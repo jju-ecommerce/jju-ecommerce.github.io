@@ -215,6 +215,12 @@ class BookRenderer:
     def add_quote(self, buf):
         text = "\n".join(buf).strip()
         plain = re.sub(r"\*\*", "", text)
+        if plain.startswith("프롬프트 사용 안내"):
+            body = re.sub(r"^프롬프트 사용 안내\s*[—–\-]\s*", "", plain).strip()
+            self._body().append(
+                '<div class="pguide"><p class="pg-t">프롬프트 사용 안내</p><p>%s</p></div>' % inline(body)
+            )
+            return
         if "🎥" in plain:
             m = re.search(r"\[([^\]]+)\]\((https?://[^)\s]+)\)", text)
             url = m.group(2) if m else YOUTUBE
@@ -570,6 +576,12 @@ p.act{margin:0 0 16px;padding:13px 15px;border-radius:13px;background:var(--crea
 .tip{margin:0 0 16px;padding:15px 16px 15px 16px;border-radius:15px;background:#FFF9EE;border:1.5px solid rgba(217,119,6,.4)}
 .tip-b{display:inline-block;margin-bottom:6px;font-size:12.5px;font-weight:700;color:#fff;background:var(--gold-deep);border-radius:999px;padding:4px 9px;line-height:1}
 .tip p{margin:0;font-size:16px;line-height:1.78;color:#5B3A12}
+.pguide{margin:0 0 18px;padding:16px 16px 14px;border-radius:16px;background:#FFF7E6;border:1.5px solid rgba(217,119,6,.45);border-left:5px solid var(--gold)}
+.pguide p{margin:0;font-size:16px;line-height:1.8;color:#5B3A12}
+.pguide p strong{color:#8A3F03}
+.pguide .pg-t{display:inline-block;margin:0 0 9px;font-size:13px;font-weight:700;color:#fff;background:var(--gold-deep);border-radius:999px;padding:5px 11px;line-height:1}
+.pguide.pg-top{margin:0 0 20px;box-shadow:0 10px 26px rgba(0,0,0,.22)}
+.pguide.pg-top p{font-size:16.5px}
 .notice{margin:0 0 16px;padding:13px 15px;border-radius:13px;background:#F4F7FB;border-left:4px solid #93A7C4}
 .notice p{margin:0;font-size:15px;line-height:1.75;color:#42536B}
 .bquote{margin:0 0 16px;padding:13px 16px;border-left:4px solid var(--gold);background:#FBF7EF}
@@ -907,6 +919,11 @@ HTML = f"""<!DOCTYPE html>
     <span class="zh">부록</span>
     <h2>프롬프트 18선 원클릭 복사</h2>
     <p>18개 전부 무료 플랜에서도 돌려볼 수 있습니다. 버튼을 누르면 전문이 복사되고, 챗GPT·클로드에 붙여넣으면 끝납니다.</p>
+  </div>
+
+  <div class="pguide pg-top">
+    <p class="pg-t">프롬프트 사용 안내</p>
+    <p>여기 18개는 그대로 쓰고 끝내는 완성본이 아니라 <b>초기 세팅</b>입니다. 먼저 이 상태로 한두 번 돌려 보시고, 내 상품·내 말투·내 시장에 맞춰 조건을 한 줄씩 더해 가며 <b>차근차근 개인이 학습시켜 업그레이드</b>시키시는 것을 권장드립니다.</p>
   </div>
 
   <nav class="idx" aria-label="프롬프트 목차">
