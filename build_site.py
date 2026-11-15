@@ -26,6 +26,9 @@ PROMPTS = pd.PROMPTS
 
 BOOK_MD = ROOT / "viral-marketing" / "4050중년셀러-이커머스-AI장사지침서-전체원고.md"
 
+SITE_URL = "https://jju-ecommerce.github.io/"
+OG_IMAGE = SITE_URL + "img/cover-560.png"
+
 YOUTUBE = "https://youtube.com/@JJU_E-Commerce"
 CHATGPT = "https://chatgpt.com/"
 CLAUDE = "https://claude.ai/new"
@@ -830,7 +833,9 @@ HTML = f"""<!DOCTYPE html>
 <meta property="og:title" content="실패 없이 시작하는 중년의 이커머스 AI 장사 지침서 | 쭈대표의 이커머스">
 <meta property="og:description" content="지침서 전체 본문 읽기부터 프롬프트 18선 원클릭 복사까지, 링크 하나로 끝냅니다.">
 <meta property="og:type" content="article">
-<meta property="og:image" content="https://juhwan7812-dot.github.io/4050-ai-prompts/img/cover-560.png">
+<meta property="og:url" content="{SITE_URL}">
+<meta property="og:image" content="{OG_IMAGE}">
+<link rel="canonical" href="{SITE_URL}">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230F172A'/%3E%3Ctext x='50' y='70' font-size='52' text-anchor='middle'%3E%F0%9F%93%98%3C/text%3E%3C/svg%3E">
 <link rel="preload" href="fonts/GmarketSansTTFBold.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/GmarketSansTTFMedium.woff2" as="font" type="font/woff2" crossorigin>
