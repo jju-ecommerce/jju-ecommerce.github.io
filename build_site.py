@@ -22,6 +22,8 @@ PROMPTS = pd.PROMPTS
 YOUTUBE = "https://youtube.com/@JJU_E-Commerce"
 CHATGPT = "https://chatgpt.com/"
 CLAUDE = "https://claude.ai/new"
+PDF_MOBILE = "https://drive.google.com/file/d/167v6ieCETbFTs1pqgTeuYcKuFcqBJEqf/view"
+PDF_PC = "https://drive.google.com/file/d/1sk5aZe6nuBDZnulNpVGJ4jKRed3uX5fX/view"
 
 CAT_COLOR = {
     "기초": "#2563EB",
@@ -164,6 +166,22 @@ a{color:inherit}
 .btn-row{display:grid;gap:10px;margin:24px 0 0}
 .btn-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 
+/* 지침서 PDF 다운로드 */
+.pdf-box{margin:20px 0 0;padding:16px 14px 13px;border:1px solid rgba(240,169,59,.42);border-radius:20px;background:rgba(240,169,59,.09);text-align:left}
+.pdf-head{margin:0 0 11px;font-size:14.5px;font-weight:700;color:#FFD79A;line-height:1.45;text-align:center;letter-spacing:-.02em}
+.pdf-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn-pdf{
+  justify-content:flex-start;gap:9px;min-height:66px;padding:12px 13px;
+  background:linear-gradient(180deg,#FFFFFF,#E7EEF8);color:var(--navy);
+  border:1.5px solid rgba(240,169,59,.85);
+  box-shadow:0 8px 20px rgba(0,0,0,.2);text-align:left;
+}
+.btn-pdf .ico{font-size:23px}
+.pdf-txt{display:flex;flex-direction:column;min-width:0}
+.pdf-txt b{font-size:16px;font-weight:700;letter-spacing:-.03em;line-height:1.25}
+.pdf-txt em{font-style:normal;font-size:12.5px;font-weight:500;color:#5A6B85;margin-top:3px;line-height:1.2;letter-spacing:-.01em}
+.pdf-foot{margin:10px 0 0;font-size:12.5px;color:#A9B7CC;line-height:1.5;text-align:center}
+
 /* 목차 */
 .toc-box{margin:34px 0 0;padding:20px 16px;border:1px solid rgba(255,255,255,.13);border-radius:20px;background:rgba(255,255,255,.04)}
 .toc-box h2{margin:0 0 4px;font-size:17px;color:#fff}
@@ -235,6 +253,14 @@ main{padding:26px 0 8px}
   .btn-yt{font-size:15px;line-height:1.3;padding:12px 8px;min-height:58px}
   .btn-ai{font-size:14.5px;min-height:50px;gap:5px;padding:10px 3px}
   .btn-ai .ico{font-size:17px}
+  .pdf-box{margin-top:16px;padding:14px 12px 11px;border-radius:16px}
+  .pdf-head{font-size:13.5px;margin-bottom:9px}
+  .pdf-row{grid-template-columns:1fr;gap:8px}
+  .btn-pdf{min-height:58px;padding:11px 12px;gap:9px}
+  .btn-pdf .ico{font-size:21px}
+  .pdf-txt b{font-size:16px}
+  .pdf-txt em{font-size:12px;margin-top:2px}
+  .pdf-foot{font-size:12px;margin-top:8px}
   .btn.copy{font-size:18px;min-height:60px}
   .card{padding:18px 14px 16px;border-radius:18px}
   .ct{font-size:19px}
@@ -358,6 +384,14 @@ HTML = f"""<!DOCTYPE html>
       <a class="btn btn-ai claude" href="{CLAUDE}" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">🤖</span><span>클로드 바로가기</span></a>
     </div>
   </div>
+  <div class="pdf-box">
+    <p class="pdf-head">📥 지침서 PDF는 아래 버튼 하나로 바로 받으실 수 있습니다</p>
+    <div class="pdf-row">
+      <a class="btn btn-pdf" href="{PDF_MOBILE}" target="_blank" rel="noopener" aria-label="모바일용 지침서 PDF 받기, 42장"><span class="ico" aria-hidden="true">📱</span><span class="pdf-txt"><b>모바일용 PDF 받기</b><em>42장 · 폰 세로형</em></span></a>
+      <a class="btn btn-pdf" href="{PDF_PC}" target="_blank" rel="noopener" aria-label="PC 가로형 지침서 PDF 받기, 29장"><span class="ico" aria-hidden="true">💻</span><span class="pdf-txt"><b>PC 가로형 PDF 받기</b><em>29장 · 넓은 화면용</em></span></a>
+    </div>
+    <p class="pdf-foot">가입·이메일 입력 없이 바로 열립니다. (구글 드라이브 새 창)</p>
+  </div>
   <div class="note"><b>사용법 3단계</b> — ① 아래에서 필요한 프롬프트를 찾습니다. ② <b>복사 버튼</b>을 누릅니다. ③ 챗GPT·클로드에 붙여넣고, <b>골드색 [대괄호]</b> 자리만 내 상품으로 바꿉니다.</div>
 </div></header>
 
@@ -405,6 +439,6 @@ HTML = f"""<!DOCTYPE html>
 
 # 폰트 서브셋 (페이지에 실제로 쓰인 글자만)
 text = re.sub(r"<[^>]+>", "", HTML)
-chars = sorted(set(text) | set("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ .,:;!?()[]{}<>/*-+=%&@#'\"~·…•▶▲✅📋💬🤖🔗①②③"))
+chars = sorted(set(text) | set("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ .,:;!?()[]{}<>/*-+=%&@#'\"~·…•▶▲✅📋💬🤖🔗📱💻📥①②③"))
 (HERE / "_chars.txt").write_text("".join(chars), encoding="utf-8")
 print("index.html written:", (HERE / "index.html").stat().st_size, "bytes |", len(chars), "unique chars")
