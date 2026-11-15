@@ -170,7 +170,6 @@ a{color:inherit}
 /* 지침서 PDF 다운로드 */
 .pdf-box{margin:20px 0 0;padding:16px 14px 13px;border:1px solid rgba(240,169,59,.42);border-radius:20px;background:rgba(240,169,59,.09);text-align:left}
 .pdf-head{margin:0 0 11px;font-size:14.5px;font-weight:700;color:#FFD79A;line-height:1.45;text-align:center;letter-spacing:-.02em}
-.pdf-row{display:grid;grid-template-columns:1fr;gap:8px}
 .btn-pdf{
   justify-content:flex-start;gap:9px;min-height:66px;padding:12px 13px;
   background:linear-gradient(180deg,#FFFFFF,#E7EEF8);color:var(--navy);
@@ -182,9 +181,9 @@ a{color:inherit}
 .pdf-txt b{font-size:16px;font-weight:700;letter-spacing:-.03em;line-height:1.25}
 .pdf-txt em{font-style:normal;font-size:12.5px;font-weight:500;color:#5A6B85;margin-top:3px;line-height:1.2;letter-spacing:-.01em}
 .pdf-foot{margin:10px 0 0;font-size:12.5px;color:#A9B7CC;line-height:1.5;text-align:center}
-.pdf-etc{margin:6px 0 0;font-size:12.5px;line-height:1.5;text-align:center}
-.pdf-etc a{color:#E3C79B;text-decoration:none;border-bottom:1px solid rgba(227,199,155,.45)}
-@media (min-width:560px){.pdf-row{grid-template-columns:1fr 1fr;gap:10px}}
+.pdf-mini{margin:8px 0 0;font-size:12px;line-height:1.6;color:#8E9FB8;text-align:center;letter-spacing:-.02em}
+.pdf-mini a{color:#B9C6DA;text-decoration:none;border-bottom:1px solid rgba(185,198,218,.35);white-space:nowrap}
+.pdf-mini .sep{color:#5C6B84;padding:0 2px}
 /* 목차 */
 .toc-box{margin:34px 0 0;padding:20px 16px;border:1px solid rgba(255,255,255,.13);border-radius:20px;background:rgba(255,255,255,.04)}
 .toc-box h2{margin:0 0 4px;font-size:17px;color:#fff}
@@ -258,6 +257,7 @@ main{padding:26px 0 8px}
   .btn-ai .ico{font-size:17px}
   .pdf-box{margin-top:16px;padding:14px 12px 11px;border-radius:16px}
   .pdf-head{font-size:13.5px;margin-bottom:9px}
+  .pdf-mini{font-size:11.5px;line-height:1.65}
   .btn-pdf{min-height:58px;padding:11px 12px;gap:9px}
   .btn-pdf .ico{font-size:21px}
   .pdf-txt b{font-size:16px}
@@ -333,6 +333,27 @@ JS = """
     var text=raw?raw.textContent:card.querySelector('.code').innerText;
     copyText(text).then(function(ok){flash(btn,ok);});
   },false);
+  /* PDF 버튼: 기기 자동 판별 */
+  var pdfBtn=document.getElementById('pdfMain');
+  function isMobileDevice(){
+    var ua=navigator.userAgent||'';
+    if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)){return true;}
+    if(navigator.maxTouchPoints>1 && window.innerWidth<=1024){return true;}
+    return window.innerWidth<=768;
+  }
+  function setPdfHref(){
+    if(!pdfBtn){return;}
+    var url=isMobileDevice()?pdfBtn.getAttribute('data-mobile'):pdfBtn.getAttribute('data-pc');
+    if(url && pdfBtn.getAttribute('href')!==url){pdfBtn.setAttribute('href',url);}
+  }
+  setPdfHref();
+  window.addEventListener('resize',setPdfHref,false);
+  window.addEventListener('orientationchange',setPdfHref,false);
+  if(pdfBtn){
+    pdfBtn.addEventListener('pointerdown',setPdfHref,false);
+    pdfBtn.addEventListener('touchstart',setPdfHref,{passive:true});
+    pdfBtn.addEventListener('click',setPdfHref,false);
+  }
   /* 링크 복사 */
   var share=document.getElementById('share');
   if(share){
@@ -387,13 +408,10 @@ HTML = f"""<!DOCTYPE html>
     </div>
   </div>
   <div class="pdf-box">
-    <p class="pdf-head">📥 지침서 PDF는 아래 버튼 하나로 바로 받으실 수 있습니다</p>
-    <div class="pdf-row">
-      <a class="btn btn-pdf" href="{PDF_MOBILE}" target="_blank" rel="noopener" aria-label="모바일용 지침서 PDF 받기, 42장"><span class="ico" aria-hidden="true">📱</span><span class="pdf-txt"><b>모바일용 PDF 받기</b><em>42장 · 폰 세로형</em></span></a>
-      <a class="btn btn-pdf" href="{PDF_PC}" target="_blank" rel="noopener" aria-label="PC 가로형 지침서 PDF 받기, 29장"><span class="ico" aria-hidden="true">💻</span><span class="pdf-txt"><b>PC 가로형 PDF 받기</b><em>29장 · 넓은 화면용</em></span></a>
-    </div>
+    <p class="pdf-head">📥 지침서 PDF, 버튼 하나면 끝납니다</p>
+    <a class="btn btn-pdf" id="pdfMain" href="{PDF_MOBILE}" target="_blank" rel="noopener" data-mobile="{PDF_MOBILE}" data-pc="{PDF_PC}" aria-label="무료 지침서 PDF 받기"><span class="ico" aria-hidden="true">📥</span><span class="pdf-txt"><b>무료 지침서 PDF 받기</b><em>휴대폰·PC 화면에 맞춰 자동으로 열립니다</em></span></a>
     <p class="pdf-foot">가입·이메일 입력 없이 바로 열립니다</p>
-    <p class="pdf-etc"><a href="{PDF_PPTX}" target="_blank" rel="noopener">발표·강의용 PPTX 편집본 받기 (6.3MB)</a></p>
+    <p class="pdf-mini">직접 선택: <a href="{PDF_MOBILE}" target="_blank" rel="noopener">모바일용(42장)</a><span class="sep">·</span><a href="{PDF_PC}" target="_blank" rel="noopener">PC용(29장)</a><span class="sep">·</span><a href="{PDF_PPTX}" target="_blank" rel="noopener">PPTX 편집본</a></p>
   </div>
   <div class="note"><b>사용법 3단계</b> — ① 아래에서 필요한 프롬프트를 찾습니다. ② <b>복사 버튼</b>을 누릅니다. ③ 챗GPT·클로드에 붙여넣고, <b>골드색 [대괄호]</b> 자리만 내 상품으로 바꿉니다.</div>
 </div></header>
