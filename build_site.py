@@ -702,7 +702,7 @@ p.act{margin:0 0 16px;padding:13px 15px;border-radius:13px;background:var(--crea
   .btbl thead{display:none}
   .btbl tr{margin:0 0 10px;border:1px solid var(--line);border-radius:13px;overflow:hidden;background:#fff}
   .btbl td{border:0;border-top:1px solid #EEF2F7;padding:9px 12px;font-size:15px}
-  .btbl td:first-child{background:var(--navy);color:#FFD79A;font-weight:700;border-top:0}
+  .btbl tbody tr td:first-child{background:var(--navy);color:#FFD79A;font-weight:700;border-top:0}
   .btbl td[data-l]:not(:first-child)::before{content:attr(data-l) " · ";font-weight:700;color:#8A6A2F}
 }
 @media (max-width:340px){
