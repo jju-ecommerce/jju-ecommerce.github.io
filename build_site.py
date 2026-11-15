@@ -158,7 +158,7 @@ a{color:inherit}
   text-decoration:none;cursor:pointer;touch-action:manipulation;
 }
 .btn .ico{font-size:22px;line-height:1}
-.btn-yt{background:linear-gradient(180deg,#F0A93B,#D97706);color:#1A1206;box-shadow:0 8px 22px rgba(217,119,6,.32)}
+.btn-yt{background:linear-gradient(180deg,#F0A93B,#D97706);color:#1A1206;box-shadow:0 8px 22px rgba(217,119,6,.32);font-size:17.5px;letter-spacing:-.03em;padding:14px 10px}
 .btn-ai{background:rgba(255,255,255,.07);color:#fff;border:1.5px solid rgba(255,255,255,.22);min-height:54px;font-size:16px}
 .btn-ai.claude{border-color:rgba(240,169,59,.55)}
 .btn-row{display:grid;gap:10px;margin:24px 0 0}
@@ -329,7 +329,7 @@ HTML = f"""<!DOCTYPE html>
   <div class="chips"><span class="chip">유통 18년</span><span class="chip">온라인 셀러 3년</span><span class="chip">프롬프트 18선 수록</span></div>
   <div class="rule"></div>
   <div class="btn-row">
-    <a class="btn btn-yt" href="{YOUTUBE}" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">▶</span><span>쭈대표 유튜브 구독하기</span></a>
+    <a class="btn btn-yt" href="{YOUTUBE}" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">▶</span><span>쭈대표 유튜브 구독하기 (@JJU_E-Commerce)</span></a>
     <div class="btn-2">
       <a class="btn btn-ai" href="{CHATGPT}" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">💬</span><span>챗GPT 바로가기</span></a>
       <a class="btn btn-ai claude" href="{CLAUDE}" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">🤖</span><span>클로드 바로가기</span></a>
@@ -357,7 +357,7 @@ HTML = f"""<!DOCTYPE html>
   <section class="cta" id="more">
     <h2>혼자 하지 마세요.<br>옆에서 같이 계산해 드립니다.</h2>
     <p>매주 4050 중년 셀러를 위한 정직한 실전 유통 영상이 올라옵니다.</p>
-    <a class="btn btn-yt" href="{YOUTUBE}" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">▶</span><span>쭈대표 유튜브 구독하기</span></a>
+    <a class="btn btn-yt" href="{YOUTUBE}" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">▶</span><span>쭈대표 유튜브 구독하기 (@JJU_E-Commerce)</span></a>
     <div class="btn-2">
       <a class="btn btn-ai" href="{CHATGPT}" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">💬</span><span>챗GPT 바로가기</span></a>
       <a class="btn btn-ai claude" href="{CLAUDE}" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">🤖</span><span>클로드 바로가기</span></a>
