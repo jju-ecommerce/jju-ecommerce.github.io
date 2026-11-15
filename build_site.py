@@ -221,19 +221,6 @@ class BookRenderer:
                 '<div class="pguide"><p class="pg-t">프롬프트 사용 안내</p><p>%s</p></div>' % inline(body)
             )
             return
-        if "🎥" in plain:
-            m = re.search(r"\[([^\]]+)\]\((https?://[^)\s]+)\)", text)
-            url = m.group(2) if m else YOUTUBE
-            lines = [l.strip() for l in plain.split("\n") if l.strip()]
-            title = re.sub(r"^🎥\s*", "", lines[0]).strip()
-            desc = " ".join(l for l in lines[1:] if "🔗" not in l and not l.startswith("["))
-            self._body().append(
-                '<div class="vid"><p class="vid-t"><span aria-hidden="true">🎥</span> %s</p>'
-                '<p class="vid-d">%s</p>'
-                '<a class="vid-a" href="%s" target="_blank" rel="noopener">▶ 유튜브 영상 보기</a></div>'
-                % (esc(title), esc(desc), esc(url))
-            )
-            return
         if "🔔" in plain:
             url = re.search(r"\[([^\]]+)\]\((https?://[^)\s]+)\)", text)
             url = url.group(2) if url else YOUTUBE
@@ -530,8 +517,8 @@ a{color:inherit}
 .intro p{margin:0 0 10px;font-size:15px;line-height:1.75;color:#C4D0E2}
 .intro p:last-child{margin-bottom:0}
 .intro b{color:#FFD79A}
-.intro .byline{margin:14px 0 0;padding-top:14px;border-top:1px solid rgba(255,255,255,.13);font-size:14px;color:#9FB0C7;line-height:1.75}
-.intro .byline b{color:#fff}
+.hero .byline{margin:18px 0 0;padding-top:14px;border-top:1px solid rgba(255,255,255,.13);font-size:14px;color:#9FB0C7;line-height:1.75}
+.hero .byline b{color:#fff}
 
 /* 지침서 차례 */
 .booktoc{margin:0 0 18px;padding:20px 16px;border:1px solid rgba(255,255,255,.13);border-radius:20px;background:rgba(255,255,255,.04)}
@@ -874,7 +861,7 @@ HTML = f"""<!DOCTYPE html>
   <span class="kicker">4050 인생 2막 · 유튜브에서 약속한 그 지침서</span>
   <h1>실패 없이 시작하는<span class="g">중년의 이커머스 AI 장사 지침서</span></h1>
   <p class="lead">PDF 다운로드 없이 <b>지침서 전체 본문</b>을 여기서 읽으시고, <b>프롬프트 18선</b>은 버튼 한 번으로 복사해 쓰십시오.</p>
-  <div class="chips"><span class="chip">유통 18년</span><span class="chip">온라인 셀러 3년</span><span class="chip">프롬프트 18선 수록</span></div>
+  <div class="chips"><span class="chip">유통 18년</span><span class="chip">도매꾹 3년 · 쿠팡 반년</span><span class="chip">프롬프트 18선 수록</span></div>
   <div class="rule"></div>
   <div class="btn-row">
     <a class="btn btn-yt" href="{YOUTUBE}" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">▶</span><span>쭈대표 유튜브 구독하기 <span class="yt-h">(@JJU_E-Commerce)</span></span></a>
@@ -884,22 +871,14 @@ HTML = f"""<!DOCTYPE html>
     <a class="btn btn-nav" href="#prompts"><span class="ico" aria-hidden="true">📋</span><span>프롬프트 18선</span></a>
     <a class="btn btn-nav" href="#pdf"><span class="ico" aria-hidden="true">📥</span><span>소장용 PDF 받기</span></a>
   </div>
+  <p class="byline"><b>쭈대표</b> — 오프라인 유통 18년(2008년~) · 온라인 3년(도매꾹 시작) · 쿠팡 반년<br>화려한 요행 대신 정직한 1원 계산으로 가족을 지키는 1인 쇼핑몰 첫걸음</p>
 </div></header>
 
 <div class="wrap zone" id="guide">
   <div class="zone-head">
     <span class="zh">지침서 전체 본문</span>
     <h2>제1장부터 에필로그까지</h2>
-    <p>책으로 낸 원고를 한 글자도 줄이지 않고 그대로 옮겼습니다. 폰에서 확대하지 않고 읽으실 수 있게 큰 글씨로 세팅했습니다.</p>
   </div>
-
-  <section class="intro">
-    <h2>이 페이지 하나로 끝냅니다</h2>
-    <p>지금까지는 PDF를 받아 폰 뷰어로 열어야 했고, 그 안에서는 보안 설정 때문에 프롬프트 <b>복사</b>가 막혔습니다. 이제 링크 하나만 누르면 <b>지침서 전체 본문 읽기</b>부터 <b>프롬프트 원클릭 복사</b>까지 바로 됩니다.</p>
-    <p>본문을 읽다가 프롬프트가 나오면 그 자리에서 <b>[📋 이 프롬프트 복사]</b>를 누르십시오. 18개 전체를 한 번에 훑고 싶으시면 <a href="#prompts">프롬프트 18선</a>으로 바로 가시면 됩니다.</p>
-    <p>골드색 <b>[대괄호]</b> 자리는 예시입니다. 내 상품명·가격·송장번호로 바꿔 넣으시면 됩니다.</p>
-    <p class="byline"><b>쭈대표</b> — 오프라인 유통 18년(2008년~) · 온라인 셀러 3년<br>화려한 요행 대신 정직한 1원 계산으로 가족을 지키는 1인 쇼핑몰 첫걸음</p>
-  </section>
 
   <nav class="booktoc" aria-label="지침서 차례">
     <h2>지침서 차례</h2>
