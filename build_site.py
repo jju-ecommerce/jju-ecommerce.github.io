@@ -157,6 +157,11 @@ class BookRenderer:
 
     def add_h4(self, text: str):
         t = text.strip().replace("**", "")
+        # 원고의 `[프롬프트 N] 제목` 라벨은 바로 뒤 코드블록이 No.XX + 제목으로 그대로 받는다.
+        # (원고 본문 번호와 부록 18선 번호가 CS 구간에서 한 칸 어긋나 있어, 라벨을 지우고
+        #  부록 기준 번호 하나로 통일한다.)
+        if re.match(r"^\[프롬프트\s*\d+\]", t):
+            return
         self._body().append('<h4 class="h4">%s</h4>' % inline(t, True))
 
     def add_para(self, lines):
