@@ -250,7 +250,7 @@ class BookRenderer:
         if p:
             pid, no = "c%02d" % p["no"], p["no"]
             self._body().append(
-                '<div class="pblock">'
+                '<div class="pblock" id="%s">'
                 '<div class="pb-head"><span class="no">No.%02d</span>'
                 '<span class="pb-t">%s</span></div>'
                 '<pre class="code">%s</pre>'
@@ -260,7 +260,7 @@ class BookRenderer:
                 '<span class="ico" aria-hidden="true">📋</span><span class="lbl">이 프롬프트 복사</span></button>'
                 '<a class="pb-link" href="#p%02d">부록 카드로 보기 →</a>'
                 "</div></div>"
-                % (no, esc(p["title"]), rich(p["body"]), esc(p["body"]), pid, no)
+                % (pid, no, esc(p["title"]), rich(p["body"]), esc(p["body"]), pid, no)
             )
         else:
             self._body().append('<pre class="code plain">%s</pre>' % esc(body))
