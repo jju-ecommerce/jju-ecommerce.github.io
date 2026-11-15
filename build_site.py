@@ -170,7 +170,6 @@ a{color:inherit}
 /* 지침서 PDF 다운로드 */
 .pdf-box{margin:20px 0 0;padding:16px 14px 13px;border:1px solid rgba(240,169,59,.42);border-radius:20px;background:rgba(240,169,59,.09);text-align:left}
 .pdf-head{margin:0 0 11px;font-size:14.5px;font-weight:700;color:#FFD79A;line-height:1.45;text-align:center;letter-spacing:-.02em}
-@media (min-width:560px){.pdf-row{grid-template-columns:1fr 1fr;gap:10px}}
 .pdf-row{display:grid;grid-template-columns:1fr;gap:8px}
 .btn-pdf{
   justify-content:flex-start;gap:9px;min-height:66px;padding:12px 13px;
@@ -185,6 +184,7 @@ a{color:inherit}
 .pdf-foot{margin:10px 0 0;font-size:12.5px;color:#A9B7CC;line-height:1.5;text-align:center}
 .pdf-etc{margin:6px 0 0;font-size:12.5px;line-height:1.5;text-align:center}
 .pdf-etc a{color:#E3C79B;text-decoration:none;border-bottom:1px solid rgba(227,199,155,.45)}
+@media (min-width:560px){.pdf-row{grid-template-columns:1fr 1fr;gap:10px}}
 /* 목차 */
 .toc-box{margin:34px 0 0;padding:20px 16px;border:1px solid rgba(255,255,255,.13);border-radius:20px;background:rgba(255,255,255,.04)}
 .toc-box h2{margin:0 0 4px;font-size:17px;color:#fff}
