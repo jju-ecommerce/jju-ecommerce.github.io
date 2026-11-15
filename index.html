@@ -72,7 +72,8 @@ a{color:inherit}
 /* 지침서 PDF 다운로드 */
 .pdf-box{margin:20px 0 0;padding:16px 14px 13px;border:1px solid rgba(240,169,59,.42);border-radius:20px;background:rgba(240,169,59,.09);text-align:left}
 .pdf-head{margin:0 0 11px;font-size:14.5px;font-weight:700;color:#FFD79A;line-height:1.45;text-align:center;letter-spacing:-.02em}
-.pdf-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (min-width:560px){.pdf-row{grid-template-columns:1fr 1fr;gap:10px}}
+.pdf-row{display:grid;grid-template-columns:1fr;gap:8px}
 .btn-pdf{
   justify-content:flex-start;gap:9px;min-height:66px;padding:12px 13px;
   background:linear-gradient(180deg,#FFFFFF,#E7EEF8);color:var(--navy);
@@ -158,7 +159,6 @@ main{padding:26px 0 8px}
   .btn-ai .ico{font-size:17px}
   .pdf-box{margin-top:16px;padding:14px 12px 11px;border-radius:16px}
   .pdf-head{font-size:13.5px;margin-bottom:9px}
-  .pdf-row{grid-template-columns:1fr;gap:8px}
   .btn-pdf{min-height:58px;padding:11px 12px;gap:9px}
   .btn-pdf .ico{font-size:21px}
   .pdf-txt b{font-size:16px}
@@ -207,7 +207,7 @@ main{padding:26px 0 8px}
       <a class="btn btn-pdf" href="https://drive.google.com/file/d/167v6ieCETbFTs1pqgTeuYcKuFcqBJEqf/view" target="_blank" rel="noopener" aria-label="모바일용 지침서 PDF 받기, 42장"><span class="ico" aria-hidden="true">📱</span><span class="pdf-txt"><b>모바일용 PDF 받기</b><em>42장 · 폰 세로형</em></span></a>
       <a class="btn btn-pdf" href="https://drive.google.com/file/d/1sk5aZe6nuBDZnulNpVGJ4jKRed3uX5fX/view" target="_blank" rel="noopener" aria-label="PC 가로형 지침서 PDF 받기, 29장"><span class="ico" aria-hidden="true">💻</span><span class="pdf-txt"><b>PC 가로형 PDF 받기</b><em>29장 · 넓은 화면용</em></span></a>
     </div>
-    <p class="pdf-foot">가입·이메일 입력 없이 바로 열립니다. (구글 드라이브 새 창)</p>
+    <p class="pdf-foot">가입·이메일 입력 없이 바로 열립니다</p>
   </div>
   <div class="note"><b>사용법 3단계</b> — ① 아래에서 필요한 프롬프트를 찾습니다. ② <b>복사 버튼</b>을 누릅니다. ③ 챗GPT·클로드에 붙여넣고, <b>골드색 [대괄호]</b> 자리만 내 상품으로 바꿉니다.</div>
 </div></header>
