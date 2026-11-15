@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>프롬프트 18선 원클릭 복사 | 쭈대표의 이커머스</title>
+<meta name="description" content="4050 중년 셀러를 위한 AI 장사 지침서 프롬프트 18선. 버튼 한 번 누르면 전문이 복사됩니다. 챗GPT·클로드에 붙여넣기만 하세요.">
+<meta name="theme-color" content="#0F172A">
+<meta property="og:title" content="프롬프트 18선 원클릭 복사 | 쭈대표의 이커머스">
+<meta property="og:description" content="버튼 한 번 누르면 프롬프트 전문이 복사됩니다. 4050 중년 셀러 AI 장사 지침서 18선.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230F172A'/%3E%3Ctext x='50' y='70' font-size='54' text-anchor='middle'%3E%F0%9F%93%8B%3C/text%3E%3C/svg%3E">
+<link rel="preload" href="fonts/GmarketSansTTFBold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/GmarketSansTTFMedium.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face{font-family:"Gmarket Sans";font-weight:300;font-style:normal;font-display:swap;src:url("fonts/GmarketSansTTFLight.woff2") format("woff2")}
+@font-face{font-family:"Gmarket Sans";font-weight:500;font-style:normal;font-display:swap;src:url("fonts/GmarketSansTTFMedium.woff2") format("woff2")}
+@font-face{font-family:"Gmarket Sans";font-weight:700;font-style:normal;font-display:swap;src:url("fonts/GmarketSansTTFBold.woff2") format("woff2")}
+
+:root{
+  --navy:#0F172A; --navy-2:#16233C; --navy-3:#20304D;
+  --gold:#D97706; --gold-2:#F0A93B; --gold-deep:#B45309;
+  --ink:#0F172A; --paper:#FFFFFF; --muted:#94A3B8;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{
+  margin:0;background:var(--navy);color:#E5EAF3;
+  font-family:"Gmarket Sans","Apple SD Gothic Neo","Malgun Gothic",system-ui,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+  font-size:18px;line-height:1.72;letter-spacing:-.01em;
+  word-break:keep-all;overflow-wrap:anywhere;
+}
+img{max-width:100%}
+a{color:inherit}
+.wrap{max-width:680px;margin:0 auto;padding:0 16px}
+
+/* 상단 고정 바 */
+.topbar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(15,23,42,.94);backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(217,119,6,.35);
+}
+.topbar .inner{max-width:680px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:10px}
+.topbar .who{font-size:13px;font-weight:700;color:var(--gold-2);letter-spacing:.02em}
+.topbar .name{font-size:15px;font-weight:700;color:#fff;margin-left:auto}
+
+/* 히어로 */
+.hero{padding:34px 0 10px;text-align:center}
+.hero .kicker{display:inline-block;font-size:14px;font-weight:700;color:var(--gold-2);letter-spacing:.06em;margin-bottom:14px}
+.hero h1{margin:0;font-size:31px;line-height:1.34;font-weight:700;color:#fff;letter-spacing:-.03em}
+.hero h1 .g{color:var(--gold-2);display:block;font-size:37px;margin-top:4px}
+.hero .lead{margin:16px auto 0;max-width:520px;font-size:17px;line-height:1.7;color:#C7D2E4}
+.hero .lead b{color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:20px 0 0}
+.chip{border:1.5px solid rgba(240,169,59,.75);color:var(--gold-2);border-radius:999px;padding:8px 14px;font-size:14px;font-weight:700;line-height:1}
+.rule{width:56px;height:3px;background:var(--gold);border-radius:2px;margin:24px auto 0}
+
+/* 상단 버튼 */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+  min-height:62px;padding:14px 16px;border:0;border-radius:16px;
+  font-family:inherit;font-size:19px;font-weight:700;letter-spacing:-.02em;
+  text-decoration:none;cursor:pointer;touch-action:manipulation;
+}
+.btn .ico{font-size:22px;line-height:1}
+.btn-yt{background:linear-gradient(180deg,#F0A93B,#D97706);color:#1A1206;box-shadow:0 8px 22px rgba(217,119,6,.32)}
+.btn-ai{background:rgba(255,255,255,.07);color:#fff;border:1.5px solid rgba(255,255,255,.22);min-height:54px;font-size:16px}
+.btn-ai.claude{border-color:rgba(240,169,59,.55)}
+.btn-row{display:grid;gap:10px;margin:24px 0 0}
+.btn-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+
+/* 목차 */
+.toc-box{margin:34px 0 0;padding:20px 16px;border:1px solid rgba(255,255,255,.13);border-radius:20px;background:rgba(255,255,255,.04)}
+.toc-box h2{margin:0 0 4px;font-size:17px;color:#fff}
+.toc-box p.sub{margin:0 0 14px;font-size:14px;color:var(--muted)}
+.toc{display:grid;gap:8px}
+.toc-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.06);text-decoration:none;border:1px solid rgba(255,255,255,.08)}
+.toc-no{font-size:14px;font-weight:700;min-width:22px;font-variant-numeric:tabular-nums}
+.toc-t{font-size:15px;color:#E5EAF3;line-height:1.35;font-weight:500}
+
+/* 카드 */
+main{padding:26px 0 8px}
+.sec-head{display:flex;align-items:baseline;gap:10px;margin:30px 0 14px}
+.sec-head h2{margin:0;font-size:20px;color:#fff}
+.sec-head .n{font-size:14px;color:var(--gold-2);font-weight:700}
+.card{
+  background:var(--paper);color:var(--ink);border-radius:22px;
+  padding:22px 18px 18px;margin:0 0 20px;
+  box-shadow:0 14px 34px rgba(0,0,0,.28);
+  scroll-margin-top:64px;
+}
+.card:target{box-shadow:0 0 0 3px var(--gold),0 14px 34px rgba(0,0,0,.28)}
+.card-top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.no{font-size:14px;font-weight:700;color:#fff;background:var(--navy);border-radius:8px;padding:5px 9px;line-height:1;font-variant-numeric:tabular-nums}
+.cat{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#334155;background:#EEF2F7;border-radius:999px;padding:6px 10px;line-height:1}
+.cat i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.ct{margin:0 0 8px;font-size:21px;line-height:1.4;font-weight:700;color:var(--ink);letter-spacing:-.03em}
+.hint{margin:0 0 14px;font-size:14.5px;line-height:1.6;color:#64748B}
+.code{
+  margin:0 0 16px;padding:16px 14px;
+  background:#F6F8FB;border:1px solid #E2E8F0;border-left:5px solid var(--gold);
+  border-radius:14px;
+  font-family:"Gmarket Sans","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  font-size:16.5px;line-height:1.78;color:#111827;
+  white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere;
+}
+.ph{background:#FFF0D2;color:#9A4A06;font-weight:700;border-radius:4px;padding:0 2px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.btn.copy{background:linear-gradient(180deg,#E8890C,#B45309);color:#fff;box-shadow:0 8px 20px rgba(180,83,9,.32);font-size:20px;min-height:64px}
+.btn.copy .lbl{letter-spacing:-.01em}
+.btn.copy.done{background:linear-gradient(180deg,#12805C,#0B6444);box-shadow:0 8px 20px rgba(11,100,68,.32)}
+.after{margin:10px 0 0;font-size:13.5px;color:#8290A6;text-align:center}
+
+/* 하단 CTA */
+.cta{margin:34px 0 0;padding:26px 18px;border-radius:22px;background:linear-gradient(180deg,#1B2A45,#131E33);border:1px solid rgba(240,169,59,.28);text-align:center}
+.cta h2{margin:0 0 8px;font-size:22px;color:#fff;line-height:1.4}
+.cta p{margin:0 0 18px;font-size:15.5px;color:#B9C6DA}
+.foot{margin:26px 0 40px;text-align:center;font-size:12.5px;color:#7C8AA0;line-height:1.7}
+.foot a{color:#9FB0C7;text-decoration:none;border-bottom:1px solid rgba(159,176,199,.4)}
+.top-link{display:block;text-align:center;margin:6px 0 0;font-size:14.5px;color:var(--gold-2);text-decoration:none;font-weight:700}
+.note{margin:18px 0 0;padding:14px 16px;border-radius:14px;background:rgba(240,169,59,.1);border:1px solid rgba(240,169,59,.3);font-size:14.5px;color:#EBD5B4;line-height:1.65;text-align:left}
+.note b{color:#FFD79A}
+
+/* 토스트 */
+.toast{
+  position:fixed;left:50%;bottom:22px;z-index:90;
+  transform:translate(-50%,160%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
+  max-width:92vw;padding:14px 20px;border-radius:999px;
+  background:#0B1220;border:1.5px solid var(--gold);
+  color:#fff;font-size:15.5px;font-weight:700;line-height:1.4;text-align:center;
+  box-shadow:0 14px 34px rgba(0,0,0,.55);
+}
+.toast.show{transform:translate(-50%,0)}
+@media (min-width:520px){.btn-2{grid-template-columns:1fr 1fr}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.toast{transition:none}}
+
+</style>
+</head>
+<body id="top">
+<div class="topbar"><div class="inner">
+  <span class="who">쭈대표의 이커머스</span>
+  <span class="name">프롬프트 18선</span>
+</div></div>
+
+<header class="hero"><div class="wrap">
+  <span class="kicker">4050 인생 2막 · 실전 유통 가이드</span>
+  <h1>버튼 한 번이면 끝나는<span class="g">AI 프롬프트 18선</span></h1>
+  <p class="lead">복잡하게 타이핑하지 마세요. <b>[📋 프롬프트 복사하기]</b>를 누르고, 챗GPT나 클로드 입력창에 <b>붙여넣기만</b> 하면 됩니다.</p>
+  <div class="chips"><span class="chip">유통 18년</span><span class="chip">온라인 셀러 3년</span><span class="chip">프롬프트 18선 수록</span></div>
+  <div class="rule"></div>
+  <div class="btn-row">
+    <a class="btn btn-yt" href="https://youtube.com/@JJU_E-Commerce" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">▶</span><span>쭈대표 유튜브 구독하기</span></a>
+    <div class="btn-2">
+      <a class="btn btn-ai" href="https://chatgpt.com/" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">💬</span><span>챗GPT 바로가기</span></a>
+      <a class="btn btn-ai claude" href="https://claude.ai/new" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">🤖</span><span>클로드 바로가기</span></a>
+    </div>
+  </div>
+  <div class="note"><b>사용법 3단계</b> — ① 아래에서 필요한 프롬프트를 찾습니다. ② <b>복사 버튼</b>을 누릅니다. ③ 챗GPT·클로드에 붙여넣고, <b>골드색 [대괄호]</b> 자리만 내 상품으로 바꿉니다.</div>
+</div></header>
+
+<div class="wrap">
+  <nav class="toc-box" aria-label="프롬프트 목차">
+    <h2>목차 — 18선 바로가기</h2>
+    <p class="sub">번호를 누르면 해당 프롬프트로 바로 이동합니다.</p>
+    <div class="toc">
+<a class="toc-item" href="#p01"><span class="toc-no" style="color:#2563EB">01</span><span class="toc-t">4050 중년 셀러 전담 AI 시스템 지침</span></a>
+<a class="toc-item" href="#p02"><span class="toc-no" style="color:#0E7490">02</span><span class="toc-t">쿠팡 틈새 안전 상품 발굴기</span></a>
+<a class="toc-item" href="#p03"><span class="toc-no" style="color:#0E7490">03</span><span class="toc-t">통관 폐기 방지 1초 인증 검증기</span></a>
+<a class="toc-item" href="#p04"><span class="toc-no" style="color:#0E7490">04</span><span class="toc-t">중국 1688 공장 직발주 검색어 변환기</span></a>
+<a class="toc-item" href="#p05"><span class="toc-no" style="color:#0E7490">05</span><span class="toc-t">믿을 수 있는 1688 진짜 공장 판별기</span></a>
+<a class="toc-item" href="#p06"><span class="toc-no" style="color:#B45309">06</span><span class="toc-t">통장에 진짜 남는 순이익 1원 단위 계산기</span></a>
+<a class="toc-item" href="#p07"><span class="toc-no" style="color:#B45309">07</span><span class="toc-t">경쟁사 가격 덤핑 대응 마지노선 역산기</span></a>
+<a class="toc-item" href="#p08"><span class="toc-no" style="color:#B45309">08</span><span class="toc-t">객단가 2배 묶음(세트) 기획기</span></a>
+<a class="toc-item" href="#p09"><span class="toc-no" style="color:#7C3AED">09</span><span class="toc-t">1688 중국어 스펙을 한국어 카피로 변환</span></a>
+<a class="toc-item" href="#p10"><span class="toc-no" style="color:#7C3AED">10</span><span class="toc-t">쿠팡 1페이지 노출용 상품명 &amp; 검색어 추출</span></a>
+<a class="toc-item" href="#p11"><span class="toc-no" style="color:#7C3AED">11</span><span class="toc-t">고객을 설득하는 고전환 상세페이지 원고 (PAS)</span></a>
+<a class="toc-item" href="#p12"><span class="toc-no" style="color:#7C3AED">12</span><span class="toc-t">반품을 사전에 막아주는 안심 FAQ 생성기</span></a>
+<a class="toc-item" href="#p13"><span class="toc-no" style="color:#BE123C">13</span><span class="toc-t">배송 지연 화난 고객 안심 대본</span></a>
+<a class="toc-item" href="#p14"><span class="toc-no" style="color:#BE123C">14</span><span class="toc-t">단순 변심 무료 반품 요구 정중 차단 대본</span></a>
+<a class="toc-item" href="#p15"><span class="toc-no" style="color:#BE123C">15</span><span class="toc-t">파손·불량 접수 시 100% 무상 맞교환 대본</span></a>
+<a class="toc-item" href="#p16"><span class="toc-no" style="color:#BE123C">16</span><span class="toc-t">별점 1점 악플 테러 방어 공개 화답 대본</span></a>
+<a class="toc-item" href="#p17"><span class="toc-no" style="color:#BE123C">17</span><span class="toc-t">감동을 주는 포토 리뷰 유도 감사 메시지</span></a>
+<a class="toc-item" href="#p18"><span class="toc-no" style="color:#0F766E">18</span><span class="toc-t">한 개 기획안으로 다채널 마켓 맞춤 변환기</span></a>
+    </div>
+  </nav>
+</div>
+
+<main class="wrap">
+  <div class="sec-head"><h2>프롬프트 18선 전문</h2><span class="n">전 18개 · 순서대로</span></div>
+
+    <article class="card" id="p01" aria-labelledby="p01-t">
+      <div class="card-top">
+        <span class="no">No.01</span>
+        <span class="cat"><i style="background:#2563EB"></i>기초 세팅</span>
+      </div>
+      <h2 class="ct" id="p01-t">4050 중년 셀러 전담 AI 시스템 지침</h2>
+      <p class="hint">챗GPT [설정] → [맞춤 설정(Custom Instructions)] 칸에 그대로 붙여넣으세요.</p>
+      <pre class="code">너는 오프라인 유통 18년, 온라인 셀러 3년 차인 이커머스 유통 베테랑이자, 4050 중년 초보 셀러의 전담 수석 비서다.
+다음 원칙에 따라 답변하라:
+1. 어려운 영어 신조어나 복잡한 IT 용어를 쓰지 말고, 4050 중년의 눈높이에 맞춰 쉽고 정갈한 한국어로 설명할 것.
+2. 모든 소싱 추천 시 '세관 폐기 및 인증 리스크가 전혀 없는 단순공산품(어린이용/전기/식기류 제외)'을 최우선으로 검토할 것.
+3. 원가 계산 시 '1위안=300원 도착단가 공식', '쿠팡 수수료 11~13%', '반품 로스 3~5%', '공헌이익률 30% 방어선'을 철저히 대입할 것.
+4. 모든 문구와 대본은 정직함과 신뢰를 기본으로 작성할 것.</pre>
+      <div class="raw" hidden>너는 오프라인 유통 18년, 온라인 셀러 3년 차인 이커머스 유통 베테랑이자, 4050 중년 초보 셀러의 전담 수석 비서다.
+다음 원칙에 따라 답변하라:
+1. 어려운 영어 신조어나 복잡한 IT 용어를 쓰지 말고, 4050 중년의 눈높이에 맞춰 쉽고 정갈한 한국어로 설명할 것.
+2. 모든 소싱 추천 시 '세관 폐기 및 인증 리스크가 전혀 없는 단순공산품(어린이용/전기/식기류 제외)'을 최우선으로 검토할 것.
+3. 원가 계산 시 '1위안=300원 도착단가 공식', '쿠팡 수수료 11~13%', '반품 로스 3~5%', '공헌이익률 30% 방어선'을 철저히 대입할 것.
+4. 모든 문구와 대본은 정직함과 신뢰를 기본으로 작성할 것.</div>
+      <button type="button" class="btn copy" data-copy="p01">
+        <span class="ico" aria-hidden="true">📋</span><span class="lbl">프롬프트 복사하기</span>
+      </button>
+      <p class="after">복사한 뒤 챗GPT·클로드 입력창에 붙여넣으면 끝납니다.</p>
+    </article>
+    <article class="card" id="p02" aria-labelledby="p02-t">
+      <div class="card-top">
+        <span class="no">No.02</span>
+        <span class="cat"><i style="background:#0E7490"></i>상품 소싱</span>
+      </div>
+      <h2 class="ct" id="p02-t">쿠팡 틈새 안전 상품 발굴기</h2>
+      <p class="hint">새 대화창에 붙여넣고, 원하는 조건이 있으면 문장 끝에 한 줄만 덧붙이세요.</p>
+      <pre class="code">너는 18년 차 유통 전문가다.
+40대 초보 셀러가 자본금을 안전하게 지키면서 쿠팡 '판매자 배송'으로 시작하기 가장 좋은 1만~2만 원대 생활/주방 소모품 5가지를 추천해 줘.
+
+<mark class="ph">[필수 조건]</mark>
+1. 전기/배터리가 일체 없는 무전원 단순공산품
+2. 어린이용이 아니며, 입에 닿는 식기류가 아닐 것 (KC인증 및 정밀검역 면제 품목)
+3. 파손 위험이 없고 부피가 작아 중년 혼자서도 포장·택배 발송이 쉬운 제품
+4. 쿠팡 월간 검색 조회수 1만 이상으로 꾸준한 수요가 있는 실속 아이템
+
+각 아이템별로 <mark class="ph">[상품명 / 추천 이유 / 예상 판매가 / 타깃 고객]</mark>을 표로 깔끔하게 정리해 줘.</pre>
+      <div class="raw" hidden>너는 18년 차 유통 전문가다.
+40대 초보 셀러가 자본금을 안전하게 지키면서 쿠팡 '판매자 배송'으로 시작하기 가장 좋은 1만~2만 원대 생활/주방 소모품 5가지를 추천해 줘.
+
+[필수 조건]
+1. 전기/배터리가 일체 없는 무전원 단순공산품
+2. 어린이용이 아니며, 입에 닿는 식기류가 아닐 것 (KC인증 및 정밀검역 면제 품목)
+3. 파손 위험이 없고 부피가 작아 중년 혼자서도 포장·택배 발송이 쉬운 제품
+4. 쿠팡 월간 검색 조회수 1만 이상으로 꾸준한 수요가 있는 실속 아이템
+
+각 아이템별로 [상품명 / 추천 이유 / 예상 판매가 / 타깃 고객]을 표로 깔끔하게 정리해 줘.</div>
+      <button type="button" class="btn copy" data-copy="p02">
+        <span class="ico" aria-hidden="true">📋</span><span class="lbl">프롬프트 복사하기</span>
+      </button>
+      <p class="after">복사한 뒤 챗GPT·클로드 입력창에 붙여넣으면 끝납니다.</p>
+    </article>
+    <article class="card" id="p03" aria-labelledby="p03-t">
+      <div class="card-top">
+        <span class="no">No.03</span>
+        <span class="cat"><i style="background:#0E7490"></i>상품 소싱</span>
+      </div>
+      <h2 class="ct" id="p03-t">통관 폐기 방지 1초 인증 검증기</h2>
+      <p class="hint">[ ] 안에 검토 중인 상품명을 넣고 그대로 붙여넣으세요.</p>
+      <pre class="code">내가 소싱을 고민 중인 상품은 다음과 같다:
+- 상품명: <mark class="ph">[검토 중인 상품명과 재질, 예: 실리콘 싱크대 하수구 냄새방지 트랩]</mark>
+
+관세청 규정에 따라 다음 항목을 판별해 줘:
+1. KC 인증(전기, 어린이제품 등) 또는 수입식품 정밀검역 대상에 해당하는가?
+2. 통관 시 추가 인증비나 서류 없이 '단순공산품'으로 즉시 통관 가능한가?
+3. 초보 셀러 기준 최종 <mark class="ph">[진행 가능 / 절대 금지]</mark> 판정과 그 이유를 알려줘.</pre>
+      <div class="raw" hidden>내가 소싱을 고민 중인 상품은 다음과 같다:
+- 상품명: [검토 중인 상품명과 재질, 예: 실리콘 싱크대 하수구 냄새방지 트랩]
+
+관세청 규정에 따라 다음 항목을 판별해 줘:
+1. KC 인증(전기, 어린이제품 등) 또는 수입식품 정밀검역 대상에 해당하는가?
+2. 통관 시 추가 인증비나 서류 없이 '단순공산품'으로 즉시 통관 가능한가?
+3. 초보 셀러 기준 최종 [진행 가능 / 절대 금지] 판정과 그 이유를 알려줘.</div>
+      <button type="button" class="btn copy" data-copy="p03">
+        <span class="ico" aria-hidden="true">📋</span><span class="lbl">프롬프트 복사하기</span>
+      </button>
+      <p class="after">복사한 뒤 챗GPT·클로드 입력창에 붙여넣으면 끝납니다.</p>
+    </article>
+    <article class="card" id="p04" aria-labelledby="p04-t">
+      <div class="card-top">
+        <span class="no">No.04</span>
+        <span class="cat"><i style="background:#0E7490"></i>상품 소싱</span>
+      </div>
+      <h2 class="ct" id="p04-t">중국 1688 공장 직발주 검색어 변환기</h2>
+      <p class="hint">[ ] 안에 쿠팡에서 잘 팔리는 상품명을 넣고 붙여넣으세요.</p>
+      <pre class="code">한국 쿠팡에서 인기 있는 <mark class="ph">[선정한 상품명, 예: 접이식 3단 기름튐 방지 스텐 가드]</mark>을 중국 1688 도매 사이트 제조공장에서 직접 찾으려고 한다.
+
+1. 1688 검색창에 복사해서 넣을 가장 정확한 중국어 도매 검색어 3개를 한자(간체자)로 알려줘.
+2. 상세페이지에서 확인해야 할 품질 규격(재질, 두께, 중량) 중국어 단어를 정리해 줘.
+3. 공장과 채팅 시 "최소 주문 수량(MOQ)과 무지 박스 포장 가능 여부"를 묻는 정중한 중국어 한 문장을 작성해 줘.</pre>
+      <div class="raw" hidden>한국 쿠팡에서 인기 있는 [선정한 상품명, 예: 접이식 3단 기름튐 방지 스텐 가드]을 중국 1688 도매 사이트 제조공장에서 직접 찾으려고 한다.
+
+1. 1688 검색창에 복사해서 넣을 가장 정확한 중국어 도매 검색어 3개를 한자(간체자)로 알려줘.
+2. 상세페이지에서 확인해야 할 품질 규격(재질, 두께, 중량) 중국어 단어를 정리해 줘.
+3. 공장과 채팅 시 "최소 주문 수량(MOQ)과 무지 박스 포장 가능 여부"를 묻는 정중한 중국어 한 문장을 작성해 줘.</div>
+      <button type="button" class="btn copy" data-copy="p04">
+        <span class="ico" aria-hidden="true">📋</span><span class="lbl">프롬프트 복사하기</span>
+      </button>
+      <p class="after">복사한 뒤 챗GPT·클로드 입력창에 붙여넣으면 끝납니다.</p>
+    </article>
+    <article class="card" id="p05" aria-labelledby="p05-t">
+      <div class="card-top">
+        <span class="no">No.05</span>
+        <span class="cat"><i style="background:#0E7490"></i>상품 소싱</span>
+      </div>
+      <h2 class="ct" id="p05-t">믿을 수 있는 1688 진짜 공장 판별기</h2>
+      <p class="hint">1688 업체 페이지의 업체명·업력·재구매율 글자를 복사해 [ ] 안에 넣으세요.</p>
+      <pre class="code">아래는 내가 찾은 1688 업체의 상세 정보다:
+<mark class="ph">[1688 페이지 내 업체명, 업력 연수, 재구매율, 이행률 등 글자 복사 입력]</mark>
+
+이 업체가 유령 중개상이 아닌 '진짜 제조공장'인지 다음 기준으로 검증해 줘:
+1. 입점 연차(최소 3년 이상) 및 단골 재구매율(20% 이상)
+2. 품질 보증 점수 및 납기 이행률
+3. 초보 셀러 기준 거래 추천 여부: <mark class="ph">[추천 / 주의 / 비추천]</mark></pre>
+      <div class="raw" hidden>아래는 내가 찾은 1688 업체의 상세 정보다:
+[1688 페이지 내 업체명, 업력 연수, 재구매율, 이행률 등 글자 복사 입력]
+
+이 업체가 유령 중개상이 아닌 '진짜 제조공장'인지 다음 기준으로 검증해 줘:
+1. 입점 연차(최소 3년 이상) 및 단골 재구매율(20% 이상)
+2. 품질 보증 점수 및 납기 이행률
+3. 초보 셀러 기준 거래 추천 여부: [추천 / 주의 / 비추천]</div>
+      <button type="button" class="btn copy" data-copy="p05">
+        <span class="ico" aria-hidden="true">📋</span><span class="lbl">프롬프트 복사하기</span>
+      </button>
+      <p class="after">복사한 뒤 챗GPT·클로드 입력창에 붙여넣으면 끝납니다.</p>
+    </article>
+    <article class="card" id="p06" aria-labelledby="p06-t">
+      <div class="card-top">
+        <span class="no">No.06</span>
+        <span class="cat"><i style="background:#B45309"></i>마진 계산</span>
+      </div>
+      <h2 class="ct" id="p06-t">통장에 진짜 남는 순이익 1원 단위 계산기</h2>
+      <p class="hint">내 상품의 판매가·공장가만 [ ] 안에서 바꾸면 1원 단위로 계산해 줍니다.</p>
+      <pre class="code">아래 조건으로 쿠팡에서 판매할 상품의 1원 단위 손익을 계산해 줘.
+
+- 쿠팡 판매가: <mark class="ph">[예: 11,500원]</mark> (무료배송)
+- 1688 공장가: <mark class="ph">[예: 6위안]</mark> (1위안=300원 도착단가 공식 적용)
+- 국내 택배비: 2,500원
+- 포장 부자재비: 500원
+- 쿠팡 판매수수료율: 11%
+- 예상 반품 로스율: 3%
+
+1. 건당 원가, 수수료, 택배비, 반품충당금을 1원 단위로 쪼개서 보여줘.
+2. 1개 팔았을 때 내 통장에 실제로 남는 '순마진(원)'과 '공헌이익률(%)'을 산출해 줘.
+3. 공헌이익률 30%를 넘겨서 안전하게 살아남을 수 있는지 판정해 줘.</pre>
+      <div class="raw" hidden>아래 조건으로 쿠팡에서 판매할 상품의 1원 단위 손익을 계산해 줘.
+
+- 쿠팡 판매가: [예: 11,500원] (무료배송)
+- 1688 공장가: [예: 6위안] (1위안=300원 도착단가 공식 적용)
+- 국내 택배비: 2,500원
+- 포장 부자재비: 500원
+- 쿠팡 판매수수료율: 11%
+- 예상 반품 로스율: 3%
+
+1. 건당 원가, 수수료, 택배비, 반품충당금을 1원 단위로 쪼개서 보여줘.
+2. 1개 팔았을 때 내 통장에 실제로 남는 '순마진(원)'과 '공헌이익률(%)'을 산출해 줘.
+3. 공헌이익률 30%를 넘겨서 안전하게 살아남을 수 있는지 판정해 줘.</div>
+      <button type="button" class="btn copy" data-copy="p06">
+        <span class="ico" aria-hidden="true">📋</span><span class="lbl">프롬프트 복사하기</span>
+      </button>
+      <p class="after">복사한 뒤 챗GPT·클로드 입력창에 붙여넣으면 끝납니다.</p>
+    </article>
+    <article class="card" id="p07" aria-labelledby="p07-t">
+      <div class="card-top">
+        <span class="no">No.07</span>
+        <span class="cat"><i style="background:#B45309"></i>마진 계산</span>
+      </div>
+      <h2 class="ct" id="p07-t">경쟁사 가격 덤핑 대응 마지노선 역산기</h2>
+      <p class="hint">내 도착단가를 [ ] 안에 넣고 붙여넣으세요.</p>
+      <pre class="code">- 도착단가: <mark class="ph">[도착단가 입력, 예: 2,400원]</mark>
+- 택배비 및 포장비: 3,000원
+- 쿠팡 수수료: 11%
+
+경쟁사가 가격을 내릴 때, 내가 최소 마진 25%를 지키면서 방어할 수 있는 '최저 판매가'를 역산해 줘.
+가격을 깎지 않고도 고객을 잡을 수 있는 실속 사은품 구성안 2가지를 제안해 줘.</pre>
+      <div class="raw" hidden>- 도착단가: [도착단가 입력, 예: 2,400원]
+- 택배비 및 포장비: 3,000원
+- 쿠팡 수수료: 11%
+
+경쟁사가 가격을 내릴 때, 내가 최소 마진 25%를 지키면서 방어할 수 있는 '최저 판매가'를 역산해 줘.
+가격을 깎지 않고도 고객을 잡을 수 있는 실속 사은품 구성안 2가지를 제안해 줘.</div>
+      <button type="button" class="btn copy" data-copy="p07">
+        <span class="ico" aria-hidden="true">📋</span><span class="lbl">프롬프트 복사하기</span>
+      </button>
+      <p class="after">복사한 뒤 챗GPT·클로드 입력창에 붙여넣으면 끝납니다.</p>
+    </article>
+    <article class="card" id="p08" aria-labelledby="p08-t">
+      <div class="card-top">
+        <span class="no">No.08</span>
+        <span class="cat"><i style="background:#B45309"></i>마진 계산</span>
+      </div>
+      <h2 class="ct" id="p08-t">객단가 2배 묶음(세트) 기획기</h2>
+      <p class="hint">[ ] 안에 상품명과 단품가격을 넣고 붙여넣으세요.</p>
+      <pre class="code">단품 <mark class="ph">[상품명]</mark>을 <mark class="ph">[단품가격, 예: 4,900원]</mark>에 팔면 택배비 빼고 남는 게 없다.
+1. 고객이 "이건 무조건 세트로 사야 이득이다"라고 느끼는 2개입, 3개입 묶음 옵션을 기획해 줘.
+2. 목표 판매가를 11,000원 ~ 14,000원대로 맞추고, 신뢰감을 주는 옵션명(예: 1+1 실속 체험팩, 온가족 쟁여두기 대용량 세트)을 지어줘.
+3. 택배비 1번으로 아끼는 마진 상승 효과를 비교표로 정리해 줘.</pre>
+      <div class="raw" hidden>단품 [상품명]을 [단품가격, 예: 4,900원]에 팔면 택배비 빼고 남는 게 없다.
+1. 고객이 "이건 무조건 세트로 사야 이득이다"라고 느끼는 2개입, 3개입 묶음 옵션을 기획해 줘.
+2. 목표 판매가를 11,000원 ~ 14,000원대로 맞추고, 신뢰감을 주는 옵션명(예: 1+1 실속 체험팩, 온가족 쟁여두기 대용량 세트)을 지어줘.
+3. 택배비 1번으로 아끼는 마진 상승 효과를 비교표로 정리해 줘.</div>
+      <button type="button" class="btn copy" data-copy="p08">
+        <span class="ico" aria-hidden="true">📋</span><span class="lbl">프롬프트 복사하기</span>
+      </button>
+      <p class="after">복사한 뒤 챗GPT·클로드 입력창에 붙여넣으면 끝납니다.</p>
+    </article>
+    <article class="card" id="p09" aria-labelledby="p09-t">
+      <div class="card-top">
+        <span class="no">No.09</span>
+        <span class="cat"><i style="background:#7C3AED"></i>상세페이지</span>
+      </div>
+      <h2 class="ct" id="p09-t">1688 중국어 스펙을 한국어 카피로 변환</h2>
+      <p class="hint">1688 상세페이지의 중국어 스펙을 복사해 [ ] 안에 붙여넣으세요.</p>
+      <pre class="code">아래는 중국 1688 상세페이지 스펙 텍스트다:
+<mark class="ph">[1688 중국어 스펙 텍스트 입력]</mark>
+
+너는 정직한 이커머스 전문 카피라이터다.
+1. 딱딱한 스펙을 한국 30~50대 주부와 가장들이 직관적으로 체감할 수 있는 '생활 속 효용(예: 10년을 박박 문질러도 찌그러지지 않는 튼튼함)'으로 바꿔줘.
+2. 손님이 첫 3초 만에 스크롤을 멈추고 읽게 만드는 진솔한 헤드카피 3개를 써줘.</pre>
+      <div class="raw" hidden>아래는 중국 1688 상세페이지 스펙 텍스트다:
+[1688 중국어 스펙 텍스트 입력]
+
+너는 정직한 이커머스 전문 카피라이터다.
+1. 딱딱한 스펙을 한국 30~50대 주부와 가장들이 직관적으로 체감할 수 있는 '생활 속 효용(예: 10년을 박박 문질러도 찌그러지지 않는 튼튼함)'으로 바꿔줘.
+2. 손님이 첫 3초 만에 스크롤을 멈추고 읽게 만드는 진솔한 헤드카피 3개를 써줘.</div>
+      <button type="button" class="btn copy" data-copy="p09">
+        <span class="ico" aria-hidden="true">📋</span><span class="lbl">프롬프트 복사하기</span>
+      </button>
+      <p class="after">복사한 뒤 챗GPT·클로드 입력창에 붙여넣으면 끝납니다.</p>
+    </article>
+    <article class="card" id="p10" aria-labelledby="p10-t">
+      <div class="card-top">
+        <span class="no">No.10</span>
+        <span class="cat"><i style="background:#7C3AED"></i>상세페이지</span>
+      </div>
+      <h2 class="ct" id="p10-t">쿠팡 1페이지 노출용 상품명 &amp; 검색어 추출</h2>
+      <p class="hint">[ ] 안에 상품명을 넣고 붙여넣으세요.</p>
+      <pre class="code">판매할 상품: <mark class="ph">[상품명, 예: 싱크대 스테인리스 배수구망 커버 세트]</mark>
+1. 쿠팡 검색창에서 소비자들이 실제로 자주 찾는 핵심 검색어 10개를 뽑아줘.
+2. 중복 없이 깔끔하고 신뢰감을 주는 쿠팡 규격(50자 내외) 상품명 3가지를 조합해 줘.
+3. 상품 등록 시 태그 칸에 넣을 연관 검색어 20개를 쉼표로 나열해 줘.</pre>
+      <div class="raw" hidden>판매할 상품: [상품명, 예: 싱크대 스테인리스 배수구망 커버 세트]
+1. 쿠팡 검색창에서 소비자들이 실제로 자주 찾는 핵심 검색어 10개를 뽑아줘.
+2. 중복 없이 깔끔하고 신뢰감을 주는 쿠팡 규격(50자 내외) 상품명 3가지를 조합해 줘.
+3. 상품 등록 시 태그 칸에 넣을 연관 검색어 20개를 쉼표로 나열해 줘.</div>
+      <button type="button" class="btn copy" data-copy="p10">
+        <span class="ico" aria-hidden="true">📋</span><span class="lbl">프롬프트 복사하기</span>
+      </button>
+      <p class="after">복사한 뒤 챗GPT·클로드 입력창에 붙여넣으면 끝납니다.</p>
+    </article>
+    <article class="card" id="p11" aria-labelledby="p11-t">
+      <div class="card-top">
+        <span class="no">No.11</span>
+        <span class="cat"><i style="background:#7C3AED"></i>상세페이지</span>
+      </div>
+      <h2 class="ct" id="p11-t">고객을 설득하는 고전환 상세페이지 원고 (PAS)</h2>
+      <p class="hint">상품명과 타깃 고객을 [ ] 안에 넣고 붙여넣으세요.</p>
+      <pre class="code">- 상품명: <mark class="ph">[내 상품명]</mark>
+- 타깃 고객: <mark class="ph">[예: 주방 기름때와 설거지 후 청소로 고생하는 주부]</mark>
+
+아래 순서에 따라 과장 없이 진솔한 상세페이지 본문 글을 작성해 줘:
+1. 문제 제기(Problem): 요리할 때마다 타일에 튀는 기름때 때문에 매번 주방을 닦아야 하는 번거로움을 공감대 있게 서술.
+2. 위기 강조(Agitation): 대충 방치했다가 찌든 때가 누렇게 눌어붙어 락스로도 안 지워지는 골칫거리를 경고.
+3. 명쾌한 해결(Solution): <mark class="ph">[상품명]</mark>을 올려두는 것만으로 기름 파편을 완벽 차단하고, 끝나면 물로 쓱 헹궈서 접어두면 끝나는 편리함 제시.
+4. 재질과 마감: 저가 철판과 다른 튼튼한 스텐 소재와 안전한 라운딩 마감을 강조.
+5. 정직한 약속: 문제 발생 시 100% 책임지는 판매자의 진심 어린 약속 한 단락.</pre>
+      <div class="raw" hidden>- 상품명: [내 상품명]
+- 타깃 고객: [예: 주방 기름때와 설거지 후 청소로 고생하는 주부]
+
+아래 순서에 따라 과장 없이 진솔한 상세페이지 본문 글을 작성해 줘:
+1. 문제 제기(Problem): 요리할 때마다 타일에 튀는 기름때 때문에 매번 주방을 닦아야 하는 번거로움을 공감대 있게 서술.
+2. 위기 강조(Agitation): 대충 방치했다가 찌든 때가 누렇게 눌어붙어 락스로도 안 지워지는 골칫거리를 경고.
+3. 명쾌한 해결(Solution): [상품명]을 올려두는 것만으로 기름 파편을 완벽 차단하고, 끝나면 물로 쓱 헹궈서 접어두면 끝나는 편리함 제시.
+4. 재질과 마감: 저가 철판과 다른 튼튼한 스텐 소재와 안전한 라운딩 마감을 강조.
+5. 정직한 약속: 문제 발생 시 100% 책임지는 판매자의 진심 어린 약속 한 단락.</div>
+      <button type="button" class="btn copy" data-copy="p11">
+        <span class="ico" aria-hidden="true">📋</span><span class="lbl">프롬프트 복사하기</span>
+      </button>
+      <p class="after">복사한 뒤 챗GPT·클로드 입력창에 붙여넣으면 끝납니다.</p>
+    </article>
+    <article class="card" id="p12" aria-labelledby="p12-t">
+      <div class="card-top">
+        <span class="no">No.12</span>
+        <span class="cat"><i style="background:#7C3AED"></i>상세페이지</span>
+      </div>
+      <h2 class="ct" id="p12-t">반품을 사전에 막아주는 안심 FAQ 생성기</h2>
+      <p class="hint">[ ] 안에 상품명을 넣고 붙여넣으세요.</p>
+      <pre class="code">상품 <mark class="ph">[상품명]</mark>을 구매하기 전에 손님들이 오해하거나 의심할 만한 단점 4가지를 짚어줘.
+그 의문을 정직하게 해소하고 오히려 제품의 신뢰를 높여주는 명쾌하고 친절한 Q&amp;A 답변 4세트를 작성해 줘.</pre>
+      <div class="raw" hidden>상품 [상품명]을 구매하기 전에 손님들이 오해하거나 의심할 만한 단점 4가지를 짚어줘.
+그 의문을 정직하게 해소하고 오히려 제품의 신뢰를 높여주는 명쾌하고 친절한 Q&amp;A 답변 4세트를 작성해 줘.</div>
+      <button type="button" class="btn copy" data-copy="p12">
+        <span class="ico" aria-hidden="true">📋</span><span class="lbl">프롬프트 복사하기</span>
+      </button>
+      <p class="after">복사한 뒤 챗GPT·클로드 입력창에 붙여넣으면 끝납니다.</p>
+    </article>
+    <article class="card" id="p13" aria-labelledby="p13-t">
+      <div class="card-top">
+        <span class="no">No.13</span>
+        <span class="cat"><i style="background:#BE123C"></i>고객 응대</span>
+      </div>
+      <h2 class="ct" id="p13-t">배송 지연 화난 고객 안심 대본</h2>
+      <p class="hint">송장번호와 지역 허브만 [ ] 안에서 바꿔 고객 답변에 그대로 붙여넣으세요.</p>
+      <pre class="code">고객님, 기다려 주신 소중한 상품인데 빠르게 받아보시지 못해 얼마나 답답하셨습니까. 진심으로 죄송합니다.
+현재 택배사 물류 허브에 즉시 확인한 결과, 고객님의 주문건(송장번호: <mark class="ph">[송장번호]</mark>)은 현재 <mark class="ph">[지역 허브]</mark>를 거쳐 고객님 관할 대리점으로 안전하게 이동 중입니다.
+기다려 주신 만큼 안전하게 도착할 수 있도록 전담 배송 기사님께 빠른 배송을 한 번 더 당부드렸습니다. 조금만 여유를 갖고 기다려 주시면 정성껏 배송해 드리겠습니다. 불편을 드려 다시 한번 고개 숙여 사과드립니다.</pre>
+      <div class="raw" hidden>고객님, 기다려 주신 소중한 상품인데 빠르게 받아보시지 못해 얼마나 답답하셨습니까. 진심으로 죄송합니다.
+현재 택배사 물류 허브에 즉시 확인한 결과, 고객님의 주문건(송장번호: [송장번호])은 현재 [지역 허브]를 거쳐 고객님 관할 대리점으로 안전하게 이동 중입니다.
+기다려 주신 만큼 안전하게 도착할 수 있도록 전담 배송 기사님께 빠른 배송을 한 번 더 당부드렸습니다. 조금만 여유를 갖고 기다려 주시면 정성껏 배송해 드리겠습니다. 불편을 드려 다시 한번 고개 숙여 사과드립니다.</div>
+      <button type="button" class="btn copy" data-copy="p13">
+        <span class="ico" aria-hidden="true">📋</span><span class="lbl">프롬프트 복사하기</span>
+      </button>
+      <p class="after">복사한 뒤 챗GPT·클로드 입력창에 붙여넣으면 끝납니다.</p>
+    </article>
+    <article class="card" id="p14" aria-labelledby="p14-t">
+      <div class="card-top">
+        <span class="no">No.14</span>
+        <span class="cat"><i style="background:#BE123C"></i>고객 응대</span>
+      </div>
+      <h2 class="ct" id="p14-t">단순 변심 무료 반품 요구 정중 차단 대본</h2>
+      <p class="hint">왕복 배송비 금액을 [ ] 안에 넣어 고객 답변에 붙여넣으세요.</p>
+      <pre class="code">고객님, 수령하신 상품 이용에 불편을 드려 대단히 죄송합니다.
+저희는 출고 전 전수 검수를 거치고 있으나, 혹여 상품에 기능상 하자가 있는 경우 즉시 100% 무상 교환 및 환불을 도와드리고 있습니다.
+정확한 확인을 위해 파손/불량 부위 사진을 문의창으로 1장만 첨부해 주시면 즉각 조치해 드리겠습니다.
+만약 단순 변심이나 색상/사이즈 착오로 인한 반품이실 경우, 오픈마켓 이용 규정에 따라 왕복 배송비 <mark class="ph">[금액, 예: 5,000원]</mark>가 차감된 후 결제 금액이 환불되오니 너른 양해 부탁드립니다. 고객님의 소중한 의견에 항상 귀 기울이겠습니다.</pre>
+      <div class="raw" hidden>고객님, 수령하신 상품 이용에 불편을 드려 대단히 죄송합니다.
+저희는 출고 전 전수 검수를 거치고 있으나, 혹여 상품에 기능상 하자가 있는 경우 즉시 100% 무상 교환 및 환불을 도와드리고 있습니다.
+정확한 확인을 위해 파손/불량 부위 사진을 문의창으로 1장만 첨부해 주시면 즉각 조치해 드리겠습니다.
+만약 단순 변심이나 색상/사이즈 착오로 인한 반품이실 경우, 오픈마켓 이용 규정에 따라 왕복 배송비 [금액, 예: 5,000원]가 차감된 후 결제 금액이 환불되오니 너른 양해 부탁드립니다. 고객님의 소중한 의견에 항상 귀 기울이겠습니다.</div>
+      <button type="button" class="btn copy" data-copy="p14">
+        <span class="ico" aria-hidden="true">📋</span><span class="lbl">프롬프트 복사하기</span>
+      </button>
+      <p class="after">복사한 뒤 챗GPT·클로드 입력창에 붙여넣으면 끝납니다.</p>
+    </article>
+    <article class="card" id="p15" aria-labelledby="p15-t">
+      <div class="card-top">
+        <span class="no">No.15</span>
+        <span class="cat"><i style="background:#BE123C"></i>고객 응대</span>
+      </div>
+      <h2 class="ct" id="p15-t">파손·불량 접수 시 100% 무상 맞교환 대본</h2>
+      <p class="hint">맞교환·환불 중 하나만 남기고 고객 답변에 붙여넣으세요.</p>
+      <pre class="code">고객님, 설레는 마음으로 기다려 주셨을 텐데 파손/불량으로 실망을 드려 진심으로 송구합니다.
+배송 과정에서 충격이 있었던 것으로 사료되며, 고객님께 조금의 불편도 드리지 않도록 번거로운 회수 절차 없이 <mark class="ph">[새 상품 당일 즉시 맞교환 / 전액 환불]</mark>을 진행해 드리겠습니다.
+오늘 중으로 새 제품을 가장 안전하게 포장하여 재출고해 드리겠습니다. 상처 입으신 마음에 조금이나마 위로가 되기를 바랍니다. 다시 한번 죄송합니다.</pre>
+      <div class="raw" hidden>고객님, 설레는 마음으로 기다려 주셨을 텐데 파손/불량으로 실망을 드려 진심으로 송구합니다.
+배송 과정에서 충격이 있었던 것으로 사료되며, 고객님께 조금의 불편도 드리지 않도록 번거로운 회수 절차 없이 [새 상품 당일 즉시 맞교환 / 전액 환불]을 진행해 드리겠습니다.
+오늘 중으로 새 제품을 가장 안전하게 포장하여 재출고해 드리겠습니다. 상처 입으신 마음에 조금이나마 위로가 되기를 바랍니다. 다시 한번 죄송합니다.</div>
+      <button type="button" class="btn copy" data-copy="p15">
+        <span class="ico" aria-hidden="true">📋</span><span class="lbl">프롬프트 복사하기</span>
+      </button>
+      <p class="after">복사한 뒤 챗GPT·클로드 입력창에 붙여넣으면 끝납니다.</p>
+    </article>
+    <article class="card" id="p16" aria-labelledby="p16-t">
+      <div class="card-top">
+        <span class="no">No.16</span>
+        <span class="cat"><i style="background:#BE123C"></i>고객 응대</span>
+      </div>
+      <h2 class="ct" id="p16-t">별점 1점 악플 테러 방어 공개 화답 대본</h2>
+      <p class="hint">상호명을 [ ] 안에 넣고 리뷰 답글에 붙여넣으세요.</p>
+      <pre class="code">안녕하세요, <mark class="ph">[상호명]</mark> 대표입니다.
+저희 제품을 믿고 구매해 주셨는데, 기대에 미치지 못하는 경험을 드려 진심으로 송구합니다.
+남겨주신 소중한 피드백은 저희 제조 및 검수팀에 즉각 전달하여 개선 조치를 진행하였습니다.
+비록 저희의 부족함으로 실망을 드렸으나, 고객님께서 겪으신 불편을 그대로 두지 않고 끝까지 책임지고 싶습니다. 문의창으로 연락 주시면 성심껏 후속 조치를 도와드리겠습니다. 더 나은 상품으로 보답하는 <mark class="ph">[상호명]</mark>이 되겠습니다.</pre>
+      <div class="raw" hidden>안녕하세요, [상호명] 대표입니다.
+저희 제품을 믿고 구매해 주셨는데, 기대에 미치지 못하는 경험을 드려 진심으로 송구합니다.
+남겨주신 소중한 피드백은 저희 제조 및 검수팀에 즉각 전달하여 개선 조치를 진행하였습니다.
+비록 저희의 부족함으로 실망을 드렸으나, 고객님께서 겪으신 불편을 그대로 두지 않고 끝까지 책임지고 싶습니다. 문의창으로 연락 주시면 성심껏 후속 조치를 도와드리겠습니다. 더 나은 상품으로 보답하는 [상호명]이 되겠습니다.</div>
+      <button type="button" class="btn copy" data-copy="p16">
+        <span class="ico" aria-hidden="true">📋</span><span class="lbl">프롬프트 복사하기</span>
+      </button>
+      <p class="after">복사한 뒤 챗GPT·클로드 입력창에 붙여넣으면 끝납니다.</p>
+    </article>
+    <article class="card" id="p17" aria-labelledby="p17-t">
+      <div class="card-top">
+        <span class="no">No.17</span>
+        <span class="cat"><i style="background:#BE123C"></i>고객 응대</span>
+      </div>
+      <h2 class="ct" id="p17-t">감동을 주는 포토 리뷰 유도 감사 메시지</h2>
+      <p class="hint">상호명·상품명·혜택을 [ ] 안에 넣고 구매 감사 메시지로 보내세요.</p>
+      <pre class="code">고객님, <mark class="ph">[상호명]</mark>의 <mark class="ph">[상품명]</mark>을 믿고 선택해 주셔서 진심으로 감사드립니다!
+혹시 사용하시면서 불편하신 점은 없으셨을까요?
+작은 정성이지만 고객님의 일상에 편리함을 더해드렸기를 바랍니다.
+저희 같은 정직한 판매자에게는 고객님의 '소중한 포토 리뷰 한 줄'이 사업을 이어가는 가장 큰 힘이자 보람입니다. 사진과 함께 따뜻한 후기를 남겨주시면 추첨을 통해 매달 <mark class="ph">[혜택, 예: 스타벅스 기프티콘]</mark>을 선물해 드리고 있으니 잠시만 시간 내어 응원해 주시면 감사하겠습니다. 늘 건강하고 행복하세요!</pre>
+      <div class="raw" hidden>고객님, [상호명]의 [상품명]을 믿고 선택해 주셔서 진심으로 감사드립니다!
+혹시 사용하시면서 불편하신 점은 없으셨을까요?
+작은 정성이지만 고객님의 일상에 편리함을 더해드렸기를 바랍니다.
+저희 같은 정직한 판매자에게는 고객님의 '소중한 포토 리뷰 한 줄'이 사업을 이어가는 가장 큰 힘이자 보람입니다. 사진과 함께 따뜻한 후기를 남겨주시면 추첨을 통해 매달 [혜택, 예: 스타벅스 기프티콘]을 선물해 드리고 있으니 잠시만 시간 내어 응원해 주시면 감사하겠습니다. 늘 건강하고 행복하세요!</div>
+      <button type="button" class="btn copy" data-copy="p17">
+        <span class="ico" aria-hidden="true">📋</span><span class="lbl">프롬프트 복사하기</span>
+      </button>
+      <p class="after">복사한 뒤 챗GPT·클로드 입력창에 붙여넣으면 끝납니다.</p>
+    </article>
+    <article class="card" id="p18" aria-labelledby="p18-t">
+      <div class="card-top">
+        <span class="no">No.18</span>
+        <span class="cat"><i style="background:#0F766E"></i>다채널 루틴</span>
+      </div>
+      <h2 class="ct" id="p18-t">한 개 기획안으로 다채널 마켓 맞춤 변환기</h2>
+      <p class="hint">확정한 기획안(상품명·도착단가·판매가·소구점)을 [ ] 안에 넣으세요.</p>
+      <pre class="code">아래는 내가 확정한 상품 기획안이다:
+<mark class="ph">[상품명 / 도착단가 / 판매가 / 핵심 소구점 입력]</mark>
+
+이 하나의 기획안을 4개 채널 문법으로 다시 써 줘.
+1. 쿠팡: 검색 상품명(50자 내외) + 핵심 스펙 5줄 + 반품 방어 FAQ 2개
+2. 네이버 스마트스토어: 키워드형 제목 + 감성형 상세 첫 문단 3줄
+3. 스레드(Threads): 4050 눈높이의 짧은 글 3개 (각 200자 이내, 이모지 남용 금지)
+4. 인스타그램: 15초 릴스 대본 (훅 1줄 → 사용 장면 3줄 → 마무리 1줄)
+
+과장·허위 표현은 쓰지 말고, 채널마다 왜 그렇게 썼는지 한 줄 이유도 붙여 줘.</pre>
+      <div class="raw" hidden>아래는 내가 확정한 상품 기획안이다:
+[상품명 / 도착단가 / 판매가 / 핵심 소구점 입력]
+
+이 하나의 기획안을 4개 채널 문법으로 다시 써 줘.
+1. 쿠팡: 검색 상품명(50자 내외) + 핵심 스펙 5줄 + 반품 방어 FAQ 2개
+2. 네이버 스마트스토어: 키워드형 제목 + 감성형 상세 첫 문단 3줄
+3. 스레드(Threads): 4050 눈높이의 짧은 글 3개 (각 200자 이내, 이모지 남용 금지)
+4. 인스타그램: 15초 릴스 대본 (훅 1줄 → 사용 장면 3줄 → 마무리 1줄)
+
+과장·허위 표현은 쓰지 말고, 채널마다 왜 그렇게 썼는지 한 줄 이유도 붙여 줘.</div>
+      <button type="button" class="btn copy" data-copy="p18">
+        <span class="ico" aria-hidden="true">📋</span><span class="lbl">프롬프트 복사하기</span>
+      </button>
+      <p class="after">복사한 뒤 챗GPT·클로드 입력창에 붙여넣으면 끝납니다.</p>
+    </article>
+
+  <a class="top-link" href="#top">▲ 맨 위 목차로</a>
+
+  <section class="cta" id="more">
+    <h2>혼자 하지 마세요.<br>옆에서 같이 계산해 드립니다.</h2>
+    <p>매주 4050 중년 셀러를 위한 정직한 실전 유통 영상이 올라옵니다.</p>
+    <a class="btn btn-yt" href="https://youtube.com/@JJU_E-Commerce" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">▶</span><span>쭈대표 유튜브 구독하기</span></a>
+    <div class="btn-2">
+      <a class="btn btn-ai" href="https://chatgpt.com/" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">💬</span><span>챗GPT 바로가기</span></a>
+      <a class="btn btn-ai claude" href="https://claude.ai/new" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">🤖</span><span>클로드 바로가기</span></a>
+    </div>
+    <button type="button" class="btn btn-ai" id="share" style="margin-top:10px"><span class="ico" aria-hidden="true">🔗</span><span>이 페이지 링크 복사하기</span></button>
+  </section>
+
+  <p class="foot">
+    프롬프트에 나오는 상품명·가격·마진 수치는 이해를 돕기 위한 <b>예시</b>입니다. [대괄호] 자리를 내 상품의 실제 숫자로 바꿔 넣으십시오.<br>
+    1위안=300원 도착단가는 작고 가벼운 생활용품 기준의 예시 계수이며, 부피(CBM)·무게·운임·수수료 조건에 따라 달라집니다.<br><br>
+    © 쭈대표의 이커머스 · <a href="https://youtube.com/@JJU_E-Commerce" target="_blank" rel="noopener">@JJU_E-Commerce</a>
+  </p>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+(function(){
+  var toast=document.getElementById('toast'),tt=null;
+  function showToast(msg,ms){
+    toast.textContent=msg;toast.classList.add('show');
+    clearTimeout(tt);tt=setTimeout(function(){toast.classList.remove('show');},ms||2600);
+  }
+  function legacyCopy(text){
+    var ta=document.createElement('textarea');
+    ta.value=text;ta.setAttribute('readonly','');
+    ta.style.position='fixed';ta.style.top='0';ta.style.left='0';
+    ta.style.width='1px';ta.style.height='1px';ta.style.padding='0';
+    ta.style.border='0';ta.style.opacity='0';
+    document.body.appendChild(ta);
+    var ok=false;
+    try{
+      ta.focus();ta.select();ta.setSelectionRange(0,text.length);
+      ok=document.execCommand('copy');
+    }catch(e){ok=false;}
+    document.body.removeChild(ta);
+    return ok;
+  }
+  function copyText(text){
+    return new Promise(function(resolve){
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(function(){resolve(true);},function(){resolve(legacyCopy(text));});
+      }else{
+        resolve(legacyCopy(text));
+      }
+    });
+  }
+  function flash(btn,ok){
+    var lbl=btn.querySelector('.lbl');
+    if(!lbl){return;}
+    if(!btn.dataset.orig){btn.dataset.orig=lbl.textContent;}
+    clearTimeout(btn._t);
+    if(ok){
+      btn.classList.add('done');lbl.textContent='✅ 복사 완료!';
+      showToast('✅ 복사 완료! 챗GPT/클로드에 붙여넣으세요');
+    }else{
+      showToast('복사가 안 되면 프롬프트 글을 길게 눌러 직접 복사해 주세요',3400);
+    }
+    btn._t=setTimeout(function(){btn.classList.remove('done');lbl.textContent=btn.dataset.orig;},2600);
+  }
+  document.addEventListener('click',function(e){
+    var btn=e.target.closest?e.target.closest('[data-copy]'):null;
+    if(!btn){return;}
+    var card=document.getElementById(btn.getAttribute('data-copy'));
+    if(!card){return;}
+    var raw=card.querySelector('.raw');
+    var text=raw?raw.textContent:card.querySelector('.code').innerText;
+    copyText(text).then(function(ok){flash(btn,ok);});
+  },false);
+  /* 링크 복사 */
+  var share=document.getElementById('share');
+  if(share){
+    share.addEventListener('click',function(){
+      var url=location.origin+location.pathname;
+      copyText(url).then(function(ok){
+        showToast(ok?'🔗 페이지 링크가 복사되었습니다':'주소창의 링크를 길게 눌러 복사해 주세요');
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>
