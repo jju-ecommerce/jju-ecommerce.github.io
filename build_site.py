@@ -500,7 +500,7 @@ a{color:inherit}
 .quick .btn-nav .ar{margin-left:auto;color:var(--gold-2);font-size:17px}
 
 /* ── 섹션 머리 ───────────────────────────────────── */
-.zone{margin:44px 0 0;scroll-margin-top:70px}
+.zone{margin:44px auto 0;scroll-margin-top:70px}
 .zone-head{text-align:center;margin:0 0 18px}
 .zone-head .zh{display:inline-block;font-size:12.5px;font-weight:700;color:var(--gold-2);letter-spacing:.08em;margin-bottom:8px}
 .zone-head h2{margin:0;font-size:24px;color:#fff;letter-spacing:-.035em}
