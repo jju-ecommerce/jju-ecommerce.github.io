@@ -30,6 +30,7 @@ SITE_URL = "https://jju-ecommerce.github.io/"
 OG_IMAGE = SITE_URL + "img/cover-560.png"
 
 YOUTUBE = "https://youtube.com/@JJU_E-Commerce"
+OPENCHAT = "https://open.kakao.com/o/gBuNbkXi"
 CHATGPT = "https://chatgpt.com/"
 CLAUDE = "https://claude.ai/new"
 PDF_MOBILE = "https://drive.google.com/file/d/167v6ieCETbFTs1pqgTeuYcKuFcqBJEqf/view"
@@ -88,6 +89,21 @@ def rich(t: str) -> str:
     return BRACKET.sub(lambda m: '<mark class="ph">[%s]</mark>' % m.group(1), out)
 
 
+def linkify_bare(out: str) -> str:
+    """마크다운 링크로 감싸지 않은 http(s) 주소도 누를 수 있게 만든다.
+
+    이미 만들어진 <a> 태그 안쪽은 건드리지 않는다.
+    """
+    parts = re.split(r"(<a\b[^>]*>.*?</a>)", out, flags=re.S)
+    for i in range(0, len(parts), 2):
+        parts[i] = re.sub(
+            r"(https?://[^\s<>\"']+)",
+            r'<a href="\1" target="_blank" rel="noopener">\1</a>',
+            parts[i],
+        )
+    return "".join(parts)
+
+
 def inline(t: str, gold_brackets: bool = False) -> str:
     """한 줄 마크다운 → HTML (굵게·기울임·링크·인라인코드)."""
     out = esc(t)
@@ -101,7 +117,7 @@ def inline(t: str, gold_brackets: bool = False) -> str:
         out,
     )
     out = re.sub(r"`([^`]+)`", r"<code>\1</code>", out)
-    return out
+    return linkify_bare(out)
 
 
 QUOTES = "\"'\u2018\u2019\u201c\u201d"
@@ -487,6 +503,8 @@ a{color:inherit}
 }
 .btn .ico{font-size:21px;line-height:1}
 .btn-yt{background:linear-gradient(180deg,#F0A93B,#D97706);color:#1A1206;box-shadow:0 8px 22px rgba(217,119,6,.32);font-size:16.5px;padding:13px 9px}
+.btn-oc{background:linear-gradient(180deg,#FEE500,#F2CE00);color:#3C1E1E;box-shadow:0 8px 22px rgba(254,229,0,.2);font-size:16.5px;padding:13px 9px}
+.btn-oc .ico{font-size:19px}
 .yt-h{display:inline-block;white-space:nowrap}
 .btn-nav{background:rgba(255,255,255,.07);color:#fff;border:1.5px solid rgba(240,169,59,.5);min-height:56px;font-size:16.5px}
 .btn-nav.pill{justify-content:flex-start;padding-left:16px}
@@ -682,6 +700,7 @@ p.act{margin:0 0 16px;padding:13px 15px;border-radius:13px;background:var(--crea
   .chip{font-size:12.5px;padding:7px 10px}
   .btn{font-size:16px;min-height:56px}
   .btn-yt{font-size:14.5px;line-height:1.3;padding:12px 8px;min-height:56px}
+  .btn-oc{font-size:14.5px;line-height:1.3;padding:12px 8px;min-height:56px}
   .btn-ai,.btn-ghost{font-size:14.5px;min-height:48px;gap:5px;padding:10px 4px}
   .btn-ai .ico,.btn-ghost .ico{font-size:17px}
   .quick .btn-nav{min-height:54px;font-size:15.5px;padding-left:13px}
@@ -938,6 +957,7 @@ HTML = f"""<!DOCTYPE html>
     <h2>혼자 하지 마세요.<br>옆에서 같이 계산해 드립니다.</h2>
     <p>매주 4050 중년 셀러를 위한 정직한 실전 유통 영상이 올라옵니다.</p>
     <a class="btn btn-yt" href="{YOUTUBE}" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">▶</span><span>쭈대표 유튜브 구독하기 <span class="yt-h">(@JJU_E-Commerce)</span></span></a>
+    <a class="btn btn-oc" href="{OPENCHAT}" target="_blank" rel="noopener" style="margin-top:10px"><span class="ico" aria-hidden="true">💬</span><span>쭈대표의 이커머스 오픈채팅방 참여하기</span></a>
     <div class="btn-2" style="margin-top:10px">
       <a class="btn btn-ai" href="{CHATGPT}" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">💬</span><span>챗GPT 바로가기</span></a>
       <a class="btn btn-ai claude" href="{CLAUDE}" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">🤖</span><span>클로드 바로가기</span></a>
