@@ -880,7 +880,7 @@ HTML = f"""<!DOCTYPE html>
   <span class="kicker">4050 인생 2막 · 유튜브에서 약속한 그 지침서</span>
   <h1>실패 없이 시작하는<span class="g">중년의 이커머스 AI 장사 지침서</span></h1>
   <p class="lead">PDF 다운로드 없이 <b>지침서 전체 본문</b>을 여기서 읽으시고, <b>프롬프트 18선</b>은 버튼 한 번으로 복사해 쓰십시오.</p>
-  <div class="chips"><span class="chip">유통 18년</span><span class="chip">도매꾹 3년 · 쿠팡 반년</span><span class="chip">프롬프트 18선 수록</span></div>
+  <div class="chips"><span class="chip">유통 18년</span><span class="chip">도매꾹 만 3년 · 4년 차 진입</span><span class="chip">프롬프트 18선 수록</span></div>
   <div class="rule"></div>
   <div class="btn-row">
     <a class="btn btn-yt" href="{YOUTUBE}" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">▶</span><span>쭈대표 유튜브 구독하기 <span class="yt-h">(@JJU_E-Commerce)</span></span></a>
@@ -890,7 +890,7 @@ HTML = f"""<!DOCTYPE html>
     <a class="btn btn-nav" href="#prompts"><span class="ico" aria-hidden="true">📋</span><span>프롬프트 18선</span></a>
     <a class="btn btn-nav" href="#pdf"><span class="ico" aria-hidden="true">📥</span><span>소장용 PDF 받기</span></a>
   </div>
-  <p class="byline"><b>쭈대표</b> — 오프라인 유통 18년(2008년~) · 온라인 3년(도매꾹 시작) · 쿠팡 반년<br>화려한 요행 대신 정직한 1원 계산으로 가족을 지키는 1인 쇼핑몰 첫걸음</p>
+  <p class="byline"><b>쭈대표</b> — 오프라인 유통 18년(2008년~) · 온라인 셀러 만 3년·4년 차 진입(도매꾹 시작) · 쿠팡 반년<br>화려한 요행 대신 정직한 1원 계산으로 가족을 지키는 1인 쇼핑몰 첫걸음</p>
 </div></header>
 
 <div class="wrap zone" id="guide">
