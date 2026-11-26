@@ -759,6 +759,10 @@
     w.y += (dy / dist) * step;
   }
 
+  function narrowScreen() {
+    return (window.innerWidth || document.documentElement.clientWidth || 0) < 480;
+  }
+
   function paintBubble(w) {
     if (!w.el) return;
     var txtEl = w.el.querySelector('.bub-txt');
@@ -766,7 +770,7 @@
     var txt = w.mood || w.cfg.duty;
     if (w.showLatest) {
       var last = latestBy(w.id);
-      if (last && last.body) txt = clipText(last.body, 18);
+      if (last && last.body) txt = clipText(last.body, narrowScreen() ? 12 : 18);
     }
     if (txtEl.textContent === txt) return;
     txtEl.textContent = txt;
@@ -805,7 +809,9 @@
 
   function bubRect(pos, cx, cy, fx, fy, fw, fh, bw, bh) {
     if (pos === 'up') return { x: cx - bw / 2, y: fy - BUB_GAP - bh, w: bw, h: bh };
+    if (pos === 'up2') return { x: cx - bw / 2, y: fy - BUB_GAP - 22 - bh, w: bw, h: bh };
     if (pos === 'down') return { x: cx - bw / 2, y: fy + fh + BUB_GAP, w: bw, h: bh };
+    if (pos === 'down2') return { x: cx - bw / 2, y: fy + fh + BUB_GAP + 22, w: bw, h: bh };
     if (pos === 'left') return { x: fx - BUB_GAP - bw, y: cy - bh / 2, w: bw, h: bh };
     return { x: fx + fw + BUB_GAP, y: cy - bh / 2, w: bw, h: bh };
   }
@@ -846,7 +852,9 @@
       var fx = cx - fw / 2;
       var fy = cy - fh / 2;
 
-      var pref = w.cfg.bubble === 'right' ? ['right', 'up', 'down', 'left'] : ['up', 'right', 'left', 'down'];
+      var pref = w.cfg.bubble === 'right'
+        ? ['right', 'up', 'up2', 'down', 'left', 'down2']
+        : ['up', 'up2', 'down', 'right', 'down2', 'left'];
       var best = null;
       for (var i = 0; i < pref.length; i++) {
         var r = bubRect(pref[i], cx, cy, fx, fy, fw, fh, bw, bh);

@@ -1621,11 +1621,17 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* 자리 — JS가 겹침을 피해 네 방향 중 하나를 고릅니다 */
+/* 자리 — JS가 겹침을 피해 여섯 방향 중 하나를 고릅니다 */
 .map-bubble[data-pos="up"] { left: 50%; bottom: 100%; transform: translate(-50%, -6px); }
+.map-bubble[data-pos="up2"] { left: 50%; bottom: 100%; transform: translate(-50%, -28px); }
 .map-bubble[data-pos="down"] { left: 50%; top: 100%; transform: translate(-50%, 6px); }
+.map-bubble[data-pos="down2"] { left: 50%; top: 100%; transform: translate(-50%, 28px); }
 .map-bubble[data-pos="right"] { left: 100%; top: 50%; transform: translate(6px, -50%); }
 .map-bubble[data-pos="left"] { right: 100%; top: 50%; transform: translate(-6px, -50%); }
+
+/* 한 칸 더 띄운 자리는 꼬리를 감춥니다 */
+.map-bubble[data-pos="up2"]::after,
+.map-bubble[data-pos="down2"]::after { display: none; }
 
 .map-bubble::after {
   content: "";
@@ -1676,10 +1682,16 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
   text-align: center;
 }
 
-/* 좀은 폭에서는 말풍선을 줄여 겹침을 줄입니다 (기본 규칙 뒤에 와야 적용됨) */
+/* 좁은 폭에서는 말풍선을 줄여 겹침을 줄입니다 (기본 규칙 뒤에 와야 적용됨) */
+@media (max-width: 430px) {
+  .map-bubble, .bub-txt { max-width: 88px; }
+  .bub-txt { font-size: 8.6px; }
+  .map-bubble { padding: 3px 6px; }
+}
+
 @media (max-width: 359px) {
-  .map-bubble, .bub-txt { max-width: 92px; }
-  .bub-txt { font-size: 8.4px; }
+  .map-bubble, .bub-txt { max-width: 82px; }
+  .bub-txt { font-size: 8.2px; }
 }
 
 /* 하단 상태 바 */
