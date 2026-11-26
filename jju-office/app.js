@@ -576,9 +576,12 @@
       return;
     }
     SB.connected = true;
-    setServerState('none', auto
-      ? '자동 연결 · 서버 확인 중'
-      : '연결 정보 있음 · 동기화 확인 중');
+    /* 해시로 들어온 경우에는 바로 online 으로 보여 주고, 아래 동기화로 확인합니다. */
+    if (auto) {
+      setServerState('ok', '연결됨 · Supabase 동기화 중');
+    } else {
+      setServerState('none', '연결 정보 있음 · 동기화 확인 중');
+    }
     pullAll().then(function () {
       setServerState('ok');
     }).catch(function (e) {
