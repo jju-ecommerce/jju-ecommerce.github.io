@@ -236,19 +236,15 @@ main {
   scrollbar-color: rgba(150, 120, 85, .28) rgba(255, 255, 255, 0);
 }
 
-.view::-webkit-scrollbar,
-.chat-log::-webkit-scrollbar { width: 6px; height: 6px; }
-.view::-webkit-scrollbar-track,
-.chat-log::-webkit-scrollbar-track { background: transparent; }
-.view::-webkit-scrollbar-thumb,
-.chat-log::-webkit-scrollbar-thumb {
+.view::-webkit-scrollbar { width: 6px; height: 6px; }
+.chat-log::-webkit-scrollbar { width: 0; height: 0; }
+.view::-webkit-scrollbar-track { background: transparent; }
+.view::-webkit-scrollbar-thumb {
   background: rgba(150, 120, 85, .26);
   border-radius: 999px;
 }
-html[data-theme="dark"] .view::-webkit-scrollbar-thumb,
-html[data-theme="dark"] .chat-log::-webkit-scrollbar-thumb { background: rgba(200, 175, 140, .22); }
-html[data-theme="dark"] .view,
-html[data-theme="dark"] .chat-log { scrollbar-color: rgba(200, 175, 140, .22) rgba(255, 255, 255, 0); }
+html[data-theme="dark"] .view::-webkit-scrollbar-thumb { background: rgba(200, 175, 140, .22); }
+html[data-theme="dark"] .view { scrollbar-color: rgba(200, 175, 140, .22) rgba(255, 255, 255, 0); }
 
 .view.active { display: block; }
 #view-office.active { display: flex; flex-direction: column; padding: 4px 12px 10px; overflow: hidden; }
@@ -389,10 +385,8 @@ html[data-theme="dark"] .chip-gold { color: var(--gold); }
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 12px 8px 6px 2px;
-  scrollbar-width: thin;
-  scrollbar-gutter: stable;
-  scrollbar-color: rgba(150, 120, 85, .28) rgba(255, 255, 255, 0);
+  padding: 12px 4px 6px 2px;
+  scrollbar-width: none;
   display: flex;
   flex-direction: column;
   gap: 14px;
