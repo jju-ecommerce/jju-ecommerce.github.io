@@ -23,6 +23,16 @@
 1. **로컬 모드(기본)** — 서버 없이 바로 동작합니다. 회의실 메시지·메모는 그 기기 브라우저(localStorage)에 저장됩니다.
 2. **AI 서버 연결(Supabase)** — 우측 상단 `AI 서버` 배지를 눌러 Project URL 과 anon key 를 넣으면 `office_messages` · `office_tasks` 테이블과 동기화됩니다. 4.5초 주기로 주고받으며, 여러 기기에서 같은 회의실을 봅니다.
 
+### 원터치 연결 (주소 한 줄)
+
+각 기기에서 `AI 서버` 창에 키를 직접 넣지 않아도, 아래처럼 주소 끝에 `#sb_url=...&sb_key=...` 를 붙여 한 번 열면 설정이 그 기기 브라우저에 저장되고 바로 연결됩니다. 연결되면 앱이 주소창의 해시를 스스로 지워 깔끔하게 남깁니다.
+
+```text
+https://jju-ecommerce.github.io/jju-office/#sb_url=<Project URL>&sb_key=<anon key>
+```
+
+이 해시 주소는 비밀번호와 같습니다. 단톡방·SNS에 그대로 올리지 말고, 기기마다 한 번씩만 열어 주세요. 이 저장소(공개)에는 키가 들어 있지 않습니다.
+
 ### Supabase 준비
 
 1. Supabase 프로젝트를 만들고 **SQL Editor** 에서 [`supabase-office-schema.sql`](supabase-office-schema.sql) 을 실행합니다.
