@@ -1480,6 +1480,7 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
 
 /* 캐릭터 */
 .map-figs { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.map-bubbles { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
 
 .map-fig {
   position: absolute;
@@ -1588,6 +1589,8 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
 
 .map-bubble {
   position: absolute;
+  left: 0;
+  top: 0;
   max-width: 104px;
   padding: 4px 7px;
   border-radius: 9px;
@@ -1599,8 +1602,10 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
   letter-spacing: -.2px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, .32);
   backdrop-filter: blur(3px);
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
   white-space: nowrap;
+  transition: opacity .2s;
 }
 
 .bub-txt {
@@ -1621,17 +1626,8 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* 자리 — JS가 겹침을 피해 여섯 방향 중 하나를 고릅니다 */
-.map-bubble[data-pos="up"] { left: 50%; bottom: 100%; transform: translate(-50%, -6px); }
-.map-bubble[data-pos="up2"] { left: 50%; bottom: 100%; transform: translate(-50%, -28px); }
-.map-bubble[data-pos="down"] { left: 50%; top: 100%; transform: translate(-50%, 6px); }
-.map-bubble[data-pos="down2"] { left: 50%; top: 100%; transform: translate(-50%, 28px); }
-.map-bubble[data-pos="right"] { left: 100%; top: 50%; transform: translate(6px, -50%); }
-.map-bubble[data-pos="left"] { right: 100%; top: 50%; transform: translate(-6px, -50%); }
-
-/* 한 칸 더 띄운 자리는 꼬리를 감춥니다 */
-.map-bubble[data-pos="up2"]::after,
-.map-bubble[data-pos="down2"]::after { display: none; }
+/* 자리 — JS가 left/top 픽셀로 잡고, data-pos 는 꼬리 방향만 정합니다 */
+.map-bubble.no-tail::after { display: none; }
 
 .map-bubble::after {
   content: "";

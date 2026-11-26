@@ -764,8 +764,8 @@
   }
 
   function paintBubble(w) {
-    if (!w.el) return;
-    var txtEl = w.el.querySelector('.bub-txt');
+    if (!w.bubble) return;
+    var txtEl = w.bubble.querySelector('.bub-txt');
     if (!txtEl) return;
     var txt = w.mood || w.cfg.duty;
     if (w.showLatest) {
@@ -799,7 +799,10 @@
   }
 
   /* ---------------- 말풍선 겹침 정리 ---------------- */
+  /* 말풍선은 캐릭터(.map-fig)와 분리된 레이어에 절대 좌표로 그립니다.
+     그래야 다른 캐릭터 머리 뒤로 말풍선이 숨지 않습니다. */
   var BUB_GAP = 6;
+  var BUB_GAP2 = 26;
 
   function overlapArea(a, b) {
     var w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
@@ -808,15 +811,14 @@
   }
 
   function bubRect(pos, cx, cy, fx, fy, fw, fh, bw, bh) {
-    if (pos === 'up') return { x: cx - bw / 2, y: fy - BUB_GAP - bh, w: bw, h: bh };
-    if (pos === 'up2') return { x: cx - bw / 2, y: fy - BUB_GAP - 22 - bh, w: bw, h: bh };
-    if (pos === 'down') return { x: cx - bw / 2, y: fy + fh + BUB_GAP, w: bw, h: bh };
-    if (pos === 'down2') return { x: cx - bw / 2, y: fy + fh + BUB_GAP + 22, w: bw, h: bh };
-    if (pos === 'left') return { x: fx - BUB_GAP - bw, y: cy - bh / 2, w: bw, h: bh };
-    return { x: fx + fw + BUB_GAP, y: cy - bh / 2, w: bw, h: bh };
+    var gap = (pos === 'up2' || pos === 'down2') ? BUB_GAP2 : BUB_GAP;
+    if (pos === 'up' || pos === 'up2') return { x: cx - bw / 2, y: fy - gap - bh, w: bw, h: bh };
+    if (pos === 'down' || pos === 'down2') return { x: cx - bw / 2, y: fy + fh + gap, w: bw, h: bh };
+    if (pos === 'left') return { x: fx - gap - bw, y: cy - bh / 2, w: bw, h: bh };
+    return { x: fx + fw + gap, y: cy - bh / 2, w: bw, h: bh };
   }
 
-  function bubScore(r, placed, sw, sh) {
+  function bubScore(r, placed, blockers, sw, sh) {
     var out = 0;
     if (r.x < 2) out += 2 - r.x;
     if (r.y < 2) out += 2 - r.y;
@@ -824,7 +826,9 @@
     if (r.y + r.h > sh - 2) out += r.y + r.h - (sh - 2);
     var over = 0;
     for (var i = 0; i < placed.length; i++) over += overlapArea(r, placed[i]);
-    return over + out * 80;
+    var onFig = 0;
+    for (var j = 0; j < blockers.length; j++) onFig += overlapArea(r, blockers[j]);
+    return over + onFig * 0.35 + out * 120;
   }
 
   function layoutBubbles() {
@@ -834,31 +838,38 @@
     if (!sw || !sh) return;
 
     var placed = [];
+    var blockers = [];
     var order = WALKERS.slice().sort(function (a, b) { return b.y - a.y; });
 
+    /* 캐릭터 몸(머리+이름표)도 장애물로 넣어 말풍선이 얼굴을 가리지 않게 */
     order.forEach(function (w) {
-      var fig = w.el;
-      if (!fig) return;
-      var bub = fig.querySelector('.map-bubble');
-      if (!bub) return;
+      if (!w.el) return;
+      var fw = w.el.offsetWidth;
+      var fh = w.el.offsetHeight;
+      var cx = sw * w.x / 100;
+      var cy = sh * w.y / 100;
+      w.figBox = { x: cx - fw / 2, y: cy - fh / 2, w: fw, h: fh };
+      blockers.push({ x: cx - fw / 2 - 2, y: cy - fh / 2 - 2, w: fw + 4, h: fh + 4 });
+    });
+
+    order.forEach(function (w) {
+      var bub = w.bubble;
+      if (!bub || !w.figBox) return;
       var bw = bub.offsetWidth;
       var bh = bub.offsetHeight;
       if (!bw || !bh) return;
 
-      var fw = fig.offsetWidth;
-      var fh = fig.offsetHeight;
-      var cx = sw * w.x / 100;
-      var cy = sh * w.y / 100;
-      var fx = cx - fw / 2;
-      var fy = cy - fh / 2;
+      var box = w.figBox;
+      var cx = box.x + box.w / 2;
+      var cy = box.y + box.h / 2;
 
       var pref = w.cfg.bubble === 'right'
         ? ['right', 'up', 'up2', 'down', 'left', 'down2']
         : ['up', 'up2', 'down', 'right', 'down2', 'left'];
       var best = null;
       for (var i = 0; i < pref.length; i++) {
-        var r = bubRect(pref[i], cx, cy, fx, fy, fw, fh, bw, bh);
-        var score = bubScore(r, placed, sw, sh) + i * 40;
+        var r = bubRect(pref[i], cx, cy, box.x, box.y, box.w, box.h, bw, bh);
+        var score = bubScore(r, placed, blockers, sw, sh) + i * 40;
         if (!best || score < best.score) best = { pos: pref[i], r: r, score: score };
         if (score < 40) break;
       }
@@ -866,12 +877,15 @@
       /* 자리가 자주 바뀌면 깜빡이므로, 지금 자리가 조금 나빠도 유지합니다. */
       var cur = bub.dataset.pos;
       if (cur && cur !== best.pos) {
-        var cr = bubRect(cur, cx, cy, fx, fy, fw, fh, bw, bh);
-        var cs = bubScore(cr, placed, sw, sh) + Math.max(0, pref.indexOf(cur)) * 40;
-        if (cs <= best.score + 120) best = { pos: cur, r: cr, score: cs };
+        var cr = bubRect(cur, cx, cy, box.x, box.y, box.w, box.h, bw, bh);
+        var cs = bubScore(cr, placed, blockers, sw, sh) + Math.max(0, pref.indexOf(cur)) * 40;
+        if (cs <= best.score + 200) best = { pos: cur, r: cr, score: cs };
       }
 
       if (bub.dataset.pos !== best.pos) bub.dataset.pos = best.pos;
+      bub.classList.toggle('no-tail', best.pos === 'up2' || best.pos === 'down2');
+      bub.style.left = best.r.x.toFixed(1) + 'px';
+      bub.style.top = best.r.y.toFixed(1) + 'px';
       placed.push(best.r);
     });
   }
@@ -922,6 +936,8 @@
     var box = el.mapFigs;
     if (!box) return;
     box.innerHTML = '';
+    var bubbleLayer = el.mapBubbles;
+    if (bubbleLayer) bubbleLayer.innerHTML = '';
     WALKERS = [];
 
     MAP_CAST.forEach(function (c) {
@@ -943,11 +959,14 @@
 
       var bub = document.createElement('span');
       bub.className = 'map-bubble';
-      bub.dataset.pos = c.bubble === 'right' ? 'right' : 'up';
+      bub.dataset.pos = 'up';
+      bub.style.left = '-9999px';   /* 첫 배치 전까지 화면 밖에 둡니다 */
       var bubTxt = document.createElement('span');
       bubTxt.className = 'bub-txt';
       bubTxt.textContent = c.duty;
       bub.appendChild(bubTxt);
+      bub.addEventListener('click', function () { openSheet(c.id); });
+      if (bubbleLayer) bubbleLayer.appendChild(bub);
 
       var body = document.createElement('span');
       body.className = 'map-fig-body is-idle';
@@ -960,11 +979,11 @@
       body.appendChild(av);
       body.appendChild(nm);
 
-      fig.appendChild(bub);
       fig.appendChild(body);
       fig.addEventListener('click', function () { openSheet(c.id); });
 
       w.el = fig;
+      w.bubble = bub;
       w.idleUntil = performance.now() + WALKERS.length * 1100 + Math.random() * 900;
       WALKERS.push(w);
       box.appendChild(fig);
@@ -1815,6 +1834,7 @@
     el.crewRow = document.getElementById('crewRow');
     el.crewList = document.getElementById('crewList');
     el.mapFigs = document.getElementById('mapFigs');
+    el.mapBubbles = document.getElementById('mapBubbles');
     el.mapStage = document.getElementById('mapStage');
     el.mapStatus = document.getElementById('mapStatus');
     el.mapSyncChip = document.getElementById('mapSyncChip');
