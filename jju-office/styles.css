@@ -1287,7 +1287,7 @@ html[data-theme="dark"] .bn-item.active {
   opacity: 0;
   pointer-events: none;
   transition: opacity .22s ease, transform .22s ease;
-  z-index: 70;
+  z-index: 95; /* 알림 설정 창 위에서도 또렷하게 보이도록 */
 }
 
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
