@@ -472,6 +472,125 @@
     });
   }
 
+  /* ---------------- AI한도 ---------------- */
+  /* 기기별 상태만 직접 기록합니다. 피클 사용량 자체는 각 기기 앱에서만 보입니다. */
+  var LIMITS_KEY = 'jju-office-limits-v1';
+
+  var LIMIT_DEVICES = [
+    { id: 'director', device: '본폰' },
+    { id: 'jju1', device: '1번 폰' },
+    { id: 'jju2', device: '2번 폰' },
+    { id: 'jju3', device: '3번 폰' }
+  ];
+
+  var LIMIT_STATES = [
+    { id: 'free', label: '여유' },
+    { id: 'care', label: '주의' },
+    { id: 'out', label: '소진' }
+  ];
+
+  var limitState = {};
+
+  function loadLimits() {
+    limitState = {};
+    var raw = null;
+    try { raw = localStorage.getItem(LIMITS_KEY); } catch (e) { raw = null; }
+    if (!raw) return;
+    try {
+      var s = JSON.parse(raw);
+      if (!s || typeof s !== 'object') return;
+      LIMIT_DEVICES.forEach(function (d) {
+        var v = s[d.id];
+        if (v && typeof v === 'object' && v.status) {
+          var ok = LIMIT_STATES.some(function (x) { return x.id === v.status; });
+          if (ok) limitState[d.id] = { status: v.status, at: v.at || '' };
+        }
+      });
+    } catch (e) { /* ignore */ }
+  }
+
+  function saveLimits() {
+    try { localStorage.setItem(LIMITS_KEY, JSON.stringify(limitState)); } catch (e) { /* ignore */ }
+  }
+
+  function shortStamp(isoStr) {
+    var d = new Date(isoStr);
+    if (isNaN(d)) return '';
+    return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + timeLabel(isoStr);
+  }
+
+  function setLimitStatus(id, status) {
+    var cur = limitState[id];
+    if (cur && cur.status === status) {
+      delete limitState[id];
+    } else {
+      limitState[id] = { status: status, at: new Date().toISOString() };
+    }
+    saveLimits();
+    renderLimits();
+  }
+
+  function renderLimits() {
+    var box = el.limitRows;
+    if (!box) return;
+    box.innerHTML = '';
+
+    var recorded = 0;
+
+    LIMIT_DEVICES.forEach(function (d) {
+      var p = PEOPLE[d.id];
+      var cur = limitState[d.id];
+      if (cur) recorded += 1;
+
+      var row = document.createElement('div');
+      row.className = 'limit-row';
+
+      var who = document.createElement('div');
+      who.className = 'limit-who';
+
+      var av = document.createElement('div');
+      av.className = 'avatar ' + p.cls;
+      av.textContent = p.initial;
+
+      var txt = document.createElement('div');
+      txt.className = 'limit-who-txt';
+      var nm = document.createElement('b');
+      nm.textContent = p.name;
+      var dv = document.createElement('span');
+      dv.textContent = d.device + (cur && cur.at ? ' · ' + shortStamp(cur.at) : '');
+      txt.appendChild(nm);
+      txt.appendChild(dv);
+
+      who.appendChild(av);
+      who.appendChild(txt);
+
+      var seg = document.createElement('div');
+      seg.className = 'seg';
+      seg.setAttribute('role', 'group');
+      seg.setAttribute('aria-label', p.name + ' 상태');
+
+      LIMIT_STATES.forEach(function (s) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'st-' + s.id;
+        b.textContent = s.label;
+        var on = !!(cur && cur.status === s.id);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        b.setAttribute('aria-label', p.name + ' ' + s.label + (on ? ' · 누르면 기록 해제' : '로 기록'));
+        b.addEventListener('click', function () { setLimitStatus(d.id, s.id); });
+        seg.appendChild(b);
+      });
+
+      row.appendChild(who);
+      row.appendChild(seg);
+      box.appendChild(row);
+    });
+
+    if (el.limitSaved) {
+      el.limitSaved.textContent = recorded ? recorded + '/' + LIMIT_DEVICES.length + ' 기록' : '미기록';
+    }
+  }
+
   /* ---------------- supabase ---------------- */
   function sbBase() { return (state.supabase.url || '').replace(/\/+$/, ''); }
   function sbHeaders(extra) {
@@ -744,6 +863,8 @@
     el.memoProgress = document.getElementById('memoProgress');
     el.crewRow = document.getElementById('crewRow');
     el.crewList = document.getElementById('crewList');
+    el.limitRows = document.getElementById('limitRows');
+    el.limitSaved = document.getElementById('limitSaved');
     el.themeBtn = document.getElementById('themeBtn');
     el.themeIcon = document.getElementById('themeIcon');
     el.serverBtn = document.getElementById('serverBtn');
@@ -856,6 +977,8 @@
     renderChat();
     renderTasks();
     renderCrew();
+    loadLimits();
+    renderLimits();
     bind();
 
     var params = new URLSearchParams(location.search);
