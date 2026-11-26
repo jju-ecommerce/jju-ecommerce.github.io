@@ -2043,7 +2043,7 @@
   /* VAPID 공개키는 공개 정보입니다(비밀키는 Supabase Edge Function 시크릿에만 저장). */
   var VAPID_PUBLIC_KEY = 'BLsYdjB1PvxgqFW1LsvjOKqEfQ6qry4P77QkHh04m2z7yXbYx5pAx4OtnRy4_XlqHofAiABdweCvsc_qRUrq0pA';
   var PUSH = { busy: false, sub: null, synced: false, lastError: '', opened: false };
-  var APP_VERSION = 'v30';
+  var APP_VERSION = 'v31';
 
   function pushSupported() {
     return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
@@ -2377,7 +2377,7 @@
     return pushRegistration().then(function (reg) {
       return reg.pushManager.getSubscription();
     }).then(function (sub) {
-      if (!sub) { renderPushBtn('off'); return null; }
+      if (!sub) { PUSH.sub = null; PUSH.synced = false; renderPushBtn('off'); return null; }
       var ep = sub.endpoint;
       PUSH.sub = null;
       return sub.unsubscribe().then(function () {
