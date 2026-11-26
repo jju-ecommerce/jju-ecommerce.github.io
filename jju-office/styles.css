@@ -1094,7 +1094,7 @@ html[data-theme="dark"] .bn-item.active {
 .relay-step b { font-size: 12.5px; font-weight: 800; letter-spacing: -.2px; }
 .relay-step small { font-size: 10.5px; color: var(--muted); font-weight: 600; }
 
-.relay-arrow { align-self: center; color: var(--gold); font-size: 13px; font-weight: 800; }
+.relay-arrow { align-self: center; color: var(--gold); font-size: 15px; font-weight: 800; line-height: 1; }
 
 .guide-box {
   padding: 11px 12px;
@@ -1155,7 +1155,8 @@ html[data-theme="dark"] .bn-item.active {
   margin-bottom: 12px;
 }
 
-.limit-alert b { display: block; font-size: 12.5px; font-weight: 800; color: var(--danger); margin-bottom: 3px; }
+.limit-alert > b { display: block; font-size: 12.5px; font-weight: 800; color: var(--danger); margin-bottom: 3px; }
+.limit-alert p b { color: var(--ink); font-weight: 800; }
 .limit-alert p { margin: 0; font-size: 12px; line-height: 1.6; color: var(--ink-2); }
 
 .sub-line { margin: -4px 0 10px; font-size: 11.5px; color: var(--muted); }

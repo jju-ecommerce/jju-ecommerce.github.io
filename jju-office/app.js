@@ -576,7 +576,7 @@
         b.textContent = s.label;
         var on = !!(cur && cur.status === s.id);
         b.setAttribute('aria-pressed', on ? 'true' : 'false');
-        b.setAttribute('aria-label', p.name + ' ' + s.label + (on ? ' · 누르면 기록 해제' : '로 기록'));
+        b.setAttribute('aria-label', p.name + ' ' + s.label + (on ? ' · 누르면 기록 해제' : ' 상태로 기록'));
         b.addEventListener('click', function () { setLimitStatus(d.id, s.id); });
         seg.appendChild(b);
       });
