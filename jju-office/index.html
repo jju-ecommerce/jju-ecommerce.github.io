@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>쭈대표 AI 오피스</title>
-<meta name="description" content="쭈대표님 전용 AI 비서 4인방 관제 오피스 — 회의실·대시보드·소싱·스레드·유튜브·AI한도">
+<meta name="description" content="쭈대표님 전용 AI 비서 4인방 관제 오피스 — 회의실·대시보드·소싱·스레드·유튜브·블로그·AI한도">
 <meta name="theme-color" content="#F6EDE0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="쭈대표 오피스">
@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="styles.css?v=7">
+<link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body>
 <div class="app" id="app">
@@ -44,7 +44,9 @@
     <button class="menu-item" data-view="sourcing"><span class="menu-ico">🛒</span><span class="menu-label">소싱</span></button>
     <button class="menu-item" data-view="threads"><span class="menu-ico">🧵</span><span class="menu-label">스레드</span></button>
     <button class="menu-item" data-view="youtube"><span class="menu-ico">🎬</span><span class="menu-label">유튜브</span></button>
+    <button class="menu-item" data-view="blog"><span class="menu-ico">✍️</span><span class="menu-label">블로그</span></button>
     <button class="menu-item" data-view="limits"><span class="menu-ico">⚡</span><span class="menu-label">AI한도</span></button>
+    <button class="menu-item" data-view="memo"><span class="menu-ico">📝</span><span class="menu-label">메모</span></button>
   </nav>
 
   <main id="main">
@@ -293,6 +295,83 @@
       </div>
     </section>
 
+    <!-- ============ ✍️ 블로그 ============ -->
+    <section class="view" id="view-blog" aria-label="블로그">
+      <div class="card blog-hero">
+        <p class="eyebrow">네이버 블로그 SEO · 도매에빠지다</p>
+        <h2>도매에빠지다<br>사업자 셀러 유입</h2>
+        <p class="blog-hero-sub">fallindomae.co.kr · B2B 사업자 전용 도매몰</p>
+        <div class="hero-stats">
+          <div class="stat"><b>1</b><span>원고</span></div>
+          <div class="stat"><b>4</b><span>공략 키워드</span></div>
+          <div class="stat"><b id="dirStat">0/3</b><span>디렉토리</span></div>
+        </div>
+        <p class="blog-hero-note">회원공개 쇼핑몰이라 네이버가 상품 정보를 잘 읽지 못합니다. 셀러가 직접 검색하는 도매·사입·위탁 키워드로 공개 안내글을 올려 자사몰로 보내는 구조입니다.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>공략 키워드</h3><span class="chip chip-gold">핵심 4 · 확장 4</span></div>
+        <ul class="kw-list" id="kwList"></ul>
+        <p class="tiny-note">소비자용 '추천' 키워드보다 <b>도매·사입·위탁·납품</b> 조합이 사업자 전환이 높습니다. 11/25 정리 기준.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>도매몰 디렉토리</h3><span class="chip chip-soft" id="dirProgress">등록 0/3</span></div>
+        <div class="dir-rows" id="dirRows"></div>
+        <p class="tiny-note">나셀러는 무료입니다. 상태는 이 브라우저에만 저장되고, 같은 상태를 한 번 더 누르면 미신청으로 돌아갑니다.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>블로그 원고</h3><span class="chip chip-warn" id="postChip">초안</span></div>
+        <p class="post-title" id="postTitle"></p>
+        <p class="post-meta" id="postMeta"></p>
+        <div class="post-tags" id="postTags"></div>
+        <div class="post-actions">
+          <button class="btn primary" type="button" data-copy="all">원고 전체 복사</button>
+        </div>
+        <div class="post-actions post-actions-sub">
+          <button class="btn ghost" type="button" data-copy="title">제목</button>
+          <button class="btn ghost" type="button" data-copy="body">본문</button>
+          <button class="btn ghost" type="button" data-copy="tags">해시태그</button>
+        </div>
+        <div class="post-status">
+          <span>발행 상태</span>
+          <div class="seg" id="postSeg" role="group" aria-label="발행 상태">
+            <button type="button" class="st-draft" data-status="draft" aria-pressed="true">초안</button>
+            <button type="button" class="st-published" data-status="published" aria-pressed="false">발행완료</button>
+          </div>
+        </div>
+        <details class="post-body-wrap">
+          <summary id="postSummary">본문 전체 보기</summary>
+          <div class="post-body" id="postBody"></div>
+        </details>
+        <p class="tiny-note">굵게·구분선 같은 서식 기호는 빼고 네이버 블로그에 바로 붙여넣을 수 있는 글자만 담았습니다. 원고 내용은 11/25 작성본 그대로입니다.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>확인된 사실</h3><span class="chip chip-ok">11/25 원고 기준</span></div>
+        <dl class="fact-grid">
+          <div><dt>운영사</dt><dd>제이엔티인터내셔날</dd></div>
+          <div><dt>도매몰</dt><dd>fallindomae.co.kr</dd></div>
+          <div><dt>출고</dt><dd>인천 남동구</dd></div>
+          <div><dt>택배</dt><dd>한진택배</dd></div>
+          <div><dt>고객센터</dt><dd>1566-0902<small>평일 10:00~16:00</small></dd></div>
+          <div><dt>회원</dt><dd>사업자 전용 폐쇄몰</dd></div>
+        </dl>
+        <p class="tiny-note">최소 주문 수량·합배송·당일 출고 마감은 사이트 공지나 고객센터로 확인이 필요해 원고에 단정하지 않았습니다.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>다음 할 일</h3></div>
+        <ul class="dot-list">
+          <li>네이버 블로그에 원고 발행 → 발행 상태를 <b>발행완료</b>로</li>
+          <li>나셀러 무료 등록 신청 (운영자 문의 게시판)</li>
+          <li>셀러위키·도매리스트닷컴 입점 문의 메일</li>
+          <li>출고 마감·합배송 조건 확인해 본문 마지막 안내 보완</li>
+        </ul>
+      </div>
+    </section>
+
     <!-- ============ ⚡ AI한도 ============ -->
     <section class="view" id="view-limits" aria-label="AI한도">
       <div class="card">
@@ -449,6 +528,6 @@
 
   <noscript><p style="padding:20px;text-align:center">자바스크립트를 켜야 오피스가 열립니다.</p></noscript>
 </div>
-<script src="app.js?v=10" defer></script>
+<script src="app.js?v=11" defer></script>
 </body>
 </html>

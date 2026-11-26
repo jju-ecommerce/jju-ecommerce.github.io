@@ -591,6 +591,311 @@
     }
   }
 
+  /* ---------------- ✍️ 블로그 ---------------- */
+  /* 원고·키워드·디렉토리는 2026-11-25 정리본 기준입니다.
+     발행 상태와 디렉토리 진행은 이 브라우저(localStorage)에만 저장됩니다. */
+  var BLOG_KEY = 'jju-office-blog-v1';
+
+  var BLOG_KEYWORDS = [
+    { kw: '생활용품 도매 사이트', kind: '핵심' },
+    { kw: '소량 사입 도매몰', kind: '핵심' },
+    { kw: '문구 위탁판매 도매처', kind: '핵심' },
+    { kw: '여행용품 B2B 도매', kind: '핵심' },
+    { kw: '생활잡화 도매', kind: '확장' },
+    { kw: '스마트스토어 소싱처', kind: '확장' },
+    { kw: '쿠팡 위탁 도매', kind: '확장' },
+    { kw: '사업자 전용 도매몰', kind: '확장' }
+  ];
+
+  var BLOG_DIRS = [
+    {
+      id: 'naseller', name: '나셀러',
+      note: '무료 · 고객센터 운영자 문의 게시판에 사이트 정보를 적어 신청',
+      url: 'https://naseller.com/mall_list/1436', linkText: '나셀러'
+    },
+    {
+      id: 'sellerwiki', name: '셀러위키',
+      note: 'B2B 도매리스트 300곳 · 입점 페이지 톡상담 또는 메일 seller-wiki@daum.net',
+      url: 'https://sellerwiki.co.kr/appy-to-sell', linkText: '입점 안내'
+    },
+    {
+      id: 'domaelist', name: '도매리스트닷컴',
+      note: '랭킹·신상품 노출 · 제휴 메일 mousy008@cscommerce.co.kr 로 연동 문의',
+      url: 'https://domaelist.com/', linkText: '도매리스트'
+    }
+  ];
+
+  var BLOG_POST = {
+    title: '생활잡화·문구 소량 사입 도매사이트 | 도매에빠지다(제이엔티인터내셔날) 이용 안내',
+    hashtags: '#도매사이트 #도매몰 #소량사입 #생활용품도매 #문구도매 #여행용품도매 #위탁판매 #스마트스토어소싱 #쿠팡소싱 #도매에빠지다 #제이엔티인터내셔날',
+    body: [
+      "스마트스토어나 쿠팡, 오픈마켓을 운영하다 보면 결국 가장 고민되는 부분이 '실제로 회전되는 상품'과 '안정적인 출고'입니다.",
+      '',
+      '대형 도매 플랫폼에서 흔한 상품을 똑같이 소싱하면 가격 경쟁에 치이기 쉽고, 그렇다고 처음부터 해외 직수입으로 대량 사입을 하기엔 재고 부담이 큽니다. 오늘은 생활잡화부터 문구, 여행, 디지털 소품까지 실전 셀러 관점에서 선별한 상품을 공급하는 B2B 사업자 전용 도매몰, 도매에빠지다(fallindomae.co.kr)를 소개합니다.',
+      '',
+      '1. 도매에빠지다는 어떤 곳인가요?',
+      '',
+      '도매에빠지다는 인천 남동구에 물류 거점을 둔 제이엔티인터내셔날이 운영하는 B2B 도매 쇼핑몰입니다. 오랜 기간 도매꾹·도매매 공급사로 활동하며 쌓아온 소싱 데이터와 실판매 경험을 바탕으로, 시장에서 실제 수요가 검증된 생활 밀착형 상품을 중심으로 공급하고 있습니다.',
+      '',
+      '· 운영사: 제이엔티인터내셔날',
+      '· 공식 도매몰: https://fallindomae.co.kr',
+      '· 출고 및 택배: 인천 남동구 출고 / 한진택배',
+      '· 고객센터: 1566-0902 (평일 10:00~16:00, 주말·공휴일 제외)',
+      '',
+      '2. 주요 취급 카테고리 및 인기 상품',
+      '',
+      '특정 계절에만 반짝하는 상품보다 사계절 꾸준히 수요가 있는 실용 잡화와 틈새 아이디어 소품 비중이 높습니다.',
+      '',
+      '· 생활·주방·청소: 층간소음 방지 퍼즐 매트, 극세사 청소 덧신(신발커버), 일본 휴대용 미니드라이버 세트',
+      '· 여행·야외·스포츠: RFID 차단 여권가방, 캐리어 바퀴 보호커버(8개입), 냉감 스포츠타월',
+      '· 디지털·문구·오피스: 다용도 매직 보자기(테크랩), 탁상용 각도조절 스마트폰 거치대, A4 5칸 아코디언 파일 폴더, 스탠드형 클립보드, 마그네틱 북마크',
+      '· 아웃도어·수납: 밀리터리 전술 스마트폰 벨트 파우치, 감성 파스텔 2단 필통 파우치',
+      '',
+      '이 외에도 매주 신상품이 꾸준히 입고되고 있어 스토어 구색을 넓히거나 테스트 사입 품목을 찾기에 좋습니다.',
+      '',
+      '3. 이런 셀러분들께 추천합니다',
+      '',
+      '· 생활잡화·문구·여행용품 카테고리로 신규 소싱처를 찾고 계신 분',
+      '· 대형 플랫폼 외에 직거래 기반의 안정적인 공급처를 확보하고 싶은 분',
+      '· 실사용 수요가 확인된 가성비 위주의 틈새 소품을 테스트해 보고 싶은 분',
+      '',
+      '4. 회원가입 및 이용 방법',
+      '',
+      '도매에빠지다는 사업자 회원 전용 폐쇄몰로 운영되며, 모든 상품의 공급 단가는 회원가입 및 승인 후 확인하실 수 있습니다.',
+      '',
+      '1) 공식 사이트(https://fallindomae.co.kr) 접속 후 회원가입',
+      '2) 사업자 회원 인증 완료',
+      '3) 로그인 후 품목별 공급 단가 및 주문 조건 확인',
+      '',
+      '(※ 최소 주문 수량, 합배송, 당일 출고 마감 시간 등 세부 거래 조건은 사이트 내 공지사항 또는 고객센터 1566-0902를 통해 확인하실 수 있습니다.)',
+      '',
+      '안정적인 공급처 한 곳을 확보해 두면 상품 소싱에 드는 시간과 시행착오를 크게 줄일 수 있습니다. 생활·문구·잡화류 사입처를 찾고 계셨다면 도매에빠지다에서 신상품과 인기 품목을 먼저 살펴보시기 바랍니다.'
+    ].join('\n')
+  };
+
+  var BLOG_DIR_STATES = [
+    { id: 'idle', label: '미신청' },
+    { id: 'applied', label: '신청함' },
+    { id: 'done', label: '등록됨' }
+  ];
+
+  var blogState = { dirs: {}, status: 'draft' };
+
+  function loadBlog() {
+    blogState = { dirs: {}, status: 'draft' };
+    var raw = null;
+    try { raw = localStorage.getItem(BLOG_KEY); } catch (e) { raw = null; }
+    if (!raw) return;
+    try {
+      var s = JSON.parse(raw);
+      if (!s || typeof s !== 'object') return;
+      if (s.status === 'published') blogState.status = 'published';
+      if (s.dirs && typeof s.dirs === 'object') {
+        BLOG_DIRS.forEach(function (d) {
+          var v = s.dirs[d.id];
+          if (v === 'applied' || v === 'done') blogState.dirs[d.id] = v;
+        });
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  function saveBlog() {
+    try { localStorage.setItem(BLOG_KEY, JSON.stringify(blogState)); } catch (e) { /* ignore */ }
+  }
+
+  function postMetaText() {
+    var tags = BLOG_POST.hashtags.split(' ').filter(Boolean);
+    return '제목 ' + BLOG_POST.title.length + '자 · 본문 ' + BLOG_POST.body.length.toLocaleString('ko-KR') +
+      '자 · 해시태그 ' + tags.length + '개';
+  }
+
+  function renderBlogKeywords() {
+    var list = el.kwList;
+    if (!list) return;
+    list.innerHTML = '';
+    BLOG_KEYWORDS.forEach(function (k) {
+      var li = document.createElement('li');
+      li.className = 'kw-item';
+
+      var name = document.createElement('b');
+      name.textContent = k.kw;
+
+      var kind = document.createElement('span');
+      kind.className = 'kw-kind ' + (k.kind === '핵심' ? 'kw-core' : 'kw-sub');
+      kind.textContent = k.kind;
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'kw-copy';
+      btn.setAttribute('aria-label', k.kw + ' 복사');
+      btn.textContent = '복사';
+      btn.addEventListener('click', function () {
+        writeClipboard(k.kw).then(function (ok) {
+          toast(ok ? '키워드를 복사했어요 — ' + k.kw : '복사가 안 됐어요 · 길게 눌러 선택해 주세요');
+        });
+      });
+
+      li.appendChild(name);
+      li.appendChild(kind);
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+  }
+
+  function renderBlogDirs() {
+    var box = el.dirRows;
+    if (!box) return;
+    box.innerHTML = '';
+
+    var done = 0;
+
+    BLOG_DIRS.forEach(function (d) {
+      var cur = blogState.dirs[d.id] || 'idle';
+      if (cur === 'done') done += 1;
+
+      var row = document.createElement('div');
+      row.className = 'dir-row';
+
+      var top = document.createElement('div');
+      top.className = 'dir-top';
+      var nm = document.createElement('b');
+      nm.textContent = d.name;
+      var link = document.createElement('a');
+      link.className = 'dir-link';
+      link.href = d.url;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.textContent = d.linkText;
+      top.appendChild(nm);
+      top.appendChild(link);
+
+      var note = document.createElement('p');
+      note.className = 'dir-note';
+      note.textContent = d.note;
+
+      var seg = document.createElement('div');
+      seg.className = 'seg dir-seg';
+      seg.setAttribute('role', 'group');
+      seg.setAttribute('aria-label', d.name + ' 진행 상태');
+
+      BLOG_DIR_STATES.forEach(function (s) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'ds-' + s.id;
+        b.textContent = s.label;
+        var on = cur === s.id;
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        b.setAttribute('aria-label', d.name + ' ' + s.label + (on ? ' · 누르면 미신청으로' : ''));
+        b.addEventListener('click', function () { setBlogDir(d.id, s.id); });
+        seg.appendChild(b);
+      });
+
+      row.appendChild(top);
+      row.appendChild(note);
+      row.appendChild(seg);
+      box.appendChild(row);
+    });
+
+    if (el.dirProgress) el.dirProgress.textContent = '등록 ' + done + '/' + BLOG_DIRS.length;
+    if (el.dirStat) el.dirStat.textContent = done + '/' + BLOG_DIRS.length;
+  }
+
+  function setBlogDir(id, status) {
+    var cur = blogState.dirs[id] || 'idle';
+    if (cur === status || status === 'idle') delete blogState.dirs[id];
+    else blogState.dirs[id] = status;
+    saveBlog();
+    renderBlogDirs();
+  }
+
+  function renderBlogPost() {
+    if (!el.postTitle) return;
+    el.postTitle.textContent = BLOG_POST.title;
+    el.postMeta.textContent = postMetaText();
+
+    el.postTags.innerHTML = '';
+    BLOG_POST.hashtags.split(' ').filter(Boolean).forEach(function (t) {
+      var sp = document.createElement('span');
+      sp.textContent = t;
+      el.postTags.appendChild(sp);
+    });
+
+    el.postBody.textContent = BLOG_POST.body;
+    if (el.postSummary) el.postSummary.textContent = '본문 전체 보기 · ' + BLOG_POST.body.length.toLocaleString('ko-KR') + '자';
+
+    var published = blogState.status === 'published';
+    el.postChip.textContent = published ? '발행완료' : '초안';
+    el.postChip.classList.toggle('chip-ok', published);
+    el.postChip.classList.toggle('chip-warn', !published);
+
+    if (el.postSeg) {
+      el.postSeg.querySelectorAll('button[data-status]').forEach(function (b) {
+        b.setAttribute('aria-pressed', b.dataset.status === blogState.status ? 'true' : 'false');
+      });
+    }
+  }
+
+  function setBlogStatus(status) {
+    blogState.status = status === 'published' ? 'published' : 'draft';
+    saveBlog();
+    renderBlogPost();
+    toast(blogState.status === 'published' ? '발행완료로 기록했어요' : '초안으로 되돌렸어요');
+  }
+
+  function blogCopyText(kind) {
+    if (kind === 'title') return BLOG_POST.title;
+    if (kind === 'body') return BLOG_POST.body;
+    if (kind === 'tags') return BLOG_POST.hashtags;
+    return BLOG_POST.title + '\n\n' + BLOG_POST.body + '\n\n' + BLOG_POST.hashtags;
+  }
+
+  var COPY_LABEL = { all: '원고 전체', title: '제목', body: '본문', tags: '해시태그' };
+
+  function copyBlog(kind) {
+    var text = blogCopyText(kind);
+    writeClipboard(text).then(function (ok) {
+      if (ok) {
+        toast(COPY_LABEL[kind] + '를 복사했어요 · ' + text.length.toLocaleString('ko-KR') + '자');
+      } else {
+        toast('복사가 안 됐어요 · 본문을 길게 눌러 선택해 주세요');
+      }
+    });
+  }
+
+  function writeClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(function () {
+        return true;
+      }).catch(function () {
+        return legacyCopy(text);
+      });
+    }
+    return Promise.resolve(legacyCopy(text));
+  }
+
+  function legacyCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    var ok = false;
+    try {
+      ta.select();
+      ok = document.execCommand('copy');
+    } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  function renderBlog() {
+    renderBlogKeywords();
+    renderBlogDirs();
+    renderBlogPost();
+  }
+
   /* ---------------- supabase ---------------- */
   function sbBase() { return (state.supabase.url || '').replace(/\/+$/, ''); }
   function sbHeaders(extra) {
@@ -865,6 +1170,17 @@
     el.crewList = document.getElementById('crewList');
     el.limitRows = document.getElementById('limitRows');
     el.limitSaved = document.getElementById('limitSaved');
+    el.kwList = document.getElementById('kwList');
+    el.dirRows = document.getElementById('dirRows');
+    el.dirProgress = document.getElementById('dirProgress');
+    el.dirStat = document.getElementById('dirStat');
+    el.postTitle = document.getElementById('postTitle');
+    el.postMeta = document.getElementById('postMeta');
+    el.postTags = document.getElementById('postTags');
+    el.postBody = document.getElementById('postBody');
+    el.postSummary = document.getElementById('postSummary');
+    el.postChip = document.getElementById('postChip');
+    el.postSeg = document.getElementById('postSeg');
     el.themeBtn = document.getElementById('themeBtn');
     el.themeIcon = document.getElementById('themeIcon');
     el.serverBtn = document.getElementById('serverBtn');
@@ -951,6 +1267,16 @@
       el.todoInput.value = '';
     });
 
+    document.querySelectorAll('#view-blog [data-copy]').forEach(function (b) {
+      b.addEventListener('click', function () { copyBlog(b.dataset.copy); });
+    });
+
+    if (el.postSeg) {
+      el.postSeg.querySelectorAll('button[data-status]').forEach(function (b) {
+        b.addEventListener('click', function () { setBlogStatus(b.dataset.status); });
+      });
+    }
+
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'visible' && SB.connected) pullAll().catch(function () {});
     });
@@ -979,6 +1305,8 @@
     renderCrew();
     loadLimits();
     renderLimits();
+    loadBlog();
+    renderBlog();
     bind();
 
     var params = new URLSearchParams(location.search);
