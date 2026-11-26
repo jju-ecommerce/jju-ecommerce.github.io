@@ -203,7 +203,7 @@ img { display: block; max-width: 100%; }
   transition: background .18s, color .18s, box-shadow .18s;
 }
 
-.menu-item .menu-ico { font-size: 16px; line-height: 1.2; }
+.menu-item .menu-ico { font-size: 19px; line-height: 1.15; }
 
 .menu-item.active {
   background: linear-gradient(180deg, #9A6530, #7A4A1E);
@@ -233,7 +233,22 @@ main {
   overscroll-behavior: contain;
   padding: 4px 12px 18px;
   scrollbar-width: thin;
+  scrollbar-color: rgba(150, 120, 85, .28) rgba(255, 255, 255, 0);
 }
+
+.view::-webkit-scrollbar,
+.chat-log::-webkit-scrollbar { width: 6px; height: 6px; }
+.view::-webkit-scrollbar-track,
+.chat-log::-webkit-scrollbar-track { background: transparent; }
+.view::-webkit-scrollbar-thumb,
+.chat-log::-webkit-scrollbar-thumb {
+  background: rgba(150, 120, 85, .26);
+  border-radius: 999px;
+}
+html[data-theme="dark"] .view::-webkit-scrollbar-thumb,
+html[data-theme="dark"] .chat-log::-webkit-scrollbar-thumb { background: rgba(200, 175, 140, .22); }
+html[data-theme="dark"] .view,
+html[data-theme="dark"] .chat-log { scrollbar-color: rgba(200, 175, 140, .22) rgba(255, 255, 255, 0); }
 
 .view.active { display: block; }
 #view-office.active { display: flex; flex-direction: column; padding: 4px 12px 10px; overflow: hidden; }
@@ -374,7 +389,9 @@ html[data-theme="dark"] .chip-gold { color: var(--gold); }
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 12px 2px 6px;
+  padding: 12px 4px 6px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(150, 120, 85, .28) rgba(255, 255, 255, 0);
   display: flex;
   flex-direction: column;
   gap: 14px;
