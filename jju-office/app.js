@@ -503,6 +503,8 @@
     leftL:   { x: 37,   y: 68,   room: 'command' },
     leftB:   { x: 37,   y: 84,   room: 'command' },
     botL:    { x: 45,   y: 89,   room: 'command' },
+    bMid:    { x: 46,   y: 71,   room: 'command' },
+    rMid:    { x: 76.5, y: 42,   room: 'command' },
     /* 🏛️ 대회의실 */
     door:    { x: 34,   y: 23.5, room: 'grand' },
     gTopR:   { x: 30.5, y: 21,   room: 'grand' },
@@ -521,6 +523,7 @@
     ['topC', 'midT'], ['midT', 'd1'], ['midT', 'midM'], ['midM', 'd2'],
     ['midM', 'midL'], ['midL', 'd3'], ['midL', 'midB'], ['midB', 'midBB'],
     ['midBB', 'botL'], ['botL', 'leftB'], ['leftB', 'leftL'], ['leftL', 'leftM'], ['leftM', 'leftT'],
+    ['midB', 'bMid'], ['bMid', 'leftL'], ['topRR', 'rMid'],
     ['midBB', 'lngIn'], ['lngIn', 'lngSofa'], ['lngSofa', 'lngBar'],
     ['leftT', 'door'], ['door', 'gTopR'], ['gTopR', 'gTopL'], ['gTopR', 'gMid'], ['gMid', 'gBot']
   ];
@@ -579,7 +582,7 @@
     {
       id: 'jju1', station: 'd1', bubble: 'up',
       place: '👑 지휘실 워크스테이션', duty: '1번 채널 대기 중',
-      spots: ['d1', 'midT', 'leftT', 'leftM', 'topL'],
+      spots: ['d1', 'leftT', 'leftM', 'leftL'],
       trips: ['lngSofa', 'gTopL', 'topC'],
       speed: 4.8, tripChance: 0.22,
       moods: {
@@ -592,7 +595,7 @@
     {
       id: 'jju2', station: 'd2', bubble: 'up',
       place: '👑 지휘실 워크스테이션', duty: '2번 채널 대기 중',
-      spots: ['d2', 'midM', 'midT', 'topR'],
+      spots: ['d2', 'topRR', 'rMid'],
       trips: ['lngBar', 'gBot', 'topL'],
       speed: 4.6, tripChance: 0.2,
       moods: {
@@ -605,8 +608,8 @@
     {
       id: 'jju3', station: 'd3', bubble: 'up',
       place: '👑 지휘실 워크스테이션', duty: '3번 채널 대기 중',
-      spots: ['d3', 'midL', 'midB', 'botL'],
-      trips: ['gBot', 'lngSofa', 'midT'],
+      spots: ['d3', 'midB', 'bMid', 'botL'],
+      trips: ['gBot', 'lngSofa', 'topL'],
       speed: 5, tripChance: 0.2,
       moods: {
         command: ['3번 채널 체크', '업리카 세션 확인', '오늘 할 일 정리', '소싱 확인 중'],
