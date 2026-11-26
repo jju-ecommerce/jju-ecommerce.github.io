@@ -407,6 +407,8 @@
   ];
 
   var taskSig = '';
+  var taskWrites = 0;        /* 지금 서버로 보내고 있는 할 일 쓰기 수 */
+  var lastTaskWriteAt = 0;   /* 마지막 쓰기가 끝난 시각 — 그 전에 떠난 조회 결과는 버립니다 */
 
   function ownerLabel(id) {
     for (var i = 0; i < TASK_OWNERS.length; i++) {
@@ -509,6 +511,15 @@
     save();
   }
 
+  function taskWrite(promise) {
+    taskWrites += 1;
+    function done() {
+      taskWrites -= 1;
+      lastTaskWriteAt = Date.now();
+    }
+    return promise.then(function (r) { done(); return r; }, function (e) { done(); throw e; });
+  }
+
   function addTask(title, owner) {
     var t = {
       id: uid(),
@@ -520,7 +531,7 @@
     state.tasks.push(t);
     renderTasks();
     if (!SB.connected) { toast('이 기기에 저장했어요'); return; }
-    sbInsert('office_tasks', { id: t.id, title: t.title, owner: t.owner, done: false })
+    taskWrite(sbInsert('office_tasks', { id: t.id, title: t.title, owner: t.owner, done: false }))
       .then(function () { return pullTasks(); })
       .catch(function () {
         t.unsynced = true;
@@ -534,7 +545,7 @@
     t.done = next;
     renderTasks();
     if (!SB.connected) return;
-    sbPatch('office_tasks', t.id, { done: next, updated_at: new Date().toISOString() })
+    taskWrite(sbPatch('office_tasks', t.id, { done: next, updated_at: new Date().toISOString() }))
       .catch(function () {
         t.done = !next;
         renderTasks();
@@ -547,7 +558,7 @@
     state.tasks = state.tasks.filter(function (x) { return x !== t; });
     renderTasks();
     if (!SB.connected) return;
-    sbDelete('office_tasks', t.id).catch(function () {
+    taskWrite(sbDelete('office_tasks', t.id)).catch(function () {
       if (idx >= 0) state.tasks.splice(idx, 0, t);
       renderTasks();
       toast('서버 삭제 실패 · 연결을 확인해 주세요');
@@ -573,9 +584,12 @@
 
   function pullTasks() {
     if (!SB.connected) return Promise.resolve(false);
+    var askedAt = Date.now();
     return sbRequest('/rest/v1/office_tasks?select=id,title,owner,done,due_date,created_at&order=created_at.asc&limit=500')
       .then(function (rows) {
         if (!Array.isArray(rows)) return false;
+        /* 방금 내가 보낸 쓰기보다 먼저 떠난 조회는 옛 값이므로 화면에 반영하지 않습니다 */
+        if (taskWrites > 0 || askedAt < lastTaskWriteAt) return false;
         applyServerTasks(rows);
         return true;
       });
