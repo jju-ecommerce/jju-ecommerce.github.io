@@ -697,6 +697,7 @@ html[data-theme="dark"] .stat { background: rgba(255, 250, 240, .05); border-col
   border: 1px solid var(--line);
   border-radius: 14px;
   min-width: 0;
+  text-align: left;
 }
 
 .crew-mini .avatar { width: 30px; height: 30px; font-size: 12px; }
@@ -1796,6 +1797,9 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
 .map-fig:focus-visible .map-avatar { box-shadow: 0 0 0 3px rgba(255, 214, 140, .55), 0 3px 10px rgba(0, 0, 0, .38); }
 
 .map-name {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
   padding: 1px 6px;
   border-radius: 999px;
   background: rgba(20, 15, 10, .88);
@@ -1806,6 +1810,16 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
   letter-spacing: -.2px;
   line-height: 1.35;
   white-space: nowrap;
+}
+
+/* 이름은 또렷하게, 직함은 한 단계 작고 묽게 — 길어져도 잘리지 않게 한 줄 고정 */
+.map-name b { font-weight: 800; }
+.map-name i {
+  font-style: normal;
+  font-weight: 700;
+  font-size: .92em;
+  color: rgba(255, 236, 206, .74);
+  letter-spacing: -.1px;
 }
 
 .map-bubble {

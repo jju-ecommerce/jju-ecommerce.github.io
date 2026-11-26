@@ -9,44 +9,50 @@
   /* ---------------- people ---------------- */
   var PEOPLE = {
     boss:     { name: '쭈대표', initial: '대', cls: 'p-boss', device: '' },
-    director: { name: '주드', initial: '주', cls: 'p-director', device: '본폰' },
-    jju1:     { name: '하루', initial: '하', cls: 'p-jju1', device: '1번 폰' },
-    jju2:     { name: '다온', initial: '다', cls: 'p-jju2', device: '2번 폰' },
-    jju3:     { name: '로이', initial: '로', cls: 'p-jju3', device: '3번 폰' }
+    director: { name: '주드', title: '총괄이사', initial: '주', cls: 'p-director', device: '본폰' },
+    jju1:     { name: '하루', title: '팀장', initial: '하', cls: 'p-jju1', device: '1번 폰' },
+    jju2:     { name: '다온', title: '과장', initial: '다', cls: 'p-jju2', device: '2번 폰' },
+    jju3:     { name: '로이', title: '대리', initial: '로', cls: 'p-jju3', device: '3번 폰' }
   };
+
+  /* 화면 표시 이름은 직함까지 붙입니다 — 주드 총괄이사 · 하루 팀장 · 다온 과장 · 로이 대리
+     아바타 원 글자(initial)와 내부 키(id)·멘션(@주드)은 짧은 이름 그대로 둡니다. */
+  function pname(p) { return p ? (p.title ? p.name + ' ' + p.title : p.name) : ''; }
+  function pnameOf(id) { return pname(PEOPLE[id]) || id; }
+  var CREW_IDS = ['director', 'jju1', 'jju2', 'jju3'];
 
   var CREW = [
     {
-      id: 'director', name: '주드', device: '본폰', handle: '지휘 총괄',
+      id: 'director', name: '주드 총괄이사', device: '본폰', handle: '지휘 총괄',
       role: '4인방 지시 하달과 결과 취합. 원고 사실 검수, 발행·시트 반영 확인, 일일 소싱 1종을 맡습니다.',
       tags: ['지휘', '원고 검수', '발행 확인', '소싱 1종']
     },
     {
-      id: 'jju1', name: '하루', device: '1번 폰', handle: '@jju20231004',
+      id: 'jju1', name: '하루 팀장', device: '1번 폰', handle: '@jju20231004',
       role: '스레드 1번 채널 운영. 월요일 유튜브 주제·대본 3종 추천과 원고 작성, 일일 소싱 1종을 맡습니다.',
       tags: ['1번 채널', '유튜브 대본', '소싱 1종']
     },
     {
-      id: 'jju2', name: '다온', device: '2번 폰', handle: '@songdossanai',
+      id: 'jju2', name: '다온 과장', device: '2번 폰', handle: '@songdossanai',
       role: '스레드 2번 채널 운영과 1688 신상품 서칭. 원고 작성과 발행 확인, 일일 소싱 1종을 맡습니다.',
       tags: ['2번 채널', '1688 서칭', '소싱 1종']
     },
     {
-      id: 'jju3', name: '로이', device: '3번 폰', handle: '@daliva_jnt',
+      id: 'jju3', name: '로이 대리', device: '3번 폰', handle: '@daliva_jnt',
       role: '스레드 3번 채널 운영. 업리카 세션 만료 시 직접 발행으로 대체하고, 오늘 할 일 프로그램과 소싱 1종을 맡습니다.',
       tags: ['3번 채널', '업리카 대응', '소싱 1종']
     }
   ];
 
   var ROOMS = {
-    grand:   { meta: '🏛️ 주드 · 하루 · 다온 · 로이 · 4명', placeholder: '지시를 한 줄로 (@all = 전원)' },
-    command: { meta: '👑 쭈대표 · 주드 · 1:1', placeholder: '주드에게 한 줄 지시' },
+    grand:   { meta: '🏛️ ' + CREW_IDS.map(pnameOf).join(' · ') + ' · 4명', placeholder: '지시를 한 줄로 (@all = 전원)' },
+    command: { meta: '👑 쭈대표 · ' + pnameOf('director') + ' · 1:1', placeholder: pnameOf('director') + '에게 한 줄 지시' },
     lounge:  { meta: '☕ 자유 기록 · 아이디어와 공지', placeholder: '라운지에 남길 메모' }
   };
 
   /* 2026-11-26 오피스 기준 실제 진행 중인 할 일 — AI 서버 미연결 시 이 기기 목록으로 씁니다. */
   var TASKS_SEED = [
-    { title: '로이(3번 폰) 오피스 외부 연동 승인하기', owner: 'boss' },
+    { title: '로이 대리(3번 폰) 오피스 외부 연동 승인하기', owner: 'boss' },
     { title: '에이블리 12/1~3 77% 페이백 참여 여부 결정', owner: 'boss' },
     { title: '유튜브 [10회] 4050 AI 이렇게 시작하세요 QPrompt 확인·촬영', owner: 'boss' },
     { title: '컴퓨존 데스크탑 i51722 램 32GB·윈도우·배송지 결정', owner: 'boss' },
@@ -208,12 +214,12 @@
   function seed() {
     if (state.messages.length) return;
     state.messages = [
-      { id: 'seed-1', room: 'grand', author: 'director', author_name: '주드', body: '[11/26] 3채널 6편 예약 완료, [10회] 대본도 시트 12행 등록.', created_at: iso(240) },
-      { id: 'seed-2', room: 'grand', author: 'jju1', author_name: '하루', body: '1번 폰 대기 중입니다. 12:31 · 19:21 발행 확인할게요.', created_at: iso(236) },
-      { id: 'seed-3', room: 'grand', author: 'jju2', author_name: '다온', body: '2번 대기 중입니다. 11:10 · 21:30 확인하고 링크 올리겠습니다.', created_at: iso(234) },
-      { id: 'seed-4', room: 'grand', author: 'jju3', author_name: '로이', body: '3번 대기 중입니다. 11:50 · 18:40이랑 업리카 세션 보겠습니다.', created_at: iso(232) },
-      { id: 'seed-5', room: 'command', author: 'director', author_name: '주드', body: '지휘실입니다, 대표님. 오늘 결정하실 것 세 가지(원고 무단 복사 4계정 대응 · 에이블리 77% 페이백 · 데스크탑 보류) 정리해 뒀습니다. 말씀만 주세요.', created_at: iso(230) },
-      { id: 'seed-6', room: 'lounge', author: 'director', author_name: '주드', body: '라운지 — 자유 기록. 아이디어나 공지를 남겨두면 회의실 지시로 이어서 처리합니다.', created_at: iso(228) }
+      { id: 'seed-1', room: 'grand', author: 'director', author_name: '주드 총괄이사', body: '[11/26] 3채널 6편 예약 완료, [10회] 대본도 시트 12행 등록.', created_at: iso(240) },
+      { id: 'seed-2', room: 'grand', author: 'jju1', author_name: '하루 팀장', body: '1번 폰 대기 중입니다. 12:31 · 19:21 발행 확인할게요.', created_at: iso(236) },
+      { id: 'seed-3', room: 'grand', author: 'jju2', author_name: '다온 과장', body: '2번 대기 중입니다. 11:10 · 21:30 확인하고 링크 올리겠습니다.', created_at: iso(234) },
+      { id: 'seed-4', room: 'grand', author: 'jju3', author_name: '로이 대리', body: '3번 대기 중입니다. 11:50 · 18:40이랑 업리카 세션 보겠습니다.', created_at: iso(232) },
+      { id: 'seed-5', room: 'command', author: 'director', author_name: '주드 총괄이사', body: '지휘실입니다, 대표님. 오늘 결정하실 것 세 가지(원고 무단 복사 4계정 대응 · 에이블리 77% 페이백 · 데스크탑 보류) 정리해 뒀습니다. 말씀만 주세요.', created_at: iso(230) },
+      { id: 'seed-6', room: 'lounge', author: 'director', author_name: '주드 총괄이사', body: '라운지 — 자유 기록. 아이디어나 공지를 남겨두면 회의실 지시로 이어서 처리합니다.', created_at: iso(228) }
     ];
     if (!state.tasks.length) {
       state.tasks = seedTasks();
@@ -298,7 +304,7 @@
       head.className = 'msg-head';
       var nm = document.createElement('span');
       nm.className = 'msg-name';
-      nm.textContent = PEOPLE[m.author] ? p.name : (m.author_name || p.name);
+      nm.textContent = PEOPLE[m.author] ? pname(p) : (m.author_name || pname(p));
       head.appendChild(nm);
       if (p.device && m.author !== 'boss') {
         var dv = document.createElement('span');
@@ -408,10 +414,10 @@
 
   var TASK_OWNERS = [
     { id: 'boss', label: '대표님 결정' },
-    { id: 'director', label: '주드' },
-    { id: 'jju1', label: '하루' },
-    { id: 'jju2', label: '다온' },
-    { id: 'jju3', label: '로이' }
+    { id: 'director', label: '주드 총괄이사' },
+    { id: 'jju1', label: '하루 팀장' },
+    { id: 'jju2', label: '다온 과장' },
+    { id: 'jju3', label: '로이 대리' }
   ];
 
   var taskSig = '';
@@ -855,7 +861,7 @@
       card.className = 'crew-mini';
       card.setAttribute('data-view', 'assistants');
       card.innerHTML = '<div class="avatar ' + p.cls + '">' + p.initial + '</div>' +
-        '<div class="crew-mini-txt"><b>' + c.name + '</b><span>' + c.device + ' · ' + c.handle + '</span></div>';
+        '<div class="crew-mini-txt"><b>' + pname(p) + '</b><span>' + c.device + ' · ' + c.handle + '</span></div>';
       card.addEventListener('click', function () { setView('assistants'); });
       row.appendChild(card);
     });
@@ -869,7 +875,7 @@
       card.innerHTML =
         '<div class="crew-head">' +
           '<div class="avatar ' + p.cls + '">' + p.initial + '</div>' +
-          '<div class="crew-head-txt"><h3>' + c.name + '</h3><p>' + c.device + ' · ' + c.handle + '</p></div>' +
+          '<div class="crew-head-txt"><h3>' + pname(p) + '</h3><p>' + c.device + ' · ' + c.handle + '</p></div>' +
           '<span class="chip chip-ok">대기</span>' +
         '</div>' +
         '<p class="crew-role">' + c.role + '</p>' +
@@ -1243,6 +1249,55 @@
     return over + blocked + out * 120;
   }
 
+  /* 이름표가 이웃 캐릭터 얼굴·다른 이름표에 가리지 않도록 좌우로 조금 비켜 놓습니다.
+     가만히 있는데도 자리가 계속 바뀌면 깜박이므로, 지금 자리에 보너스 점수를 줘서 유지합니다. */
+  var NAME_SHIFT = {};
+  var NAME_CANDS = [0, -0.45, 0.45, -0.85, 0.85, -1.3, 1.3];
+
+  function declutterNames(sw, sh, order, stageRect) {
+    var avatars = [];
+    var placedNames = [];
+
+    order.forEach(function (w) {
+      if (!w.el) return;
+      var av = w.el.querySelector('.map-avatar');
+      if (!av) return;
+      var ar = av.getBoundingClientRect();
+      avatars.push({ x: ar.x - stageRect.x, y: ar.y - stageRect.y, w: ar.width, h: ar.height });
+    });
+
+    order.forEach(function (w) {
+      if (!w.el) return;
+      var nm = w.el.querySelector('.map-name');
+      if (!nm || !nm.offsetWidth) return;
+      var nr = nm.getBoundingClientRect();
+      var nw = nr.width;
+      var nh = nr.height;
+      var cx = sw * w.x / 100;
+      var top = nr.y - stageRect.y;
+      var cur = NAME_SHIFT[w.id] || 0;
+      var best = null;
+
+      for (var i = 0; i < NAME_CANDS.length; i++) {
+        var off = Math.round(NAME_CANDS[i] * nw);
+        var r = { x: cx - nw / 2 + off, y: top, w: nw, h: nh };
+        var score = Math.abs(off) * 0.08;
+        if (r.x < 2) score += (2 - r.x) * 40;
+        if (r.x + r.w > sw - 2) score += (r.x + r.w - sw + 2) * 40;
+        for (var a = 0; a < avatars.length; a++) score += overlapArea(r, avatars[a]) * 1.4;
+        for (var b = 0; b < placedNames.length; b++) score += overlapArea(r, placedNames[b]);
+        if (off === cur) score -= 14;
+        if (!best || score < best.score) best = { score: score, r: r, off: off };
+      }
+
+      NAME_SHIFT[w.id] = best.off;
+      nm.style.transform = best.off ? 'translateX(' + best.off + 'px)' : '';
+      placedNames.push(best.r);
+    });
+
+    return placedNames;
+  }
+
   function layoutBubbles() {
     if (!el.mapStage) return;
     var sw = WALK.w || el.mapStage.clientWidth;
@@ -1252,6 +1307,8 @@
     var placed = [];
     var blockers = [];
     var order = WALKERS.slice().sort(function (a, b) { return b.y - a.y; });
+    var stageRect = el.mapStage.getBoundingClientRect();
+    var nameRects = declutterNames(sw, sh, order, stageRect);
 
     /* 캐릭터 몸(머리+이름표)도 장애물로 넣어 말풍선이 얼굴을 가리지 않게 */
     order.forEach(function (w) {
@@ -1264,8 +1321,12 @@
       blockers.push({ r: { x: cx - fw / 2 - 2, y: cy - fh / 2 - 2, w: fw + 4, h: fh + 4 }, w: 0.35 });
     });
 
+    /* 이름표(직함 포함)는 글자가 읽혀야 하므로 더 강한 장애물로 둡니다 */
+    nameRects.forEach(function (r) {
+      blockers.push({ r: { x: r.x - 3, y: r.y - 3, w: r.w + 6, h: r.h + 6 }, w: 1.1 });
+    });
+
     /* 방 이름표(존 태그)도 살짝 피해 갑니다 */
-    var stageRect = el.mapStage.getBoundingClientRect();
     [].forEach.call(el.mapStage.querySelectorAll('.zone-tag'), function (tag) {
       var tr = tag.getBoundingClientRect();
       blockers.push({ r: { x: tr.x - stageRect.x, y: tr.y - stageRect.y, w: tr.width, h: tr.height }, w: 0.6 });
@@ -1374,7 +1435,7 @@
       fig.type = 'button';
       fig.className = 'map-fig fig-' + c.id;
       fig.dataset.person = c.id;
-      fig.setAttribute('aria-label', p.name + ' 최근 보고 보기');
+      fig.setAttribute('aria-label', pname(p) + ' 최근 보고 보기');
 
       var bub = document.createElement('span');
       bub.className = 'map-bubble';
@@ -1394,7 +1455,14 @@
       av.textContent = p.initial;
       var nm = document.createElement('span');
       nm.className = 'map-name';
-      nm.textContent = p.name;
+      var nmName = document.createElement('b');
+      nmName.textContent = p.name;
+      nm.appendChild(nmName);
+      if (p.title) {
+        var nmTitle = document.createElement('i');
+        nmTitle.textContent = p.title;
+        nm.appendChild(nmTitle);
+      }
       body.appendChild(av);
       body.appendChild(nm);
 
@@ -1464,7 +1532,7 @@
         var card = document.createElement('button');
         card.type = 'button';
         card.className = 'map-stat';
-        card.setAttribute('aria-label', row.p.name + ' 빠른 시트 열기');
+        card.setAttribute('aria-label', pname(row.p) + ' 빠른 시트 열기');
         card.addEventListener('click', function () { openSheet(row.c.id); });
 
         var av = document.createElement('span');
@@ -1477,7 +1545,7 @@
         var top = document.createElement('span');
         top.className = 'map-stat-top';
         var nm = document.createElement('b');
-        nm.textContent = row.p.name;
+        nm.textContent = pname(row.p);
         var pl = document.createElement('i');
         top.appendChild(nm);
         top.appendChild(pl);
@@ -1512,11 +1580,11 @@
 
     el.sheetAvatar.className = 'map-avatar sheet-avatar ' + p.cls;
     el.sheetAvatar.textContent = p.initial;
-    el.sheetName.textContent = p.name;
+    el.sheetName.textContent = pname(p);
     el.sheetMeta.textContent = p.device + ' · ' + (here || (last && ROOM_LABEL[last.room] ? ROOM_LABEL[last.room] : c.place));
     el.sheetBody.textContent = last
       ? clipText(last.body, 220)
-      : '아직 올린 보고가 없습니다. 회의실에서 ' + p.name + '에게 지시하면 최근 보고가 여기에 뜹니다.';
+      : '아직 올린 보고가 없습니다. 회의실에서 ' + pname(p) + '에게 지시하면 최근 보고가 여기에 뜹니다.';
     el.sheetTime.textContent = last ? timeLabel(last.created_at) + ' · ' + (ROOM_LABEL[last.room] || '') : '';
 
     el.sheetRooms.querySelectorAll('[data-map-room]').forEach(function (b) {
@@ -2026,7 +2094,7 @@
       if (exists) return;
       state.messages.push({
         id: r.id, room: r.room, author: r.author || 'director',
-        author_name: r.author_name || (PEOPLE[r.author] ? PEOPLE[r.author].name : '비서'),
+        author_name: r.author_name || (PEOPLE[r.author] ? pname(PEOPLE[r.author]) : '비서'),
         body: r.body || '', created_at: r.created_at || new Date().toISOString()
       });
       changed = true;
@@ -2043,7 +2111,7 @@
   /* VAPID 공개키는 공개 정보입니다(비밀키는 Supabase Edge Function 시크릿에만 저장). */
   var VAPID_PUBLIC_KEY = 'BLsYdjB1PvxgqFW1LsvjOKqEfQ6qry4P77QkHh04m2z7yXbYx5pAx4OtnRy4_XlqHofAiABdweCvsc_qRUrq0pA';
   var PUSH = { busy: false, sub: null, synced: false, lastError: '', opened: false };
-  var APP_VERSION = 'v32';
+  var APP_VERSION = 'v33';
 
   function pushSupported() {
     return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
