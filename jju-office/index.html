@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="styles.css?v=22">
+<link rel="stylesheet" href="styles.css?v=23">
 </head>
 <body>
 <div class="app" id="app">
@@ -51,6 +51,7 @@
     <button class="menu-item" data-view="youtube"><span class="menu-ico">🎬</span><span class="menu-label">유튜브</span></button>
     <button class="menu-item" data-view="blog"><span class="menu-ico">✍️</span><span class="menu-label">블로그</span></button>
     <button class="menu-item" data-view="tasks"><span class="menu-ico">📋</span><span class="menu-label">할 일</span></button>
+    <button class="menu-item menu-wide" data-view="deliverables"><span class="menu-ico">📂</span><span class="menu-label">작업물(자료실)</span><span class="menu-wide-badge" id="dlMenuBadge">0</span></button>
   </nav>
 
   <main id="main">
@@ -477,6 +478,56 @@
       </div>
     </section>
 
+    <!-- ============ 📂 작업물(자료실) ============ -->
+    <section class="view" id="view-deliverables" aria-label="작업물 자료실">
+      <div class="card dl-hero">
+        <p class="eyebrow">자료실 · DELIVERABLES</p>
+        <h2>📂 작업물 한곳에</h2>
+        <p class="dl-hero-sub">전자책·영상·이미지·문서·표를 카테고리와 검색으로 골라 바로 보고 내려받습니다.</p>
+        <div class="hero-stats">
+          <div class="stat"><b id="dlStatAll">0</b><span>전체 자료</span></div>
+          <div class="stat"><b id="dlStatCat">0</b><span>분류</span></div>
+          <div class="stat"><b id="dlStatFile">0</b><span>내려받기</span></div>
+        </div>
+      </div>
+
+      <div class="card dl-tools">
+        <div class="dl-search">
+          <span class="dl-search-ico" aria-hidden="true">🔎</span>
+          <input id="dlSearch" type="search" autocomplete="off" placeholder="이름·태그로 찾기 (예: ROAS, 로고)" aria-label="자료 검색">
+          <button type="button" class="dl-search-clear" id="dlSearchClear" aria-label="검색어 지우기" hidden>✕</button>
+        </div>
+        <div class="dl-cats" id="dlCats" role="group" aria-label="카테고리 필터">
+          <button type="button" class="dl-cat active" data-cat="all" aria-pressed="true">전체 <b id="dlCatAll">0</b></button>
+          <button type="button" class="dl-cat" data-cat="ebook" aria-pressed="false">전자책 <b id="dlCatEbook">0</b></button>
+          <button type="button" class="dl-cat" data-cat="video" aria-pressed="false">영상 <b id="dlCatVideo">0</b></button>
+          <button type="button" class="dl-cat" data-cat="image" aria-pressed="false">이미지 <b id="dlCatImage">0</b></button>
+          <button type="button" class="dl-cat" data-cat="doc" aria-pressed="false">문서/표 <b id="dlCatDoc">0</b></button>
+          <button type="button" class="dl-cat" data-cat="util" aria-pressed="false">유틸리티 <b id="dlCatUtil">0</b></button>
+        </div>
+        <div class="dl-sort-row">
+          <div class="dl-sort seg" id="dlSort" role="group" aria-label="정렬 기준">
+            <button type="button" class="active" data-sort="new" aria-pressed="true">최신순</button>
+            <button type="button" data-sort="name" aria-pressed="false">이름순</button>
+          </div>
+          <span class="dl-count" id="dlCount">0개</span>
+        </div>
+      </div>
+
+      <ul class="dl-grid" id="dlGrid"></ul>
+      <p class="dl-empty" id="dlEmpty" hidden>조건에 맞는 자료가 없습니다. 검색어를 지우거나 다른 카테고리를 눌러 주세요.</p>
+
+      <div class="card">
+        <div class="card-head"><h3>이 자료실의 값</h3><span class="chip chip-soft" id="dlSourceChip">정적 목록</span></div>
+        <ul class="dot-list">
+          <li>기본 목록은 <b>app.js</b>에 들어 있어 서버가 없어도 바로 뜹니다.</li>
+          <li>AI 서버(Supabase)를 연결하면 <b>office_deliverables</b> 테이블 자료를 위에 더합니다. 테이블이 없거나 비어 있으면 이 목록 그대로 씁니다.</li>
+          <li>이미지·영상·CSV·마크다운은 여기서 바로 보고 내려받고, 드라이브·문서·시트는 <b>새 탭</b>으로 엽니다.</li>
+          <li>드라이브·문서·시트 중 일부는 대표님 Google 계정 로그인 상태에서만 열립니다(<b>🔒 공유 제한</b> 표시).</li>
+        </ul>
+      </div>
+    </section>
+
     <!-- ============ 비서 ============ -->
     <section class="view" id="view-assistants" aria-label="비서">
       <div class="card">
@@ -553,6 +604,24 @@
     </div>
   </div>
 
+  <!-- 📂 자료실 미리보기 모달 -->
+  <div class="modal dl-modal" id="dlModal" role="dialog" aria-modal="true" aria-labelledby="dlModalTitle" hidden>
+    <div class="modal-backdrop" data-close="1"></div>
+    <div class="modal-panel dl-panel">
+      <div class="modal-head">
+        <h2 id="dlModalTitle">자료</h2>
+        <button class="modal-close" id="dlModalClose" aria-label="닫기">✕</button>
+      </div>
+      <p class="dl-modal-meta" id="dlModalMeta"></p>
+      <div class="dl-preview" id="dlPreview"></div>
+      <div class="modal-actions dl-modal-actions">
+        <a class="btn primary" id="dlOpenTab" href="#" target="_blank" rel="noopener">새 탭에서 열기</a>
+        <a class="btn ghost" id="dlDownload" href="#" download>다운로드</a>
+        <button class="btn ghost" id="dlCopyLink" type="button">링크 복사</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 🔔 알림 설정 모달 -->
   <div class="modal" id="pushModal" role="dialog" aria-modal="true" aria-labelledby="pushModalTitle" hidden>
     <div class="modal-backdrop" data-close="1"></div>
@@ -617,6 +686,6 @@
   };
 })();
 </script>
-<script src="app.js?v=34" defer></script>
+<script src="app.js?v=35" defer></script>
 </body>
 </html>

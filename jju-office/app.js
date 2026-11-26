@@ -78,6 +78,8 @@
     messages: [],
     tasks: [],
     taskFilter: 'all',
+    dlCat: 'all',
+    dlSort: 'new',
     supabase: { url: '', key: '' }
   };
 
@@ -134,6 +136,8 @@
         messages: state.messages.slice(-400),
         tasks: state.tasks,
         taskFilter: state.taskFilter,
+        dlCat: state.dlCat,
+        dlSort: state.dlSort,
         supabase: state.supabase
       }));
     } catch (e) { /* storage full or blocked */ }
@@ -162,6 +166,8 @@
         };
       }).filter(function (t) { return t.title; });
       state.taskFilter = (s.taskFilter === 'today' || s.taskFilter === 'upcoming') ? s.taskFilter : 'all';
+      state.dlCat = DL_CATS.indexOf(s.dlCat) !== -1 ? s.dlCat : 'all';
+      state.dlSort = s.dlSort === 'name' ? 'name' : 'new';
       if (s.supabase && typeof s.supabase === 'object') {
         state.supabase.url = s.supabase.url || '';
         state.supabase.key = s.supabase.key || '';
@@ -251,6 +257,10 @@
     if (name === 'tasks') {
       renderTasks();
       if (SB.connected) pullTasks().catch(function () {});
+    }
+    if (name === 'deliverables') {
+      renderDeliverables();
+      if (!DL.pulled) { DL.pulled = true; pullDeliverables(); }
     }
     /* 오피스 맵을 보고 있을 때만 캐릭터가 걸어 다닙니다 */
     if (name === 'map') {
@@ -2118,7 +2128,7 @@
   /* VAPID 공개키는 공개 정보입니다(비밀키는 Supabase Edge Function 시크릿에만 저장). */
   var VAPID_PUBLIC_KEY = 'BLsYdjB1PvxgqFW1LsvjOKqEfQ6qry4P77QkHh04m2z7yXbYx5pAx4OtnRy4_XlqHofAiABdweCvsc_qRUrq0pA';
   var PUSH = { busy: false, sub: null, synced: false, lastError: '', opened: false };
-  var APP_VERSION = 'v34';
+  var APP_VERSION = 'v35';
 
   function pushSupported() {
     return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
@@ -2485,6 +2495,670 @@
   /* index.html의 종 버튼(onclick)에서 부릅니다. */
   window.JJU_PUSH = togglePush;
 
+  /* ---------------- 📂 작업물(자료실) ---------------- */
+  /* 정적 기본 목록 — app.js에 들어 있어 서버가 없어도 즉시 뜼니다.
+     file = 이 저장소 안 파일(앱에서 미리보기·다운로드), url = 바깥 링크(새 탭). */
+  var DL_CATS = ['all', 'ebook', 'video', 'image', 'doc', 'util'];
+  var DL_KIND = {
+    web:   { label: 'WEB',   ico: '🔗' },
+    pdf:   { label: 'PDF',   ico: '📕' },
+    pptx:  { label: 'PPTX',  ico: '📊' },
+    video: { label: 'MP4',   ico: '🎬' },
+    image: { label: 'PNG',   ico: '🖼️' },
+    csv:   { label: 'CSV',   ico: '🧮' },
+    md:    { label: 'MD',    ico: '📝' },
+    xlsx:  { label: 'XLSX',  ico: '📗' },
+    sheet: { label: 'SHEET', ico: '📈' },
+    doc:   { label: 'DOC',   ico: '📄' },
+    sql:   { label: 'SQL',   ico: '🗄️' },
+    app:   { label: 'APP',   ico: '📱' }
+  };
+
+  var DL_SEED = [
+    /* 전자책 */
+    { id: 'ebook-free-web', cat: 'ebook', kind: 'web',
+      title: '무료 지침서 웹페이지 · 4050 인생 2막',
+      desc: '중년 셀러 첫시작 지침서 무료 배포판 — 브라우저에서 바로 읽기',
+      url: 'https://jju-ecommerce.github.io/', tags: ['무료', '지침서', '퍼널', '랜딩'], date: '2026-11-23' },
+    { id: 'ebook-free-mobile', cat: 'ebook', kind: 'pdf',
+      title: '무료 지침서 모바일 PDF',
+      desc: '폰 화면에 맞춘 무료 지침서 PDF',
+      url: 'https://drive.google.com/file/d/167v6ieCETbFTs1pqgTeuYcKuFcqBJEqf/view', tags: ['무료', 'PDF', '모바일'], date: '2026-11-15', approx: true },
+    { id: 'ebook-free-pc', cat: 'ebook', kind: 'pdf',
+      title: '무료 지침서 PC PDF',
+      desc: 'PC에서 읽기 좋은 무료 지침서 PDF',
+      url: 'https://drive.google.com/file/d/1sk5aZe6nuBDZnulNpVGJ4jKRed3uX5fX/view', tags: ['무료', 'PDF', 'PC'], date: '2026-11-15', approx: true },
+    { id: 'ebook-free-pptx', cat: 'ebook', kind: 'pptx',
+      title: '무료 지침서 슬라이드북 PPTX',
+      desc: '무료 배포용 슬라이드북(구글 슬라이드)',
+      url: 'https://docs.google.com/presentation/d/1mACG4qkkkACxO0NQrnKl0qV3Re25AHvr/edit', tags: ['무료', 'PPTX', '슬라이드'], date: '2026-11-15' },
+    { id: 'ebook-paid1-pc', cat: 'ebook', kind: 'pdf',
+      title: '유료 1호 PC PDF',
+      desc: '4050 이커머스, 이 한 권으로 끝낸다 — PC용',
+      url: 'https://drive.google.com/file/d/1EikOUAdiUcj5Uw4syGhuGlLImTgFYXd0/view', tags: ['유료', '1호', 'PDF', 'PC'], date: '2026-11-18', approx: true, locked: true },
+    { id: 'ebook-paid1-mobile', cat: 'ebook', kind: 'pdf',
+      title: '유료 1호 모바일 PDF',
+      desc: '4050 이커머스, 이 한 권으로 끝낸다 — 모바일용',
+      url: 'https://drive.google.com/file/d/1nsXA93xxA0uqfEVlwnpJRiCret-LljdW/view', tags: ['유료', '1호', 'PDF', '모바일'], date: '2026-11-18', approx: true, locked: true },
+    { id: 'ebook-paid1-manual', cat: 'ebook', kind: 'pdf',
+      title: '유료 1호 부록 · 상품등록 매뉴얼',
+      desc: '1호 구매자 배포용 상품등록 실습 매뉴얼',
+      url: 'https://drive.google.com/file/d/1AA7BIV9NdiVvm-b1Pn7Y6XKv08NyyMlP/view', tags: ['유료', '1호', '부록', '매뉴얼'], date: '2026-11-18', approx: true, locked: true },
+    { id: 'ebook-paid2-mobile', cat: 'ebook', kind: 'pdf',
+      title: '유료 2호 모바일 PDF · 도매꾹 공급사 실전편',
+      desc: '다품목 1인 셀러 실무 — 모바일용',
+      url: 'https://drive.google.com/file/d/1aSV3KJtzKSrnQvci1XGOLd7PRYWiQceS/view', tags: ['유료', '2호', 'PDF', '모바일'], date: '2026-11-18', approx: true, locked: true },
+    { id: 'ebook-paid2-pc', cat: 'ebook', kind: 'pdf',
+      title: '유료 2호 PC PDF · 도매꾹 공급사 실전편',
+      desc: '다품목 1인 셀러 실무 — PC용',
+      url: 'https://drive.google.com/file/d/1IfcM0RpsaH1GWZ8faG9NMC75yRr8pFSj/view', tags: ['유료', '2호', 'PDF', 'PC'], date: '2026-11-18', approx: true, locked: true },
+
+    /* 영상 */
+    { id: 'video-intro', cat: 'video', kind: 'video',
+      title: '소개 모션그래픽 16:9',
+      desc: '오피스·유튜브 인트로용 모션그래픽 (16:9, MP4)',
+      file: 'assets/jju-intro-motion-16x9.mp4', size: '9.7MB', tags: ['인트로', '모션그래픽', '유튜브'], date: '2026-11-27' },
+
+    /* 이미지 */
+    { id: 'img-jju-logo', cat: 'image', kind: 'image',
+      title: '쭈대표 이커머스 투명 로고',
+      desc: '배경 투명 PNG — 썸네일·상세·배너 공통 사용',
+      file: 'assets/jju-ecom-logo-transparent.png', size: '641KB', tags: ['로고', '브랜드', '투명PNG'], date: '2026-11-27' },
+    { id: 'img-daliva-logo', cat: 'image', kind: 'image',
+      title: '달리바 투명 로고',
+      desc: '달리바 상품 상세·배너용 투명 로고(드라이브)',
+      url: 'https://drive.google.com/file/d/1mEkp63OpiM14JIsfKcOIG45vussrhUKC/view', tags: ['로고', '달리바', '브랜드'], date: '2026-11-25', approx: true, locked: true },
+    { id: 'img-jnt-logo', cat: 'image', kind: 'image',
+      title: 'JNT 인터내셔날 로고 시안 · 럭셔리 모노',
+      desc: '제이엔티인터내셔날 로고안 2차 3건 중 주요안',
+      file: 'assets/jnt-logo-luxury-mono.png', size: '916KB', tags: ['로고', 'JNT', '시안'], date: '2026-11-25' },
+
+    /* 문서/표 */
+    { id: 'doc-sourcing-sheet', cat: 'doc', kind: 'sheet',
+      title: '제이엔티 일일 쿠팡 소싱 보고서',
+      desc: '일일 소싱 행·도착원가·판매가·경쟁가 보고 시트',
+      url: 'https://docs.google.com/spreadsheets/d/1-LRGzoWqtzTeOxkBg0l5F4CoRGdBN_eiECJ73a5_Tuk/edit', tags: ['시트', '소싱', '쿠팡'], date: '2026-11-26', approx: true, locked: true },
+    { id: 'doc-script-sheet', cat: 'doc', kind: 'sheet',
+      title: '스레드·유튜브 대본 통합 시트',
+      desc: '스레드_3채널_바이럴_마케팅_원고 + [유튜브_대본] 탭',
+      url: 'https://docs.google.com/spreadsheets/d/1KtpmojsNcgc8XKS03RVwJzrX6C151Rb9eTBhF4O3cJI/edit', tags: ['시트', '스레드', '유튜브', '대본'], date: '2026-11-26', approx: true, locked: true },
+    { id: 'doc-naver-blog', cat: 'doc', kind: 'doc',
+      title: '도매에빠지다 네이버 블로그 홍보글',
+      desc: '제목·본문·해시태그 11개 — 11/25 작성분',
+      url: 'https://docs.google.com/document/d/19HrjuWHFoHHVeRtMvzctYeWwEpwzN1Vo_9AzTn0Xcfg/edit', tags: ['블로그', '원고', '도매에빠지다'], date: '2026-11-25', locked: true },
+    { id: 'doc-roas-csv', cat: 'doc', kind: 'csv',
+      title: '판매가·원가별 396행 손익분기 ROAS 표',
+      desc: '물류비·판매가·도착원가 → 개당 공헌이익·손익분기 ROAS·목표 ROAS',
+      file: 'assets/coupang-breakeven-roas-396.csv', size: '13KB', tags: ['ROAS', '손익분기', '쿠팡광고', 'CSV'], date: '2026-11-27' },
+    { id: 'doc-ads-research', cat: 'doc', kind: 'md',
+      title: '쿠팡 광고 관리 비법 리서치 보고서',
+      desc: '공식 문서·실무 블로그·유튜브 전수 리서치 — 표기 구분 포함',
+      file: 'assets/coupang-ads-playbook-2026-11-26.md', size: '30KB', tags: ['쿠팡광고', '리서치', '유튜브'], date: '2026-11-26' },
+    { id: 'doc-domeggook-xlsx', cat: 'doc', kind: 'xlsx',
+      title: '도매꾹 베스트100 생활잡화·문구 분석 (사진 포함)',
+      desc: '베스트100 상품·가격·이미지 정리 엑셀',
+      file: 'assets/domeggook-best100-2026-11-25.xlsx', size: '477KB', tags: ['도매꾹', '소싱', '엑셀', '베스트100'], date: '2026-11-25' },
+    { id: 'doc-weekly-youtube', cat: 'doc', kind: 'md',
+      title: '주간 유튜브 추천 3선 대본 (11/23)',
+      desc: '월요일 08:30 루틴 — 주제 3선과 전체 대본·큐시트',
+      file: 'assets/weekly-youtube-3picks-2026-11-23.md', size: '49KB', tags: ['유튜브', '대본', '주간루틴'], date: '2026-11-23' },
+
+    /* 유틸리티 */
+    { id: 'util-office-app', cat: 'util', kind: 'app',
+      title: '쭈대표 AI 오피스 웹앱',
+      desc: '지금 보고 있는 오피스 — 대회의실·할 일·대시보드',
+      url: 'https://jju-ecommerce.github.io/jju-office/', tags: ['오피스', '앱', 'PWA'], date: '2026-11-27' },
+    { id: 'util-yt-channel', cat: 'util', kind: 'web',
+      title: '유튜브 채널 · 쭈대표의 이커머스',
+      desc: '@JJU_E-Commerce 바로가기',
+      url: 'https://www.youtube.com/@JJU_E-Commerce', tags: ['유튜브', '채널'], date: '2026-11-19', approx: true },
+    { id: 'util-schema-sql', cat: 'util', kind: 'sql',
+      title: '오피스 AI 서버 스키마 SQL',
+      desc: 'Supabase SQL Editor에 붙여 넣을 테이블·정책 >',
+      file: 'supabase-office-schema.sql', size: '3KB', tags: ['Supabase', '스키마', '설치'], date: '2026-11-27' }
+  ];
+
+  var DL = {
+    cat: 'all', sort: 'new', q: '',
+    items: DL_SEED.slice(),
+    source: 'static', sourceLabel: '정적 목록',
+    loading: false, pulled: false, opened: null, seq: 0
+  };
+
+  function dlKind(k) { return DL_KIND[k] || { label: String(k || '').toUpperCase(), ico: '📎' }; }
+
+  function dlHref(it) { return (it && (it.file || it.url)) || '#'; }
+
+  function dlIsFile(it) { return !!(it && it.file); }
+
+  function dlStamp(it) {
+    var d = String((it && it.date) || '');
+    var md = d.length >= 10 ? d.slice(5, 10) : d;
+    return (it && it.approx ? '≈ ' : '') + (md ? md.replace('-', '/') : '—');
+  }
+
+  function dlByNew(a, b) {
+    var da = String(a.date || ''), db = String(b.date || '');
+    if (da !== db) return da < db ? 1 : -1;
+    return String(a.title).localeCompare(String(b.title), 'ko');
+  }
+
+  function dlByName(a, b) { return String(a.title).localeCompare(String(b.title), 'ko'); }
+
+  function dlCounts() {
+    var c = { all: 0, ebook: 0, video: 0, image: 0, doc: 0, util: 0 };
+    DL.items.forEach(function (it) {
+      c.all += 1;
+      if (c[it.cat] !== undefined) c[it.cat] += 1;
+    });
+    return c;
+  }
+
+  function dlFiltered() {
+    var q = String(DL.q || '').trim().toLowerCase();
+    var list = DL.items.filter(function (it) {
+      if (DL.cat !== 'all' && it.cat !== DL.cat) return false;
+      if (!q) return true;
+      var hay = [it.title, it.desc, it.kind, dlKind(it.kind).label, (it.tags || []).join(' ')].join(' ').toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+    return list.sort(DL.sort === 'name' ? dlByName : dlByNew);
+  }
+
+  function dlSetNum(el2, n) { if (el2) el2.textContent = String(n); }
+
+  function renderDeliverables() {
+    var grid = el.dlGrid;
+    if (!grid) return;
+    var c = dlCounts();
+    var list = dlFiltered();
+    var fileN = DL.items.filter(dlIsFile).length;
+    var catN = DL_CATS.filter(function (k) { return k !== 'all' && c[k] > 0; }).length;
+
+    dlSetNum(el.dlStatAll, c.all);
+    dlSetNum(el.dlStatCat, catN);
+    dlSetNum(el.dlStatFile, fileN);
+    dlSetNum(el.dlCatAll, c.all);
+    dlSetNum(el.dlCatEbook, c.ebook);
+    dlSetNum(el.dlCatVideo, c.video);
+    dlSetNum(el.dlCatImage, c.image);
+    dlSetNum(el.dlCatDoc, c.doc);
+    dlSetNum(el.dlCatUtil, c.util);
+    dlSetNum(el.dlMenuBadge, c.all);
+    if (el.dlCount) el.dlCount.textContent = list.length + '개';
+    if (el.dlEmpty) el.dlEmpty.hidden = list.length > 0;
+
+    if (el.dlCats) {
+      el.dlCats.querySelectorAll('button[data-cat]').forEach(function (b) {
+        var on = b.dataset.cat === DL.cat;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    }
+    if (el.dlSort) {
+      el.dlSort.querySelectorAll('button[data-sort]').forEach(function (b) {
+        var on = b.dataset.sort === DL.sort;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    }
+    if (el.dlSourceChip) {
+      el.dlSourceChip.textContent = DL.sourceLabel;
+      el.dlSourceChip.className = 'chip ' + (DL.source === 'server' ? 'chip-ok' : 'chip-soft');
+    }
+
+    grid.innerHTML = '';
+    list.forEach(function (it) { grid.appendChild(dlCard(it)); });
+  }
+
+  function dlCard(it) {
+    var li = document.createElement('li');
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'dl-card';
+    btn.setAttribute('data-dl-id', it.id);
+    btn.setAttribute('aria-label', it.title + ' — 미리보기 열기');
+
+    var thumb = document.createElement('span');
+    thumb.className = 'dl-thumb' + (it.kind === 'video' ? ' dl-thumb-dark' : '');
+    if (it.kind === 'image' && it.file) {
+      var im = document.createElement('img');
+      im.src = it.file;
+      im.alt = '';
+      im.loading = 'lazy';
+      im.decoding = 'async';
+      thumb.appendChild(im);
+    } else {
+      thumb.textContent = dlKind(it.kind).ico;
+    }
+
+    var body = document.createElement('span');
+    body.className = 'dl-body';
+
+    var h = document.createElement('span');
+    h.className = 'dl-title';
+    h.textContent = it.title;
+    body.appendChild(h);
+
+    if (it.desc) {
+      var d = document.createElement('span');
+      d.className = 'dl-desc';
+      d.textContent = it.desc;
+      body.appendChild(d);
+    }
+
+    var foot = document.createElement('span');
+    foot.className = 'dl-foot';
+    var k = document.createElement('span');
+    k.className = 'dl-kind';
+    k.textContent = dlKind(it.kind).label;
+    foot.appendChild(k);
+    if (it.size) {
+      var s = document.createElement('span');
+      s.className = 'dl-kind';
+      s.textContent = it.size;
+      foot.appendChild(s);
+    }
+    if (it.locked) {
+      var lk = document.createElement('span');
+      lk.className = 'dl-lock';
+      lk.textContent = '🔒 공유 제한';
+      lk.title = '익명 접속에서는 Google 로그인이 필요합니다';
+      foot.appendChild(lk);
+    }
+    if (it.server) {
+      var sv = document.createElement('span');
+      sv.className = 'dl-srv';
+      sv.textContent = '서버';
+      foot.appendChild(sv);
+    }
+    var st = document.createElement('span');
+    st.className = 'dl-stamp';
+    st.textContent = dlStamp(it);
+    foot.appendChild(st);
+
+    body.appendChild(foot);
+    btn.appendChild(thumb);
+    btn.appendChild(body);
+    li.appendChild(btn);
+    return li;
+  }
+
+  function setDlSource(kind, label) {
+    DL.source = kind;
+    DL.sourceLabel = label;
+    if (el.dlSourceChip) {
+      el.dlSourceChip.textContent = label;
+      el.dlSourceChip.className = 'chip ' + (kind === 'server' ? 'chip-ok' : 'chip-soft');
+    }
+  }
+
+  /* Supabase office_deliverables — 테이블이 없거나(404) 비어 있어도 정적 목록을 그대로 유지합니다. */
+  function dlRowItem(r) {
+    if (!r || typeof r !== 'object') return null;
+    var id = String(r.id || r.slug || '').trim();
+    var title = String(r.title || r.name || '').trim();
+    if (!id || !title) return null;
+    var cat = String(r.category || r.cat || 'util').toLowerCase();
+    if (cat === 'all' || DL_CATS.indexOf(cat) === -1) cat = 'util';
+    var file = String(r.file_path || r.file || '').trim();
+    var url = String(r.url || r.link || '').trim();
+    if (!file && !url) return null;
+    var kind = String(r.kind || r.type || '').toLowerCase();
+    if (!DL_KIND[kind]) {
+      var guess = (file || url).split('?')[0].split('.').pop().toLowerCase();
+      kind = DL_KIND[guess] ? guess : (file ? 'md' : 'web');
+    }
+    var tags = Array.isArray(r.tags) ? r.tags : String(r.tags || '').split(',');
+    tags = tags.map(function (t) { return String(t || '').trim(); }).filter(Boolean).slice(0, 8);
+    return {
+      id: 'sb-' + id, cat: cat, kind: kind, title: title,
+      desc: String(r.description || r.desc || ''),
+      file: file, url: url, tags: tags,
+      date: String(r.updated_at || r.created_at || '').slice(0, 10),
+      size: String(r.size_label || r.size || ''),
+      locked: !!r.locked, server: true
+    };
+  }
+
+  function mergeDeliverables(rows) {
+    var extra = [];
+    (Array.isArray(rows) ? rows : []).forEach(function (r) {
+      var it = dlRowItem(r);
+      if (!it) return;
+      if (DL_SEED.some(function (s) { return s.id === it.id; })) return;
+      if (extra.some(function (s) { return s.id === it.id; })) return;
+      extra.push(it);
+    });
+    DL.items = extra.length ? DL_SEED.concat(extra) : DL_SEED.slice();
+    return extra.length;
+  }
+
+  function pullDeliverables() {
+    if (!state.supabase.url || !state.supabase.key) {
+      setDlSource('static', '정적 목록');
+      return Promise.resolve(false);
+    }
+    if (DL.loading) return Promise.resolve(false);
+    DL.loading = true;
+    setDlSource('static', '서버 확인 중…');
+    return sbRequest('/rest/v1/office_deliverables?select=*&order=updated_at.desc&limit=200')
+      .then(function (rows) {
+        DL.loading = false;
+        var n = mergeDeliverables(rows);
+        setDlSource(n ? 'server' : 'static', n ? ('서버 ' + n + '건 추가') : '정적 목록');
+        renderDeliverables();
+        return true;
+      })
+      .catch(function (e) {
+        DL.loading = false;
+        setDlSource('static', (e && e.status === 404) ? '정적 유지 · 테이블 없음' : '정적 유지 · 서버 응답 없음');
+        return false;
+      });
+  }
+
+  /* ---------- 미리보기 모달 ---------- */
+  function openDeliverable(it) {
+    if (!it || !el.dlModal) return;
+    DL.opened = it;
+    if (el.dlModalTitle) el.dlModalTitle.textContent = it.title;
+    if (el.dlModalMeta) {
+      var parts = [dlKind(it.kind).label];
+      if (it.size) parts.push(it.size);
+      parts.push(dlStamp(it));
+      if ((it.tags || []).length) parts.push((it.tags || []).slice(0, 3).map(function (t) { return '#' + t; }).join(' '));
+      el.dlModalMeta.textContent = parts.join(' · ');
+    }
+    var href = dlHref(it);
+    if (el.dlOpenTab) el.dlOpenTab.href = href;
+    if (el.dlDownload) {
+      if (dlIsFile(it)) {
+        el.dlDownload.hidden = false;
+        el.dlDownload.href = it.file;
+        el.dlDownload.setAttribute('download', it.file.split('/').pop());
+      } else {
+        el.dlDownload.hidden = true;
+        el.dlDownload.removeAttribute('href');
+      }
+    }
+    el.dlModal.hidden = false;
+    renderDlPreview(it);
+  }
+
+  function closeDeliverable() {
+    if (!el.dlModal) return;
+    el.dlModal.hidden = true;
+    DL.opened = null;
+    DL.seq += 1;
+    if (el.dlPreview) el.dlPreview.innerHTML = '';
+  }
+
+  function dlPreviewNote(html) {
+    if (!el.dlPreview) return;
+    el.dlPreview.innerHTML = '<p class="dl-pv-note">' + html + '</p>';
+  }
+
+  function renderDlPreview(it) {
+    if (!el.dlPreview) return;
+    DL.seq += 1;
+    var token = DL.seq;
+    el.dlPreview.innerHTML = '';
+    var kind = it.kind;
+
+    if (!dlIsFile(it)) {
+      dlPreviewNote(it.locked
+        ? '🔒 <b>공유 제한 자료</b>입니다.<br>대표님 Google 계정으로 로그인된 브라우저에서 <b>[새 탭에서 열기]</b>를 누르면 바로 열립니다.'
+        : '<b>' + dlEsc(dlKind(kind).label) + '</b> 링크입니다.<br><b>[새 탭에서 열기]</b>를 누르면 바로 열립니다.');
+      return;
+    }
+
+    if (kind === 'image') {
+      var im = document.createElement('img');
+      im.className = 'dl-pv-img';
+      im.src = it.file;
+      im.alt = it.title;
+      el.dlPreview.appendChild(im);
+      return;
+    }
+
+    if (kind === 'video') {
+      var v = document.createElement('video');
+      v.controls = true;
+      v.preload = 'metadata';
+      v.playsInline = true;
+      v.setAttribute('playsinline', '');
+      v.src = it.file;
+      el.dlPreview.appendChild(v);
+      return;
+    }
+
+    if (kind === 'xlsx') {
+      dlPreviewNote('📗 엑셀 파일은 브라우저에서 미리보기를 지원하지 않습니다.<br><b>[다운로드]</b>로 받아서 열어 주세요.');
+      return;
+    }
+
+    /* csv · md · sql · 그 밖의 텍스트 파일 */
+    var loading = document.createElement('p');
+    loading.className = 'dl-loading';
+    loading.textContent = '불러오는 중…';
+    el.dlPreview.appendChild(loading);
+
+    fetch(it.file, { cache: 'no-store' }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    }).then(function (text) {
+      if (token !== DL.seq) return;
+      el.dlPreview.innerHTML = '';
+      if (kind === 'csv') {
+        el.dlPreview.appendChild(dlCsvTable(text));
+      } else if (kind === 'md') {
+        var md = document.createElement('div');
+        md.className = 'dl-md';
+        md.innerHTML = dlMarkdown(text);
+        el.dlPreview.appendChild(md);
+      } else {
+        var pre = document.createElement('pre');
+        pre.className = 'dl-md';
+        pre.textContent = text;
+        el.dlPreview.appendChild(pre);
+      }
+    }).catch(function (e) {
+      if (token !== DL.seq) return;
+      dlPreviewNote('본문을 불러오지 못했습니다 (' + dlEsc((e && e.message) || 'error') + ').<br><b>[다운로드]</b>로 받아서 확인해 주세요.');
+    });
+  }
+
+  function dlEsc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function dlCsvRows(text) {
+    var rows = [], row = [], cur = '', q = false, i = 0;
+    var s = String(text || '').replace(/^\uFEFF/, '');
+    while (i < s.length) {
+      var c = s.charAt(i);
+      if (q) {
+        if (c === '"') {
+          if (s.charAt(i + 1) === '"') { cur += '"'; i += 2; continue; }
+          q = false; i += 1; continue;
+        }
+        cur += c; i += 1; continue;
+      }
+      if (c === '"') { q = true; i += 1; continue; }
+      if (c === ',') { row.push(cur); cur = ''; i += 1; continue; }
+      if (c === '\r') { i += 1; continue; }
+      if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; i += 1; continue; }
+      cur += c; i += 1;
+    }
+    if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+    return rows.filter(function (r) { return r.some(function (v) { return String(v).trim() !== ''; }); });
+  }
+
+  function dlCsvTable(text) {
+    var rows = dlCsvRows(text);
+    var wrap = document.createElement('div');
+    wrap.className = 'dl-table-wrap';
+    if (!rows.length) {
+      var p = document.createElement('p');
+      p.className = 'dl-pv-note';
+      p.textContent = '표 내용을 읽지 못했습니다.';
+      wrap.appendChild(p);
+      return wrap;
+    }
+    var head = rows[0];
+    var body = rows.slice(1);
+    var limit = 60;
+    var shown = body.slice(0, limit);
+    var table = document.createElement('table');
+    var thead = document.createElement('thead');
+    var htr = document.createElement('tr');
+    head.forEach(function (h) {
+      var th = document.createElement('th');
+      th.textContent = String(h).trim();
+      htr.appendChild(th);
+    });
+    thead.appendChild(htr);
+    table.appendChild(thead);
+    var tbody = document.createElement('tbody');
+    shown.forEach(function (r) {
+      var tr = document.createElement('tr');
+      head.forEach(function (_, idx) {
+        var td = document.createElement('td');
+        td.textContent = String(r[idx] == null ? '' : r[idx]).trim();
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    if (body.length > limit) {
+      var note = document.createElement('p');
+      note.className = 'dl-pv-note';
+      note.textContent = body.length.toLocaleString('ko-KR') + '행 중 ' + limit + '행만 보여 줍니다 · 전체는 다운로드';
+      wrap.appendChild(note);
+    }
+    return wrap;
+  }
+
+  function dlMdInline(s) {
+    return s
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  }
+
+  function dlMdRow(line) {
+    var s = String(line).trim().replace(/^\|/, '').replace(/\|$/, '');
+    var cells = [], cur = '';
+    for (var i = 0; i < s.length; i++) {
+      var c = s.charAt(i);
+      if (c === '\\' && s.charAt(i + 1) === '|') { cur += '|'; i += 1; continue; }
+      if (c === '|') { cells.push(cur.trim()); cur = ''; continue; }
+      cur += c;
+    }
+    cells.push(cur.trim());
+    return cells;
+  }
+
+  function dlMarkdown(src) {
+    var lines = String(src || '').replace(/\r\n?/g, '\n').split('\n');
+    var out = [], i = 0, list = null;
+    function closeList() { if (list) { out.push('</' + list + '>'); list = null; } }
+    while (i < lines.length) {
+      var line = lines[i];
+
+      if (/^\s*```/.test(line)) {
+        closeList();
+        var buf = [];
+        i += 1;
+        while (i < lines.length && !/^\s*```/.test(lines[i])) { buf.push(dlEsc(lines[i])); i += 1; }
+        i += 1;
+        out.push('<pre><code>' + buf.join('\n') + '</code></pre>');
+        continue;
+      }
+
+      var h = line.match(/^(#{1,6})\s+(.*)$/);
+      if (h) {
+        closeList();
+        var lv = Math.min(h[1].length, 4);
+        out.push('<h' + lv + '>' + dlMdInline(dlEsc(h[2])) + '</h' + lv + '>');
+        i += 1;
+        continue;
+      }
+
+      if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) { closeList(); out.push('<hr>'); i += 1; continue; }
+
+      /* 표: | a | b | 다음 줄이 |---| 구분자 */
+      if (line.indexOf('|') !== -1 && i + 1 < lines.length && /^\s*\|?[\s:|-]+\|[-:\s|]*$/.test(lines[i + 1]) && lines[i + 1].indexOf('-') !== -1) {
+        closeList();
+        var headCells = dlMdRow(line);
+        var tbl = ['<table><thead><tr>'];
+        headCells.forEach(function (c) { tbl.push('<th>' + dlMdInline(dlEsc(c)) + '</th>'); });
+        tbl.push('</tr></thead><tbody>');
+        i += 2;
+        while (i < lines.length && lines[i].indexOf('|') !== -1 && lines[i].trim()) {
+          var cells = dlMdRow(lines[i]);
+          tbl.push('<tr>');
+          headCells.forEach(function (_, idx) { tbl.push('<td>' + dlMdInline(dlEsc(cells[idx] == null ? '' : cells[idx])) + '</td>'); });
+          tbl.push('</tr>');
+          i += 1;
+        }
+        tbl.push('</tbody></table>');
+        out.push(tbl.join(''));
+        continue;
+      }
+
+      var ul = line.match(/^\s*[-*+]\s+(.*)$/);
+      var ol = line.match(/^\s*\d+[.)]\s+(.*)$/);
+      if (ul || ol) {
+        var want = ul ? 'ul' : 'ol';
+        if (list !== want) { closeList(); out.push('<' + want + '>'); list = want; }
+        out.push('<li>' + dlMdInline(dlEsc((ul || ol)[1])) + '</li>');
+        i += 1;
+        continue;
+      }
+
+      if (/^\s*>\s?/.test(line)) {
+        closeList();
+        var q = [];
+        while (i < lines.length && /^\s*>\s?/.test(lines[i])) {
+          q.push(dlMdInline(dlEsc(lines[i].replace(/^\s*>\s?/, ''))));
+          i += 1;
+        }
+        out.push('<blockquote>' + q.join('<br>') + '</blockquote>');
+        continue;
+      }
+
+      if (!line.trim()) { closeList(); i += 1; continue; }
+
+      closeList();
+      var para = [];
+      while (i < lines.length && lines[i].trim() &&
+             !/^(#{1,6}\s|\s*[-*+]\s|\s*\d+[.)]\s|\s*>|\s*```)/.test(lines[i]) &&
+             !/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(lines[i]) &&
+             lines[i].indexOf('|') === -1) {
+        para.push(lines[i]);
+        i += 1;
+      }
+      if (!para.length) { i += 1; continue; }
+      out.push('<p>' + para.map(function (l) { return dlMdInline(dlEsc(l)); }).join('<br>') + '</p>');
+    }
+    closeList();
+    return out.join('');
+  }
+
+  function copyDlLink() {
+    var it = DL.opened;
+    if (!it) return;
+    var abs = dlHref(it);
+    try { abs = new URL(dlHref(it), location.href).href; } catch (e) { /* keep relative */ }
+    writeClipboard(abs).then(function (ok) {
+      toast(ok ? '링크를 복사했어요' : '복사가 안 됐어요 · 주소를 길게 눌러 복사해 주세요');
+    });
+  }
+
   /* ---------------- toast ---------------- */
   var toastTimer = null;
   function toast(text, ms) {
@@ -2532,6 +3206,7 @@
         refreshPushState();
         syncPushSubscription();
         toast('AI 서버에 연결했어요');
+        DL.pulled = false;
         setTimeout(closeModal, 600);
       } else {
         SB.connected = false;
@@ -2637,6 +3312,32 @@
     el.pushRefresh = document.getElementById('pushRefresh');
     el.toast = document.getElementById('toast');
     el.todayLabel = document.getElementById('todayLabel');
+    el.dlGrid = document.getElementById('dlGrid');
+    el.dlEmpty = document.getElementById('dlEmpty');
+    el.dlCount = document.getElementById('dlCount');
+    el.dlCats = document.getElementById('dlCats');
+    el.dlCatAll = document.getElementById('dlCatAll');
+    el.dlCatEbook = document.getElementById('dlCatEbook');
+    el.dlCatVideo = document.getElementById('dlCatVideo');
+    el.dlCatImage = document.getElementById('dlCatImage');
+    el.dlCatDoc = document.getElementById('dlCatDoc');
+    el.dlCatUtil = document.getElementById('dlCatUtil');
+    el.dlStatAll = document.getElementById('dlStatAll');
+    el.dlStatCat = document.getElementById('dlStatCat');
+    el.dlStatFile = document.getElementById('dlStatFile');
+    el.dlSearch = document.getElementById('dlSearch');
+    el.dlSearchClear = document.getElementById('dlSearchClear');
+    el.dlSort = document.getElementById('dlSort');
+    el.dlSourceChip = document.getElementById('dlSourceChip');
+    el.dlMenuBadge = document.getElementById('dlMenuBadge');
+    el.dlModal = document.getElementById('dlModal');
+    el.dlModalTitle = document.getElementById('dlModalTitle');
+    el.dlModalMeta = document.getElementById('dlModalMeta');
+    el.dlModalClose = document.getElementById('dlModalClose');
+    el.dlPreview = document.getElementById('dlPreview');
+    el.dlOpenTab = document.getElementById('dlOpenTab');
+    el.dlDownload = document.getElementById('dlDownload');
+    el.dlCopyLink = document.getElementById('dlCopyLink');
   }
 
   function bind() {
@@ -2718,7 +3419,7 @@
       if (e.target.dataset.close) closeModal();
     });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') { closeModal(); closeSheet(); hideMentions(); closePushPanel(); }
+      if (e.key === 'Escape') { closeModal(); closeSheet(); hideMentions(); closePushPanel(); closeDeliverable(); }
     });
     document.getElementById('sbSave').addEventListener('click', saveServer);
     document.getElementById('sbTest').addEventListener('click', testFromModal);
@@ -2768,6 +3469,62 @@
       });
     }
 
+    /* 📂 작업물(자료실) */
+    if (el.dlSearch) {
+      el.dlSearch.addEventListener('input', function () {
+        DL.q = el.dlSearch.value || '';
+        if (el.dlSearchClear) el.dlSearchClear.hidden = !DL.q;
+        renderDeliverables();
+      });
+    }
+    if (el.dlSearchClear) {
+      el.dlSearchClear.addEventListener('click', function () {
+        if (el.dlSearch) { el.dlSearch.value = ''; el.dlSearch.focus(); }
+        DL.q = '';
+        el.dlSearchClear.hidden = true;
+        renderDeliverables();
+      });
+    }
+    if (el.dlCats) {
+      el.dlCats.querySelectorAll('button[data-cat]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          DL.cat = b.dataset.cat || 'all';
+          state.dlCat = DL.cat;
+          save();
+          renderDeliverables();
+        });
+      });
+    }
+    if (el.dlSort) {
+      el.dlSort.querySelectorAll('button[data-sort]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          DL.sort = b.dataset.sort === 'name' ? 'name' : 'new';
+          state.dlSort = DL.sort;
+          save();
+          renderDeliverables();
+        });
+      });
+    }
+    if (el.dlGrid) {
+      el.dlGrid.addEventListener('click', function (e) {
+        var card = e.target.closest('[data-dl-id]');
+        if (!card) return;
+        var id = card.getAttribute('data-dl-id');
+        var it = null;
+        for (var i = 0; i < DL.items.length; i++) {
+          if (DL.items[i].id === id) { it = DL.items[i]; break; }
+        }
+        if (it) openDeliverable(it);
+      });
+    }
+    if (el.dlModal) {
+      el.dlModal.addEventListener('click', function (e) {
+        if (e.target.dataset && e.target.dataset.close) closeDeliverable();
+      });
+    }
+    if (el.dlModalClose) el.dlModalClose.addEventListener('click', closeDeliverable);
+    if (el.dlCopyLink) el.dlCopyLink.addEventListener('click', copyDlLink);
+
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'visible') {
         if (SB.connected) pullAll().catch(function () {});
@@ -2791,6 +3548,8 @@
     cacheEls();
     var had = load();
     if (!had) seed();
+    DL.cat = state.dlCat || 'all';
+    DL.sort = state.dlSort === 'name' ? 'name' : 'new';
     if (!state.tasks.length) state.tasks = seedTasks();
     applyTheme(state.theme);
     el.todayLabel.textContent = koDate();
@@ -2807,6 +3566,7 @@
     renderCrew();
     loadBlog();
     renderBlog();
+    renderDeliverables();
     bind();
 
     var params = new URLSearchParams(location.search);

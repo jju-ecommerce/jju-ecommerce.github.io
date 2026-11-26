@@ -1,11 +1,16 @@
 /* 쭈대표 AI 오피스 · service worker */
-var CACHE = 'jju-office-v28';
+var CACHE = 'jju-office-v29';
 var ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './assets/office-floorplan.jpg',
+  './assets/jju-ecom-logo-transparent.png',
+  './assets/jnt-logo-luxury-mono.png',
+  './assets/coupang-breakeven-roas-396.csv',
+  './assets/coupang-ads-playbook-2026-11-26.md',
+  './assets/weekly-youtube-3picks-2026-11-23.md',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -14,6 +19,10 @@ var ASSETS = [
   './icons/favicon-32.png',
   './icons/logo-badge.png'
 ];
+
+/* 대용량 미디어는 미리 받지도, 캐시에 넣지도 않습니다.
+   (설치 시간·캐시 용량 낭비 + 영상 구간 요청(Range)이 캐시에 막히는 문제 방지) */
+var MEDIA_RE = /\.(mp4|webm|ogv|mov|m4v|mp3|m4a|wav)$/i;
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
@@ -89,7 +98,12 @@ self.addEventListener('fetch', function (e) {
   var url = new URL(req.url);
   if (url.origin !== location.origin) return; /* Supabase REST calls go straight to the network */
 
+  /* 영상은 브라우저 기본 처리에 맡깁니다(구간 요청·스트리밍). respondWith를 걸지 않습니다. */
   var dest = req.destination;
+  if (dest === 'video' || dest === 'audio' || MEDIA_RE.test(url.pathname)) return;
+  /* Range 요청(영상·대용량 탐색)도 가로채지 않습니다. */
+  if (req.headers.get('range')) return;
+
   var fresh = dest === 'document' || dest === 'script' || dest === 'style';
 
   if (fresh) {
@@ -122,6 +136,7 @@ self.addEventListener('fetch', function (e) {
     return;
   }
 
+  /* 이미지·CSV·MD·XLSX 등: 캐시 우선 + 뒤에서 갱신(오프라인에서도 자료실 목록이 열립니다) */
   e.respondWith(
     caches.match(req).then(function (hit) {
       if (hit) {
