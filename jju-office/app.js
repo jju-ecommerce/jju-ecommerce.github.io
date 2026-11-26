@@ -417,6 +417,7 @@
   var taskSig = '';
   var taskWrites = 0;        /* 지금 서버로 보내고 있는 할 일 쓰기 수 */
   var lastTaskWriteAt = 0;   /* 마지막 쓰기가 끝난 시각 — 그 전에 떠난 조회 결과는 버립니다 */
+  var taskGone = {};         /* 지금 지우는 중인 id — 그 전에 떠난 조회가 돌아와도 목록에 다시 올리지 않습니다 */
 
   function ownerLabel(id) {
     for (var i = 0; i < TASK_OWNERS.length; i++) {
@@ -778,10 +779,15 @@
 
   function removeTask(t) {
     var idx = state.tasks.indexOf(t);
+    taskGone[t.id] = Date.now();
     state.tasks = state.tasks.filter(function (x) { return x !== t; });
     renderTasks();
     if (!SB.connected) return;
-    taskWrite(sbDelete('office_tasks', t.id)).catch(function () {
+    taskWrite(sbDelete('office_tasks', t.id)).then(function () {
+      /* 서버에서 지워진 걸 확인한 뒤에 이 id를 풀어 줍니다(그 사이 조회가 와도 부활하지 않게) */
+      lastTaskWriteAt = Date.now();
+    }).catch(function () {
+      delete taskGone[t.id];
       if (idx >= 0) state.tasks.splice(idx, 0, t);
       renderTasks();
       toast('서버 삭제 실패 · 연결을 확인해 주세요');
@@ -790,7 +796,11 @@
 
   /* 서버 rows -> 화면. 서버에 아직 못 올린 항목(unsynced)은 목록에 남겨 둡니다. */
   function applyServerTasks(rows) {
-    var list = rows.map(taskFromRow);
+    var now = Date.now();
+    Object.keys(taskGone).forEach(function (id) {
+      if (now - taskGone[id] > 20000) delete taskGone[id];
+    });
+    var list = rows.filter(function (r) { return !taskGone[r.id]; }).map(taskFromRow);
     state.tasks.forEach(function (t) {
       if (!t.unsynced) return;
       var dup = list.some(function (x) { return x.id === t.id; });
