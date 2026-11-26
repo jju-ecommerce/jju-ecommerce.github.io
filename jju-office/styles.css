@@ -421,6 +421,9 @@ html[data-theme="dark"] .chip-gold { color: var(--gold); }
 .avatar.p-jju3 { background: linear-gradient(160deg, #6E7FA8, #44557C); }
 .avatar.p-boss { background: linear-gradient(160deg, #5C4A3A, #33281E); }
 
+html[data-theme="dark"] .avatar.p-boss { background: linear-gradient(160deg, #8C7256, #6A533E); }
+html[data-theme="dark"] .avatar { box-shadow: 0 2px 8px rgba(0, 0, 0, .35), 0 0 0 1px rgba(255, 240, 220, .08); }
+
 .msg-main { min-width: 0; max-width: calc(100% - 42px); }
 
 .msg-head {
