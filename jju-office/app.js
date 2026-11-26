@@ -140,6 +140,46 @@
     } catch (e) { return false; }
   }
 
+  /* ---------------- one-touch connect (URL hash) ---------------- */
+  /* 주소 끝에 #sb_url=...&sb_key=... 를 붙여 열면 서버 설정을 자동으로 저장하고
+     바로 연결합니다. 키는 저장소(localStorage)에만 남고 코드에는 남지 않습니다. */
+  function parseHashConfig() {
+    var raw = (window.location.hash || '').replace(/^#+/, '');
+    if (!raw) return null;
+    var url = '', key = '';
+    raw.split('&').forEach(function (pair) {
+      if (!pair) return;
+      var i = pair.indexOf('=');
+      var k = i === -1 ? pair : pair.slice(0, i);
+      var v = i === -1 ? '' : pair.slice(i + 1);
+      try {
+        k = decodeURIComponent(k.replace(/\+/g, ' '));
+        v = decodeURIComponent(v.replace(/\+/g, ' '));
+      } catch (e) { /* keep raw */ }
+      k = k.trim();
+      if (k === 'sb_url') url = v.trim();
+      else if (k === 'sb_key') key = v.trim();
+    });
+    if (!/^https?:\/\//i.test(url) || !key) return null;
+    return { url: url, key: key };
+  }
+
+  function stripHash() {
+    try {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    } catch (e) { /* ignore */ }
+  }
+
+  function applyHashConfig() {
+    var cfg = parseHashConfig();
+    if (!cfg) return false;
+    state.supabase.url = cfg.url;
+    state.supabase.key = cfg.key;
+    save();
+    stripHash();
+    return true;
+  }
+
   /* ---------------- seeds ---------------- */
   function seed() {
     if (state.messages.length) return;
@@ -528,7 +568,7 @@
 
   function flashServer(mode) { if (mode === 'ok' && SB.connected) setServerState('ok'); }
 
-  function connectStored() {
+  function connectStored(auto) {
     if (DEMO) { setServerState('none'); return; }
     if (!state.supabase.url || !state.supabase.key) {
       SB.connected = false;
@@ -536,7 +576,9 @@
       return;
     }
     SB.connected = true;
-    setServerState('none', '연결 정보 있음 · 동기화 확인 중');
+    setServerState('none', auto
+      ? '자동 연결 · 서버 확인 중'
+      : '연결 정보 있음 · 동기화 확인 중');
     pullAll().then(function () {
       setServerState('ok');
     }).catch(function (e) {
@@ -817,7 +859,9 @@
     var v = params.get('view');
     setView(v && document.getElementById('view-' + v) ? v : 'office');
 
-    connectStored();
+    var autoConnected = applyHashConfig();
+    connectStored(autoConnected);
+    if (autoConnected) toast('AI 서버에 자동 연결됐어요');
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
