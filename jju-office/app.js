@@ -694,7 +694,13 @@
     w.path = path;
     w.target = w.path.shift();
     w.showLatest = false;
-    w.mood = pickPhrase(cfg.moods.walk, w.mood);
+
+    var goalRoom = (MAP_NODES[goal] || {}).room;
+    var curRoom = (MAP_NODES[w.node] || {}).room;
+    w.moveLabel = goalRoom !== curRoom
+      ? (goalRoom === 'grand' ? '대회의실로 이동' : goalRoom === 'lounge' ? '라운지로 이동' : '지휘실로 복귀')
+      : '';
+    w.mood = w.moveLabel || pickPhrase(cfg.moods.walk, w.mood);
     w.moodUntil = now + 3400 + Math.random() * 1600;
     paintBubble(w);
     setWalkState(w, true);
@@ -702,6 +708,7 @@
 
   function arrive(w, now) {
     setWalkState(w, false);
+    w.moveLabel = '';
     var room = (MAP_NODES[w.node] || {}).room || 'command';
     var pool = (w.cfg.moods && w.cfg.moods[room]) || w.cfg.moods.command || ['대기 중'];
     var last = latestBy(w.id);
@@ -772,7 +779,7 @@
       w.moodUntil = now + 3800 + Math.random() * 3600;
       if (w.target) {
         w.showLatest = false;
-        w.mood = pickPhrase(w.cfg.moods.walk, w.mood);
+        w.mood = (w.moveLabel && Math.random() < 0.7) ? w.moveLabel : pickPhrase(w.cfg.moods.walk, w.mood);
       } else {
         var room = (MAP_NODES[w.node] || {}).room || 'command';
         var pool = (w.cfg.moods && w.cfg.moods[room]) || w.cfg.moods.command || ['대기 중'];
@@ -913,7 +920,7 @@
         id: c.id, cfg: c, node: c.station,
         x: st.x, y: st.y,
         path: [], target: null, trip: false,
-        idleUntil: 0, moodUntil: 0, mood: '', showLatest: false,
+        idleUntil: 0, moodUntil: 0, mood: '', moveLabel: '', showLatest: false,
         landTimer: 0, el: null
       };
 
@@ -947,6 +954,7 @@
       fig.addEventListener('click', function () { openSheet(c.id); });
 
       w.el = fig;
+      w.idleUntil = performance.now() + WALKERS.length * 1100 + Math.random() * 900;
       WALKERS.push(w);
       box.appendChild(fig);
       moveFig(w);

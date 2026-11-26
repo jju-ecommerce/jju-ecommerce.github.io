@@ -1783,8 +1783,8 @@ html[data-theme="dark"] .sheet-rooms button.here { background: linear-gradient(1
   .menu-item { font-size: 13px; }
   .map-avatar { width: 36px; height: 36px; font-size: 14px; }
   .map-name { font-size: 9.5px; }
-  .bub-txt { font-size: 10.5px; max-width: 150px; }
-  .map-bubble { max-width: 150px; }
+  .bub-txt { font-size: 10px; max-width: 124px; }
+  .map-bubble { max-width: 124px; }
   .zone-tag { font-size: 11px; padding: 4px 8px; }
   .zone-tag small { font-size: 9px; }
   .map-legend { font-size: 11.5px; }
