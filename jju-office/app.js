@@ -39,7 +39,7 @@
   ];
 
   var ROOMS = {
-    grand:   { meta: '🏛️ 총괄이사 · 쭈1 · 쭈2 · 쭈3 · 4명', placeholder: '대표님, 지시를 한 줄로 (@all = 전원)' },
+    grand:   { meta: '🏛️ 총괄이사 · 쭈1 · 쭈2 · 쭈3 · 4명', placeholder: '지시를 한 줄로 (@all = 전원)' },
     command: { meta: '👑 쭈대표 · 총괄이사 · 1:1', placeholder: '총괄이사에게 한 줄 지시' },
     lounge:  { meta: '☕ 자유 기록 · 아이디어와 공지', placeholder: '라운지에 남길 메모' }
   };

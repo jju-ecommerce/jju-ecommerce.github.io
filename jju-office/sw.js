@@ -1,5 +1,5 @@
 /* 쭈대표 AI 오피스 · service worker */
-var CACHE = 'jju-office-v1';
+var CACHE = 'jju-office-v2';
 var ASSETS = [
   './',
   './index.html',
@@ -38,6 +38,24 @@ self.addEventListener('fetch', function (e) {
 
   var url = new URL(req.url);
   if (url.origin !== location.origin) return; /* Supabase REST calls go straight to the network */
+
+  var dest = req.destination;
+  var fresh = dest === 'document' || dest === 'script' || dest === 'style';
+
+  if (fresh) {
+    e.respondWith(
+      fetch(req).then(function (res) {
+        if (res && res.ok) {
+          var copy = res.clone();
+          caches.open(CACHE).then(function (c) { c.put(req, copy); });
+        }
+        return res;
+      }).catch(function () {
+        return caches.match(req).then(function (hit) { return hit || caches.match('./index.html'); });
+      })
+    );
+    return;
+  }
 
   if (req.mode === 'navigate') {
     e.respondWith(

@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
 <div class="app" id="app">
@@ -61,7 +61,7 @@
         <div class="chat-log" id="chatLog" aria-live="polite"></div>
         <div class="composer">
           <button class="plus-btn" id="plusBtn" aria-label="멘션 빠른 입력" aria-expanded="false">+</button>
-          <input id="chatInput" type="text" autocomplete="off" placeholder="대표님, 지시를 한 줄로 (@all = 전원)" aria-label="회의실 지시 입력">
+          <input id="chatInput" type="text" autocomplete="off" placeholder="지시를 한 줄로 (@all = 전원)" aria-label="회의실 지시 입력">
           <button class="send-btn" id="sendBtn">보내기</button>
           <div class="mention-menu" id="mentionMenu" hidden>
             <button data-mention="@all">@all <small>전원</small></button>
@@ -364,6 +364,6 @@
 
   <noscript><p style="padding:20px;text-align:center">자바스크립트를 켜야 오피스가 열립니다.</p></noscript>
 </div>
-<script src="app.js" defer></script>
+<script src="app.js?v=2" defer></script>
 </body>
 </html>

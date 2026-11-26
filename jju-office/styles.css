@@ -389,8 +389,9 @@ html[data-theme="dark"] .chip-gold { color: var(--gold); }
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 12px 4px 6px 2px;
+  padding: 12px 8px 6px 2px;
   scrollbar-width: thin;
+  scrollbar-gutter: stable;
   scrollbar-color: rgba(150, 120, 85, .28) rgba(255, 255, 255, 0);
   display: flex;
   flex-direction: column;
