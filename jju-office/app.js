@@ -1703,6 +1703,7 @@
       el.serverStatus.textContent = note || '연결되지 않음 · 로컬 모드로 동작 중';
     }
     updateMap();
+    if (el.taskBadge) renderTasks();
   }
 
   function flashServer(mode) { if (mode === 'ok' && SB.connected) setServerState('ok'); }
