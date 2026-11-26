@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>쭈대표 AI 오피스</title>
-<meta name="description" content="쭈대표님 전용 AI 비서 4인방 관제 오피스 — 회의실·대시보드·소싱·스레드·유튜브·블로그·AI한도">
+<meta name="description" content="쭈대표님 전용 AI 비서 4인방 관제 오피스 — 오피스 맵·회의실·대시보드·소싱·스레드·유튜브·블로그·AI한도">
 <meta name="theme-color" content="#F6EDE0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="쭈대표 오피스">
@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="styles.css?v=9">
+<link rel="stylesheet" href="styles.css?v=10">
 </head>
 <body>
 <div class="app" id="app">
@@ -39,6 +39,7 @@
   </header>
 
   <nav class="menu-grid" aria-label="주요 메뉴">
+    <button class="menu-item" data-view="map"><span class="menu-ico">🗺️</span><span class="menu-label">오피스 맵</span></button>
     <button class="menu-item active" data-view="office"><span class="menu-ico">🏛️</span><span class="menu-label">회의실</span></button>
     <button class="menu-item" data-view="dashboard"><span class="menu-ico">📊</span><span class="menu-label">대시보드</span></button>
     <button class="menu-item" data-view="sourcing"><span class="menu-ico">🛒</span><span class="menu-label">소싱</span></button>
@@ -46,10 +47,45 @@
     <button class="menu-item" data-view="youtube"><span class="menu-ico">🎬</span><span class="menu-label">유튜브</span></button>
     <button class="menu-item" data-view="blog"><span class="menu-ico">✍️</span><span class="menu-label">블로그</span></button>
     <button class="menu-item" data-view="limits"><span class="menu-ico">⚡</span><span class="menu-label">AI한도</span></button>
-    <button class="menu-item" data-view="memo"><span class="menu-ico">📝</span><span class="menu-label">메모</span></button>
   </nav>
 
   <main id="main">
+
+    <!-- ============ 🗺️ 오피스 맵 ============ -->
+    <section class="view" id="view-map" aria-label="오피스 맵">
+      <div class="map-summary">
+        <span class="map-summary-org">🏢 제이엔티인터내셔날</span>
+        <span class="map-summary-sep" aria-hidden="true">·</span>
+        <span class="map-summary-live"><span class="live-dot" id="mapLiveDot"></span>4인방 ON</span>
+        <span class="map-summary-sep" aria-hidden="true">·</span>
+        <span class="map-summary-hint">공간 누르면 바로 입장</span>
+      </div>
+
+      <div class="card map-card">
+        <div class="map-stage" id="mapStage">
+          <img class="map-img" src="assets/office-floorplan.jpg" alt="쭈대표 오피스 탑다운 평면도 — 왼쪽 유리방 대회의실, 가운데 지휘실과 워크스테이션 6개, 오른쪽 아래 라운지 소파와 커피바" width="1402" height="1122" decoding="async">
+
+          <button type="button" class="map-zone zone-grand" data-map-room="grand" aria-label="대회의실 탭으로 입장">
+            <span class="zone-tag">🏛️ 대회의실<small>공동존 · 프로젝트</small></span>
+          </button>
+          <button type="button" class="map-zone zone-command" data-map-room="command" aria-label="지휘실 탭으로 입장">
+            <span class="zone-tag">👑 지휘실<small>컨트롤 타워</small></span>
+          </button>
+          <button type="button" class="map-zone zone-lounge" data-map-room="lounge" aria-label="라운지 탭으로 입장">
+            <span class="zone-tag">☕ 라운지<small>소파 · 커피바</small></span>
+          </button>
+
+          <div class="map-figs" id="mapFigs"></div>
+        </div>
+        <p class="map-legend">💡 구역을 누르면 회의실 탭으로 들어가고, 캐릭터를 누르면 최근 보고를 봅니다.</p>
+      </div>
+
+      <div class="card map-bar">
+        <div class="card-head"><h3>4인방 현재 위치</h3><span class="chip chip-soft" id="mapSyncChip">로컬 모드</span></div>
+        <div class="map-status" id="mapStatus"></div>
+        <p class="tiny-note">말풍선과 위치는 AI 서버(office_messages)에 올라온 각 비서의 최신 보고를 따릅니다. 연결 전에는 기기에 저장된 최근 대화를 보여 줍니다.</p>
+      </div>
+    </section>
 
     <!-- ============ 회의실 ============ -->
     <section class="view active" id="view-office" aria-label="회의실">
@@ -496,6 +532,33 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <!-- 캐릭터 빠른 시트 -->
+  <div class="map-sheet" id="mapSheet" hidden>
+    <div class="map-sheet-backdrop" data-sheet-close="1"></div>
+    <div class="map-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheetName">
+      <span class="sheet-grip" aria-hidden="true"></span>
+      <div class="sheet-head">
+        <span class="map-avatar sheet-avatar" id="sheetAvatar">총</span>
+        <div class="sheet-head-txt">
+          <h3 id="sheetName">총괄이사</h3>
+          <p id="sheetMeta">본폰 · 지휘실</p>
+        </div>
+        <button class="modal-close" id="sheetClose" aria-label="닫기">✕</button>
+      </div>
+      <div class="sheet-report">
+        <span class="sheet-label">최근 보고</span>
+        <p id="sheetBody"></p>
+        <span class="sheet-time" id="sheetTime"></span>
+      </div>
+      <p class="sheet-guide">들어갈 방을 고르면 회의실 탭으로 바로 이동합니다.</p>
+      <div class="sheet-rooms" id="sheetRooms">
+        <button type="button" data-map-room="grand">🏛️ 대회의실</button>
+        <button type="button" data-map-room="command">👑 지휘실</button>
+        <button type="button" data-map-room="lounge">☕ 라운지</button>
+      </div>
+    </div>
+  </div>
+
   <!-- AI 서버 설정 모달 -->
   <div class="modal" id="serverModal" role="dialog" aria-modal="true" aria-labelledby="serverModalTitle" hidden>
     <div class="modal-backdrop" data-close="1"></div>
@@ -528,6 +591,6 @@
 
   <noscript><p style="padding:20px;text-align:center">자바스크립트를 켜야 오피스가 열립니다.</p></noscript>
 </div>
-<script src="app.js?v=12" defer></script>
+<script src="app.js?v=13" defer></script>
 </body>
 </html>

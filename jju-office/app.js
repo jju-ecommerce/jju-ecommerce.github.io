@@ -304,6 +304,7 @@
     state.messages.sort(function (a, b) { return new Date(a.created_at) - new Date(b.created_at); });
     save();
     if (msg.room === state.room) renderChat();
+    updateMap();
   }
 
   function sendMessage() {
@@ -470,6 +471,181 @@
         '<div class="crew-tags">' + c.tags.map(function (t) { return '<span class="tag">' + t + '</span>'; }).join('') + '</div>';
       list.appendChild(card);
     });
+  }
+
+  /* ---------------- 🗺️ 오피스 맵 ---------------- */
+  /* 캐릭터 좌표는 평면도(1402×1122) 기준 비율입니다.
+     말풍선은 각 비서가 office_messages에 올린 최신 보고를 18자로 줄여 보여 줍니다. */
+  var MAP_CAST = [
+    { id: 'director', x: 58, y: 19, bubble: 'right', place: '👑 지휘실', duty: '지휘실 대기 · 지시 대기' },
+    { id: 'jju1', x: 44, y: 35, bubble: 'up', place: '👑 지휘실 워크스테이션', duty: '1번 채널 대기 중' },
+    { id: 'jju2', x: 67, y: 41, bubble: 'up', place: '👑 지휘실 워크스테이션', duty: '2번 채널 대기 중' },
+    { id: 'jju3', x: 45, y: 59, bubble: 'up', place: '👑 지휘실 워크스테이션', duty: '3번 채널 대기 중' }
+  ];
+
+  var ROOM_LABEL = { grand: '🏛️ 대회의실', command: '👑 지휘실', lounge: '☕ 라운지' };
+
+  function latestBy(author) {
+    var latest = null;
+    state.messages.forEach(function (m) {
+      if (m.author !== author) return;
+      if (!latest || new Date(m.created_at) > new Date(latest.created_at)) latest = m;
+    });
+    return latest;
+  }
+
+  function clipText(text, max) {
+    var plain = String(text || '').replace(/\s+/g, ' ').trim();
+    var chars = Array.from(plain);
+    if (chars.length <= max) return chars.join('');
+    return chars.slice(0, max - 1).join('') + '…';
+  }
+
+  function renderMapFigures() {
+    var box = el.mapFigs;
+    if (!box) return;
+    box.innerHTML = '';
+    MAP_CAST.forEach(function (c) {
+      var p = PEOPLE[c.id];
+      var fig = document.createElement('button');
+      fig.type = 'button';
+      fig.className = 'map-fig fig-' + c.id;
+      fig.dataset.person = c.id;
+      fig.dataset.bubble = c.bubble;
+      fig.style.left = c.x + '%';
+      fig.style.top = c.y + '%';
+      fig.setAttribute('aria-label', p.name + ' 최근 보고 보기');
+
+      var bub = document.createElement('span');
+      bub.className = 'map-bubble';
+      bub.dataset.bubbleFor = c.id;
+      bub.textContent = c.duty;
+
+      var av = document.createElement('span');
+      av.className = 'map-avatar ' + p.cls;
+      av.textContent = p.initial;
+
+      var nm = document.createElement('span');
+      nm.className = 'map-name';
+      nm.textContent = p.name;
+
+      fig.appendChild(bub);
+      fig.appendChild(av);
+      fig.appendChild(nm);
+      fig.addEventListener('click', function () { openSheet(c.id); });
+      box.appendChild(fig);
+    });
+  }
+
+  function updateMap() {
+    if (!el.mapFigs) return;
+    var connected = !!SB.connected;
+
+    if (el.mapSyncChip) {
+      el.mapSyncChip.textContent = connected ? '실시간 연결' : '로컬 모드';
+      el.mapSyncChip.classList.toggle('chip-ok', connected);
+      el.mapSyncChip.classList.toggle('chip-soft', !connected);
+    }
+    if (el.mapLiveDot) el.mapLiveDot.classList.toggle('off', !connected);
+
+    var rows = MAP_CAST.map(function (c) {
+      var last = latestBy(c.id);
+      var bub = el.mapFigs.querySelector('[data-bubble-for="' + c.id + '"]');
+      if (bub) bub.textContent = last ? clipText(last.body, 18) : c.duty;
+      return {
+        c: c,
+        p: PEOPLE[c.id],
+        last: last,
+        place: last && ROOM_LABEL[last.room] ? ROOM_LABEL[last.room] : c.place,
+        status: last ? clipText(last.body, 22) : c.duty
+      };
+    });
+
+    if (!el.mapStatus) return;
+    el.mapStatus.innerHTML = '';
+    rows.forEach(function (row) {
+      var card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'map-stat';
+      card.setAttribute('aria-label', row.p.name + ' 빠른 시트 열기');
+      card.addEventListener('click', function () { openSheet(row.c.id); });
+
+      var av = document.createElement('span');
+      av.className = 'map-avatar sm ' + row.p.cls;
+      av.textContent = row.p.initial;
+
+      var txt = document.createElement('span');
+      txt.className = 'map-stat-txt';
+
+      var top = document.createElement('span');
+      top.className = 'map-stat-top';
+      var nm = document.createElement('b');
+      nm.textContent = row.p.name;
+      var pl = document.createElement('i');
+      pl.textContent = row.place;
+      top.appendChild(nm);
+      top.appendChild(pl);
+
+      var st = document.createElement('span');
+      st.className = 'map-stat-status';
+      st.textContent = row.status;
+
+      txt.appendChild(top);
+      txt.appendChild(st);
+      card.appendChild(av);
+      card.appendChild(txt);
+      el.mapStatus.appendChild(card);
+    });
+  }
+
+  function openSheet(id) {
+    var c = MAP_CAST.filter(function (x) { return x.id === id; })[0];
+    if (!c || !el.mapSheet) return;
+    var p = PEOPLE[id];
+    var last = latestBy(id);
+
+    el.sheetAvatar.className = 'map-avatar sheet-avatar ' + p.cls;
+    el.sheetAvatar.textContent = p.initial;
+    el.sheetName.textContent = p.name;
+    el.sheetMeta.textContent = p.device + ' · ' + (last && ROOM_LABEL[last.room] ? ROOM_LABEL[last.room] : c.place);
+    el.sheetBody.textContent = last
+      ? clipText(last.body, 220)
+      : '아직 올린 보고가 없습니다. 회의실에서 ' + p.name + '에게 지시하면 최근 보고가 여기에 뜹니다.';
+    el.sheetTime.textContent = last ? timeLabel(last.created_at) + ' · ' + (ROOM_LABEL[last.room] || '') : '';
+
+    el.sheetRooms.querySelectorAll('[data-map-room]').forEach(function (b) {
+      var here = !!(last && last.room === b.dataset.mapRoom);
+      b.classList.toggle('here', here);
+      b.setAttribute('aria-current', here ? 'true' : 'false');
+    });
+
+    el.mapSheet.hidden = false;
+  }
+
+  function closeSheet() {
+    if (el.mapSheet) el.mapSheet.hidden = true;
+  }
+
+  function selectRoom(room) {
+    if (!ROOMS[room]) return;
+    state.room = room;
+    document.querySelectorAll('.room-tab').forEach(function (b) {
+      var on = b.dataset.room === room;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    el.roomMeta.textContent = ROOMS[room].meta;
+    el.chatInput.placeholder = ROOMS[room].placeholder;
+    el.chatInput.blur();
+    renderChat();
+    save();
+  }
+
+  function goRoom(room) {
+    if (!ROOMS[room]) return;
+    selectRoom(room);
+    closeSheet();
+    setView('office');
   }
 
   /* ---------------- AI한도 ---------------- */
@@ -988,6 +1164,7 @@
       el.serverStatus.classList.remove('ok', 'err');
       el.serverStatus.textContent = note || '연결되지 않음 · 로컬 모드로 동작 중';
     }
+    updateMap();
   }
 
   function flashServer(mode) { if (mode === 'ok' && SB.connected) setServerState('ok'); }
@@ -1060,6 +1237,7 @@
       save();
       if (state.view === 'office') renderChat();
     }
+    updateMap();
   }
 
   function mergeTasks(rows) {
@@ -1168,6 +1346,18 @@
     el.memoProgress = document.getElementById('memoProgress');
     el.crewRow = document.getElementById('crewRow');
     el.crewList = document.getElementById('crewList');
+    el.mapFigs = document.getElementById('mapFigs');
+    el.mapStatus = document.getElementById('mapStatus');
+    el.mapSyncChip = document.getElementById('mapSyncChip');
+    el.mapLiveDot = document.getElementById('mapLiveDot');
+    el.mapSheet = document.getElementById('mapSheet');
+    el.sheetAvatar = document.getElementById('sheetAvatar');
+    el.sheetName = document.getElementById('sheetName');
+    el.sheetMeta = document.getElementById('sheetMeta');
+    el.sheetBody = document.getElementById('sheetBody');
+    el.sheetTime = document.getElementById('sheetTime');
+    el.sheetRooms = document.getElementById('sheetRooms');
+    el.sheetClose = document.getElementById('sheetClose');
     el.limitRows = document.getElementById('limitRows');
     el.limitSaved = document.getElementById('limitSaved');
     el.kwList = document.getElementById('kwList');
@@ -1207,19 +1397,25 @@
 
     document.querySelectorAll('.room-tab').forEach(function (b) {
       b.addEventListener('click', function () {
-        state.room = b.dataset.room;
-        document.querySelectorAll('.room-tab').forEach(function (x) {
-          var on = x === b;
-          x.classList.toggle('active', on);
-          x.setAttribute('aria-selected', on ? 'true' : 'false');
-        });
-        el.roomMeta.textContent = ROOMS[state.room].meta;
-        el.chatInput.placeholder = ROOMS[state.room].placeholder;
-        el.chatInput.blur();
-        renderChat();
-        save();
+        selectRoom(b.dataset.room);
       });
     });
+
+    document.querySelectorAll('.map-zone').forEach(function (b) {
+      b.addEventListener('click', function () { goRoom(b.dataset.mapRoom); });
+    });
+
+    if (el.sheetRooms) {
+      el.sheetRooms.querySelectorAll('[data-map-room]').forEach(function (b) {
+        b.addEventListener('click', function () { goRoom(b.dataset.mapRoom); });
+      });
+    }
+    if (el.mapSheet) {
+      el.mapSheet.addEventListener('click', function (e) {
+        if (e.target.dataset.sheetClose) closeSheet();
+      });
+    }
+    if (el.sheetClose) el.sheetClose.addEventListener('click', closeSheet);
 
     el.sendBtn.addEventListener('click', sendMessage);
     el.chatInput.addEventListener('keydown', function (e) {
@@ -1253,7 +1449,7 @@
       if (e.target.dataset.close) closeModal();
     });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') { closeModal(); hideMentions(); }
+      if (e.key === 'Escape') { closeModal(); closeSheet(); hideMentions(); }
     });
     document.getElementById('sbSave').addEventListener('click', saveServer);
     document.getElementById('sbTest').addEventListener('click', testFromModal);
@@ -1301,6 +1497,8 @@
       b.setAttribute('aria-selected', on ? 'true' : 'false');
     });
     renderChat();
+    renderMapFigures();
+    updateMap();
     renderTasks();
     renderCrew();
     loadLimits();

@@ -1,10 +1,11 @@
 /* 쭈대표 AI 오피스 · service worker */
-var CACHE = 'jju-office-v9';
+var CACHE = 'jju-office-v10';
 var ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
+  './assets/office-floorplan.jpg',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
