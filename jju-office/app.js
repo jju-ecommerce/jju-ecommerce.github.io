@@ -144,7 +144,7 @@
   function seed() {
     if (state.messages.length) return;
     state.messages = [
-      { id: 'seed-1', room: 'grand', author: 'director', author_name: '총괄이사', body: '[11/26 출근 보고] 3채널 6편 예약 완료했고, [10회] 대본도 시트 12행에 올려 뒀습니다.', created_at: iso(240) },
+      { id: 'seed-1', room: 'grand', author: 'director', author_name: '총괄이사', body: '[11/26] 3채널 6편 예약 완료, [10회] 대본도 시트 12행 등록.', created_at: iso(240) },
       { id: 'seed-2', room: 'grand', author: 'jju1', author_name: '쭈1', body: '1번 폰 대기 중입니다. 12:31 · 19:21 발행 확인할게요.', created_at: iso(236) },
       { id: 'seed-3', room: 'grand', author: 'jju2', author_name: '쭈2', body: '2번 대기 중입니다. 11:10 · 21:30 확인하고 링크 올리겠습니다.', created_at: iso(234) },
       { id: 'seed-4', room: 'grand', author: 'jju3', author_name: '쭈3', body: '3번 대기 중입니다. 11:50 · 18:40이랑 업리카 세션 보겠습니다.', created_at: iso(232) },
