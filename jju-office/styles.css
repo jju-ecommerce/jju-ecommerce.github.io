@@ -1522,6 +1522,11 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
   transition: transform .18s;
 }
 
+.map-avatar.p-director { background: linear-gradient(160deg, #A9702F, #6E451C); }
+.map-avatar.p-jju1 { background: linear-gradient(160deg, #4E9A6E, #2F6F48); }
+.map-avatar.p-jju2 { background: linear-gradient(160deg, #B2705F, #8A4A3C); }
+.map-avatar.p-jju3 { background: linear-gradient(160deg, #6E7FA8, #44557C); }
+
 .map-avatar::after {
   content: "";
   position: absolute;
@@ -1650,7 +1655,7 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
   width: min(560px, 100%);
   max-height: 82dvh;
   overflow-y: auto;
-  padding: 8px 18px calc(16px + env(safe-area-inset-bottom));
+  padding: 8px 18px calc(22px + env(safe-area-inset-bottom));
   background: var(--card);
   border: 1px solid var(--line);
   border-bottom: none;
