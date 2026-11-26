@@ -1558,7 +1558,7 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
   bottom: calc(100% - 2px);
   left: 50%;
   transform: translateX(-50%);
-  max-width: 122px;
+  max-width: 104px;
   padding: 4px 7px;
   border-radius: 9px;
   background: rgba(24, 18, 12, .9);
@@ -1590,14 +1590,17 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
 }
 
 .map-fig[data-bubble="right"] .map-bubble {
-  left: calc(50% + 16px);
-  bottom: 3px;
+  left: calc(50% + 14px);
+  top: 5px;
+  bottom: auto;
+  max-width: 100px;
   transform: none;
 }
 
 .map-fig[data-bubble="right"] .map-bubble::after {
   left: -4px;
-  bottom: 9px;
+  top: 8px;
+  bottom: auto;
   margin-left: 0;
   border: none;
   border-left: 1px solid rgba(255, 240, 214, .16);
