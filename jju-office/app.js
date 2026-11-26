@@ -535,9 +535,12 @@
       fig.addEventListener('click', function () { openSheet(c.id); });
       box.appendChild(fig);
     });
+    updateMap(true);
   }
 
-  function updateMap() {
+  var mapSig = '';
+
+  function updateMap(force) {
     if (!el.mapFigs) return;
     var connected = !!SB.connected;
 
@@ -562,6 +565,14 @@
     });
 
     if (!el.mapStatus) return;
+
+    /* 4.5초 폴링마다 카드 DOM을 다시 만들면 누르던 탭이 끊깁니다. 바뀐 게 없으면 그대로 둡니다. */
+    var sig = (connected ? '1' : '0') + '|' + rows.map(function (r) {
+      return r.c.id + '·' + r.place + '·' + r.status;
+    }).join('|');
+    if (!force && sig === mapSig) return;
+    mapSig = sig;
+
     el.mapStatus.innerHTML = '';
     rows.forEach(function (row) {
       var card = document.createElement('button');
@@ -1498,7 +1509,6 @@
     });
     renderChat();
     renderMapFigures();
-    updateMap();
     renderTasks();
     renderCrew();
     loadLimits();
