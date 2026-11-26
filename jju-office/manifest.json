@@ -1,7 +1,7 @@
 {
   "name": "쭈대표 AI 오피스",
   "short_name": "쭈대표 오피스",
-  "description": "쭈대표님 전용 AI 비서 4인방 관제 오피스 — 회의실·대시보드·소싱·스레드·유튜브·메모",
+  "description": "쭈대표님 전용 AI 비서 4인방 관제 오피스 — 회의실·대시보드·소싱·스레드·유튜브·할 일",
   "lang": "ko",
   "dir": "ltr",
   "start_url": "./",
@@ -22,6 +22,6 @@
   "shortcuts": [
     { "name": "회의실", "short_name": "회의실", "url": "./?view=office", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "대시보드", "short_name": "대시보드", "url": "./?view=dashboard", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
-    { "name": "메모", "short_name": "메모", "url": "./?view=memo", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+    { "name": "할 일", "short_name": "할 일", "url": "./?view=tasks", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
   ]
 }

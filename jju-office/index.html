@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>쭈대표 AI 오피스</title>
-<meta name="description" content="쭈대표님 전용 AI 비서 4인방 관제 오피스 — 오피스 맵·회의실·대시보드·소싱·스레드·유튜브·블로그·AI한도">
+<meta name="description" content="쭈대표님 전용 AI 비서 4인방 관제 오피스 — 오피스 맵·회의실·대시보드·소싱·스레드·유튜브·블로그·할 일">
 <meta name="theme-color" content="#F6EDE0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="쭈대표 오피스">
@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="styles.css?v=16">
+<link rel="stylesheet" href="styles.css?v=17">
 </head>
 <body>
 <div class="app" id="app">
@@ -46,7 +46,7 @@
     <button class="menu-item" data-view="threads"><span class="menu-ico">🧵</span><span class="menu-label">스레드</span></button>
     <button class="menu-item" data-view="youtube"><span class="menu-ico">🎬</span><span class="menu-label">유튜브</span></button>
     <button class="menu-item" data-view="blog"><span class="menu-ico">✍️</span><span class="menu-label">블로그</span></button>
-    <button class="menu-item" data-view="limits"><span class="menu-ico">⚡</span><span class="menu-label">AI한도</span></button>
+    <button class="menu-item" data-view="tasks"><span class="menu-ico">📋</span><span class="menu-label">할 일</span></button>
   </nav>
 
   <main id="main">
@@ -409,108 +409,47 @@
       </div>
     </section>
 
-    <!-- ============ ⚡ AI한도 ============ -->
-    <section class="view" id="view-limits" aria-label="AI한도">
+    <!-- ============ 📋 할 일 ============ -->
+    <section class="view" id="view-tasks" aria-label="할 일">
       <div class="card">
-        <div class="card-head"><h3>피클 4인방 릴레이 순서</h3><span class="chip chip-soft">본폰 → 3번 폰</span></div>
-        <div class="relay" role="list" aria-label="릴레이 순서">
-          <div class="relay-step" role="listitem"><span class="relay-ico">🏛️</span><b>총괄이사</b><small>본폰</small></div>
-          <span class="relay-arrow" aria-hidden="true">→</span>
-          <div class="relay-step" role="listitem"><span class="relay-ico">1️⃣</span><b>쭈1</b><small>1번 폰</small></div>
-          <span class="relay-arrow" aria-hidden="true">→</span>
-          <div class="relay-step" role="listitem"><span class="relay-ico">2️⃣</span><b>쭈2</b><small>2번 폰</small></div>
-          <span class="relay-arrow" aria-hidden="true">→</span>
-          <div class="relay-step" role="listitem"><span class="relay-ico">3️⃣</span><b>쭈3</b><small>3번 폰</small></div>
+        <div class="card-head">
+          <h3>📋 오늘 할 일</h3>
+          <span class="chip chip-gold" id="taskBadge">진행 중 0건</span>
         </div>
-        <div class="guide-box">
-          <b>확인 위치</b>
-          <p>각 기기 피클 앱 → <b>나의 피클</b> 탭 → <b>일일 사용량 한도</b> 카드</p>
-          <ul class="dot-list">
-            <li>사용량은 매일 <b>새벽 4시</b>에 초기화됩니다.</li>
-            <li>같은 카드의 <b>한도 초기화 티켓</b> 줄에서 전체·절반 티켓 보유 수를 확인합니다.</li>
-          </ul>
-        </div>
-        <p class="muted-note">사용량 수치는 보안상 각 기기 앱에서만 보이고 이 화면으로 자동 수집되지 않습니다. 아래에서 기기별 상태만 직접 눌러 기록해 두세요.</p>
-      </div>
-
-      <div class="card">
-        <div class="card-head"><h3>기기별 상태 기록</h3><span class="chip chip-soft" id="limitSaved">미기록</span></div>
-        <div class="limit-rows" id="limitRows"></div>
-        <p class="tiny-note">상태는 이 브라우저에만 저장됩니다. 같은 상태를 한 번 더 누르면 미기록으로 돌아갑니다.</p>
-      </div>
-
-      <div class="card">
-        <div class="card-head"><h3>Supabase</h3><span class="chip chip-warn">Free Plan</span></div>
-        <p class="sub-line">juhwan7812@gmail.com · 2026-11-26 대시보드 확인</p>
-        <div class="limit-alert">
-          <b>Egress 무료 한도 초과</b>
-          <p>대시보드 안내 — 이 상태가 계속되면 <b>2026년 12월 18일부터</b> 프로젝트가 제한됩니다. 사용량을 줄이거나 Pro로 올려야 합니다.</p>
-        </div>
-        <ul class="meters">
-          <li>
-            <div class="meter-head"><span>Egress</span><b class="over">6.19 / 5 GB · 124%</b></div>
-            <div class="meter over"><i style="width:100%"></i></div>
-          </li>
-          <li>
-            <div class="meter-head"><span>Database</span><b>63 / 500 MB · 13%</b></div>
-            <div class="meter"><i style="width:12.6%"></i></div>
-          </li>
-          <li>
-            <div class="meter-head"><span>Monthly active users</span><b>2 / 50,000 · 0.004%</b></div>
-            <div class="meter"><i style="width:2%"></i></div>
-          </li>
-        </ul>
-        <p class="tiny-note">그 외 — 파일 저장 0 / 1 GB · 로그 수집 0.25 / 1 GB</p>
-      </div>
-
-      <div class="card">
-        <div class="card-head"><h3>Claude Pro · ChatGPT</h3><span class="chip chip-soft">실시간 연동 없음</span></div>
-        <ul class="status-list">
-          <li>
-            <span class="ico">🅰️</span>
-            <div class="status-body"><b>Claude Pro — 5시간 세션 · 주간 한도</b><p>5시간 세션 한도와 주간 한도가 따로 돌아갑니다. 사용량은 Claude 앱·웹의 설정 → 사용량 화면에서만 보입니다.</p></div>
-            <span class="chip chip-soft">앱 확인</span>
-          </li>
-          <li>
-            <span class="ico">🟢</span>
-            <div class="status-body"><b>ChatGPT Plus — 모델별 5시간 · 주간 한도</b><p>모델마다 5시간·주간 한도가 다릅니다. 사용량은 ChatGPT 설정 화면에서만 보입니다.</p></div>
-            <span class="chip chip-soft">앱 확인</span>
-          </li>
-        </ul>
-        <div class="limit-memo">
-          <b>12월 변경 안내</b>
-          <p>12월부터 ChatGPT(Plus·Pro·Business)와 Codex 사용량이 토큰 기준으로 한 화면에 통합됩니다. 정확한 적용 날짜는 아직 공지되지 않았습니다. <small>(OpenAI 도움말 · 11/26 확인)</small></p>
-        </div>
-        <p class="muted-note">이 화면은 두 서비스의 사용량을 API로 읽어오지 않습니다. 위 한도 구조만 정리해 둔 것이고, 실제 잔량은 각 앱에서 확인해 주세요.</p>
-      </div>
-
-      <div class="card">
-        <div class="card-head"><h3>이 화면의 값</h3></div>
-        <ul class="dot-list">
-          <li>외부 한도는 <b>2026-11-26</b>에 Supabase 대시보드에서 직접 확인한 값입니다.</li>
-          <li>자동으로 갱신되지 않으니, 숫자가 바뀌었으면 알려 주세요. 다시 확인해 반영합니다.</li>
-          <li>기기별 상태 기록은 이 브라우저(localStorage)에만 남습니다. 공개 저장소에는 아무 값도 올라가지 않습니다.</li>
-        </ul>
-      </div>
-    </section>
-
-    <!-- ============ 메모 ============ -->
-    <section class="view" id="view-memo" aria-label="메모">
-      <div class="card">
-        <div class="card-head"><h3>오늘 할 일</h3><span class="chip chip-soft" id="memoProgress">0/0</span></div>
-        <ul class="todo-list" id="todoList"></ul>
-        <form class="todo-add" id="todoForm">
-          <input id="todoInput" type="text" autocomplete="off" placeholder="할 일을 입력하고 Enter">
-          <button type="submit">추가</button>
+        <p class="muted-note" id="taskSummary">대표님 결정 대기 0건 · 완료 0건</p>
+        <form class="task-add" id="taskForm">
+          <input id="taskInput" type="text" autocomplete="off" placeholder="할 일을 입력하고 Enter">
+          <div class="task-add-row">
+            <select id="taskOwner" aria-label="담당 선택">
+              <option value="boss">대표님 결정</option>
+              <option value="director">총괄이사</option>
+              <option value="jju1">쭈1</option>
+              <option value="jju2">쭈2</option>
+              <option value="jju3">쭈3</option>
+            </select>
+            <button type="submit">추가</button>
+          </div>
         </form>
+        <p class="tiny-note" id="taskSyncNote">이 기기에만 저장 · AI 서버를 연결하면 4인방과 실시간 공유</p>
       </div>
+
       <div class="card">
-        <div class="card-head"><h3>홈 화면에 추가</h3></div>
+        <div class="card-head"><h3>진행 중</h3><span class="chip chip-soft" id="taskOpenCount">0건</span></div>
+        <ul class="todo-list" id="taskOpenList"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>완료</h3><span class="chip chip-soft" id="taskDoneCount">0건</span></div>
+        <ul class="todo-list" id="taskDoneList"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>이 화면의 값</h3><span class="chip chip-soft" id="taskServerChip">기기 저장</span></div>
         <ul class="dot-list">
-          <li>안드로이드 크롬 — 오른쪽 위 ⋮ → <b>앱 설치</b></li>
-          <li>아이폰 사파리 — 공유 → <b>홈 화면에 추가</b></li>
+          <li>할 일은 Supabase <b>office_tasks</b> 테이블과 동기화됩니다(AI 서버 연결 시).</li>
+          <li>체크·삭제는 누르는 즉시 서버에 반영되고, 4.5초 주기로 다른 기기와 맞춰집니다.</li>
+          <li>AI 서버가 연결되지 않으면 이 브라우저(localStorage)에만 저장됩니다.</li>
         </ul>
-        <p class="muted-note">메모는 이 기기에 저장됩니다. AI 서버를 연결하면 office_tasks 테이블과도 동기화됩니다.</p>
       </div>
     </section>
 
@@ -528,7 +467,7 @@
   <nav class="bottom-nav" aria-label="하단 메뉴">
     <button class="bn-item" data-view="assistants"><span>🤖</span>비서</button>
     <button class="bn-item active" data-view="office"><span>💬</span>대화</button>
-    <button class="bn-item" data-view="memo"><span>📁</span>메모</button>
+    <button class="bn-item" data-view="tasks"><span>📋</span>할 일</button>
   </nav>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -592,6 +531,6 @@
 
   <noscript><p style="padding:20px;text-align:center">자바스크립트를 켜야 오피스가 열립니다.</p></noscript>
 </div>
-<script src="app.js?v=21" defer></script>
+<script src="app.js?v=22" defer></script>
 </body>
 </html>

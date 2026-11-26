@@ -44,14 +44,21 @@
     lounge:  { meta: '☕ 자유 기록 · 아이디어와 공지', placeholder: '라운지에 남길 메모' }
   };
 
+  /* 2026-11-26 오피스 기준 실제 진행 중인 할 일 — AI 서버 미연결 시 이 기기 목록으로 씁니다. */
   var TASKS_SEED = [
-    '스레드 3채널 6편 발행 확인 (2번 11:10·21:30 / 3번 11:50·18:40 / 1번 12:31·19:21)',
-    '일일 소싱 33~36행 판매가 확정 검토',
-    '[10회] 4050 AI, 이렇게 시작하세요 QPrompt 멘트로 촬영 준비',
-    '원고 무단 복사 4계정 대응 결정 (@liquidgroove · @mooni.lab.kr · @susieq286 · @hopkoohq)',
-    '에이블리 77% 페이백 참여 여부 확인 (12/1~3 · 12/11까지 사용)',
-    '데스크탑(컴퓨존 i51722) 램 32GB·윈도우 11 추가 여부'
+    { title: '쭈3(3번 폰) 오피스 외부 연동 승인하기', owner: 'boss' },
+    { title: '에이블리 12/1~3 77% 페이백 참여 여부 결정', owner: 'boss' },
+    { title: '유튜브 [10회] 4050 AI 이렇게 시작하세요 QPrompt 확인·촬영', owner: 'boss' },
+    { title: '컴퓨존 데스크탑 i51722 램 32GB·윈도우·배송지 결정', owner: 'boss' },
+    { title: '소싱 시트 33~36행 검토 및 목요일 소싱 재개 여부 결정', owner: 'boss' },
+    { title: '내일(11/27)부터 도매에빠지다 최신상품순 블로그 작성 개시', owner: 'jju2' }
   ];
+
+  function seedTasks() {
+    return TASKS_SEED.map(function (t) {
+      return { id: uid(), title: t.title, owner: t.owner, done: false, created_at: new Date().toISOString() };
+    });
+  }
 
   /* ---------------- state ---------------- */
   var state = {
@@ -131,7 +138,16 @@
       state.theme = s.theme === 'dark' ? 'dark' : 'light';
       state.room = ROOMS[s.room] ? s.room : 'grand';
       state.messages = Array.isArray(s.messages) ? s.messages : [];
-      state.tasks = Array.isArray(s.tasks) ? s.tasks : [];
+      state.tasks = (Array.isArray(s.tasks) ? s.tasks : []).map(function (t) {
+        return {
+          id: (t && t.id) || uid(),
+          title: String((t && t.title) || ''),
+          owner: (t && PEOPLE[t.owner]) ? t.owner : 'boss',
+          done: !!(t && t.done),
+          created_at: (t && t.created_at) || new Date().toISOString(),
+          unsynced: !!(t && t.unsynced)
+        };
+      }).filter(function (t) { return t.title; });
       if (s.supabase && typeof s.supabase === 'object') {
         state.supabase.url = s.supabase.url || '';
         state.supabase.key = s.supabase.key || '';
@@ -192,9 +208,7 @@
       { id: 'seed-6', room: 'lounge', author: 'director', author_name: '총괄이사', body: '라운지 — 자유 기록. 아이디어나 공지를 남겨두면 회의실 지시로 이어서 처리합니다.', created_at: iso(228) }
     ];
     if (!state.tasks.length) {
-      state.tasks = TASKS_SEED.map(function (t) {
-        return { id: uid(), title: t, done: false };
-      });
+      state.tasks = seedTasks();
     }
     save();
   }
@@ -219,6 +233,10 @@
       el.main.scrollTop = 0;
       var v = target;
       v.scrollTop = 0;
+    }
+    if (name === 'tasks') {
+      renderTasks();
+      if (SB.connected) pullTasks().catch(function () {});
     }
     /* 오피스 맵을 보고 있을 때만 캐릭터가 걸어 다닙니다 */
     if (name === 'map') {
@@ -376,73 +394,191 @@
     save();
   }
 
-  /* ---------------- tasks ---------------- */
-  function renderTasks() {
-    var list = el.todoList;
-    list.innerHTML = '';
-    if (!state.tasks.length) {
-      var p = document.createElement('li');
-      p.className = 'todo-empty';
-      p.textContent = '할 일이 없습니다. 아래에 추가해 보세요.';
-      list.appendChild(p);
+  /* ---------------- 📋 할 일 ---------------- */
+  /* Supabase office_tasks 실제 컬럼: id · title · owner · done · due_date · created_at · updated_at
+     AI 서버가 붙으면 서버 목록이 기준이고, 연결 전에는 이 기기(localStorage)에만 담깁니다. */
+
+  var TASK_OWNERS = [
+    { id: 'boss', label: '대표님 결정' },
+    { id: 'director', label: '총괄이사' },
+    { id: 'jju1', label: '쭈1' },
+    { id: 'jju2', label: '쭈2' },
+    { id: 'jju3', label: '쭈3' }
+  ];
+
+  var taskSig = '';
+
+  function ownerLabel(id) {
+    for (var i = 0; i < TASK_OWNERS.length; i++) {
+      if (TASK_OWNERS[i].id === id) return TASK_OWNERS[i].label;
     }
-    state.tasks.forEach(function (t) {
-      var li = document.createElement('li');
-      li.className = 'todo-item' + (t.done ? ' done' : '');
+    return TASK_OWNERS[0].label;
+  }
 
-      var cb = document.createElement('button');
-      cb.className = 'todo-check';
-      cb.setAttribute('aria-label', t.done ? '완료 취소' : '완료 표시');
-      cb.setAttribute('aria-pressed', t.done ? 'true' : 'false');
-      cb.textContent = '✓';
-      cb.addEventListener('click', function () { toggleTask(t); });
+  function taskFromRow(r) {
+    return {
+      id: r.id,
+      title: r.title || '(제목 없음)',
+      owner: PEOPLE[r.owner] ? r.owner : 'boss',
+      done: !!r.done,
+      due_date: r.due_date || '',
+      created_at: r.created_at || new Date().toISOString()
+    };
+  }
 
-      var tx = document.createElement('span');
-      tx.className = 'todo-text';
-      tx.textContent = t.title;
+  function byCreated(a, b) { return new Date(a.created_at) - new Date(b.created_at); }
 
-      var del = document.createElement('button');
-      del.className = 'todo-del';
-      del.setAttribute('aria-label', '할 일 삭제');
-      del.textContent = '✕';
-      del.addEventListener('click', function () { removeTask(t); });
+  function renderTaskRow(t) {
+    var li = document.createElement('li');
+    li.className = 'todo-item' + (t.done ? ' done' : '');
 
-      li.appendChild(cb);
-      li.appendChild(tx);
-      li.appendChild(del);
-      list.appendChild(li);
-    });
+    var cb = document.createElement('button');
+    cb.type = 'button';
+    cb.className = 'todo-check';
+    cb.setAttribute('aria-label', t.done ? '완료 취소' : '완료 표시');
+    cb.setAttribute('aria-pressed', t.done ? 'true' : 'false');
+    cb.textContent = '✓';
+    cb.addEventListener('click', function () { toggleTask(t); });
 
-    var done = state.tasks.filter(function (t) { return t.done; }).length;
-    el.memoProgress.textContent = done + '/' + state.tasks.length;
+    var body = document.createElement('div');
+    body.className = 'todo-body';
+
+    var tx = document.createElement('span');
+    tx.className = 'todo-text';
+    tx.textContent = t.title;
+    body.appendChild(tx);
+
+    var meta = document.createElement('span');
+    meta.className = 'todo-owner ow-' + (t.owner || 'boss');
+    meta.textContent = ownerLabel(t.owner) + (t.unsynced ? ' · 기기에만' : '');
+    body.appendChild(meta);
+
+    var del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'todo-del';
+    del.setAttribute('aria-label', '할 일 삭제');
+    del.textContent = '✕';
+    del.addEventListener('click', function () { removeTask(t); });
+
+    li.appendChild(cb);
+    li.appendChild(body);
+    li.appendChild(del);
+    return li;
+  }
+
+  function emptyTaskRow(text) {
+    var li = document.createElement('li');
+    li.className = 'todo-empty';
+    li.textContent = text;
+    return li;
+  }
+
+  function renderTasks() {
+    if (!el.taskOpenList || !el.taskDoneList) return;
+
+    var open = state.tasks.filter(function (t) { return !t.done; }).sort(byCreated);
+    var done = state.tasks.filter(function (t) { return t.done; }).sort(function (a, b) { return byCreated(b, a); });
+
+    el.taskOpenList.innerHTML = '';
+    if (open.length) {
+      open.forEach(function (t) { el.taskOpenList.appendChild(renderTaskRow(t)); });
+    } else {
+      el.taskOpenList.appendChild(emptyTaskRow('진행 중인 할 일이 없습니다. 위에 한 줄 추가해 보세요.'));
+    }
+
+    el.taskDoneList.innerHTML = '';
+    if (done.length) {
+      done.forEach(function (t) { el.taskDoneList.appendChild(renderTaskRow(t)); });
+    } else {
+      el.taskDoneList.appendChild(emptyTaskRow('완료한 일이 아직 없습니다.'));
+    }
+
+    var bossOpen = open.filter(function (t) { return t.owner === 'boss'; }).length;
+    el.taskBadge.textContent = '진행 중 ' + open.length + '건';
+    el.taskOpenCount.textContent = open.length + '건';
+    el.taskDoneCount.textContent = done.length + '건';
+    el.taskSummary.textContent = '대표님 결정 대기 ' + bossOpen + '건 · 완료 ' + done.length + '건';
+    el.taskSyncNote.textContent = SB.connected
+      ? 'AI 서버 연결됨 · 4인방과 실시간 공유 중'
+      : '이 기기에만 저장 · AI 서버를 연결하면 4인방과 실시간 공유';
+    if (el.taskServerChip) el.taskServerChip.textContent = SB.connected ? '서버 연동' : '기기 저장';
+
+    taskSig = state.tasks.map(function (t) {
+      return t.id + ':' + (t.done ? 1 : 0) + ':' + (t.unsynced ? 1 : 0) + ':' + t.title + ':' + (t.owner || '');
+    }).join('|');
     save();
   }
 
-  function toggleTask(t) {
-    t.done = !t.done;
+  function addTask(title, owner) {
+    var t = {
+      id: uid(),
+      title: title,
+      owner: PEOPLE[owner] ? owner : 'boss',
+      done: false,
+      created_at: new Date().toISOString()
+    };
+    state.tasks.push(t);
     renderTasks();
-    if (SB.connected) {
-      sbPatch('office_tasks', t.id, { done: t.done, updated_at: new Date().toISOString() })
-        .catch(function () { /* keep local */ });
-    }
+    if (!SB.connected) { toast('이 기기에 저장했어요'); return; }
+    sbInsert('office_tasks', { id: t.id, title: t.title, owner: t.owner, done: false })
+      .then(function () { return pullTasks(); })
+      .catch(function () {
+        t.unsynced = true;
+        renderTasks();
+        toast('서버 저장 실패 · 이 기기에만 담아 뒀어요');
+      });
+  }
+
+  function toggleTask(t) {
+    var next = !t.done;
+    t.done = next;
+    renderTasks();
+    if (!SB.connected) return;
+    sbPatch('office_tasks', t.id, { done: next, updated_at: new Date().toISOString() })
+      .catch(function () {
+        t.done = !next;
+        renderTasks();
+        toast('서버 반영 실패 · AI 서버 연결을 확인해 주세요');
+      });
   }
 
   function removeTask(t) {
-    state.tasks = state.tasks.filter(function (x) { return x.id !== t.id; });
+    var idx = state.tasks.indexOf(t);
+    state.tasks = state.tasks.filter(function (x) { return x !== t; });
     renderTasks();
-    if (SB.connected) {
-      sbDelete('office_tasks', t.id).catch(function () { /* keep local */ });
-    }
+    if (!SB.connected) return;
+    sbDelete('office_tasks', t.id).catch(function () {
+      if (idx >= 0) state.tasks.splice(idx, 0, t);
+      renderTasks();
+      toast('서버 삭제 실패 · 연결을 확인해 주세요');
+    });
   }
 
-  function addTask(title) {
-    var t = { id: uid(), title: title, done: false };
-    state.tasks.push(t);
+  /* 서버 rows -> 화면. 서버에 아직 못 올린 항목(unsynced)은 목록에 남겨 둡니다. */
+  function applyServerTasks(rows) {
+    var list = rows.map(taskFromRow);
+    state.tasks.forEach(function (t) {
+      if (!t.unsynced) return;
+      var dup = list.some(function (x) { return x.id === t.id; });
+      if (!dup) list.push(t);
+    });
+    list.sort(byCreated);
+    var sig = list.map(function (t) {
+      return t.id + ':' + (t.done ? 1 : 0) + ':' + (t.unsynced ? 1 : 0) + ':' + t.title + ':' + (t.owner || '');
+    }).join('|');
+    state.tasks = list;
+    if (sig === taskSig) return;
     renderTasks();
-    if (SB.connected) {
-      sbInsert('office_tasks', { id: t.id, title: t.title, owner: 'boss', done: false })
-        .catch(function () { toast('서버 저장 실패 · 기기에만 저장했어요'); });
-    }
+  }
+
+  function pullTasks() {
+    if (!SB.connected) return Promise.resolve(false);
+    return sbRequest('/rest/v1/office_tasks?select=id,title,owner,done,due_date,created_at&order=created_at.asc&limit=500')
+      .then(function (rows) {
+        if (!Array.isArray(rows)) return false;
+        applyServerTasks(rows);
+        return true;
+      });
   }
 
   /* ---------------- crew ---------------- */
@@ -1155,125 +1291,6 @@
     setView('office');
   }
 
-  /* ---------------- AI한도 ---------------- */
-  /* 기기별 상태만 직접 기록합니다. 피클 사용량 자체는 각 기기 앱에서만 보입니다. */
-  var LIMITS_KEY = 'jju-office-limits-v1';
-
-  var LIMIT_DEVICES = [
-    { id: 'director', device: '본폰' },
-    { id: 'jju1', device: '1번 폰' },
-    { id: 'jju2', device: '2번 폰' },
-    { id: 'jju3', device: '3번 폰' }
-  ];
-
-  var LIMIT_STATES = [
-    { id: 'free', label: '여유' },
-    { id: 'care', label: '주의' },
-    { id: 'out', label: '소진' }
-  ];
-
-  var limitState = {};
-
-  function loadLimits() {
-    limitState = {};
-    var raw = null;
-    try { raw = localStorage.getItem(LIMITS_KEY); } catch (e) { raw = null; }
-    if (!raw) return;
-    try {
-      var s = JSON.parse(raw);
-      if (!s || typeof s !== 'object') return;
-      LIMIT_DEVICES.forEach(function (d) {
-        var v = s[d.id];
-        if (v && typeof v === 'object' && v.status) {
-          var ok = LIMIT_STATES.some(function (x) { return x.id === v.status; });
-          if (ok) limitState[d.id] = { status: v.status, at: v.at || '' };
-        }
-      });
-    } catch (e) { /* ignore */ }
-  }
-
-  function saveLimits() {
-    try { localStorage.setItem(LIMITS_KEY, JSON.stringify(limitState)); } catch (e) { /* ignore */ }
-  }
-
-  function shortStamp(isoStr) {
-    var d = new Date(isoStr);
-    if (isNaN(d)) return '';
-    return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + timeLabel(isoStr);
-  }
-
-  function setLimitStatus(id, status) {
-    var cur = limitState[id];
-    if (cur && cur.status === status) {
-      delete limitState[id];
-    } else {
-      limitState[id] = { status: status, at: new Date().toISOString() };
-    }
-    saveLimits();
-    renderLimits();
-  }
-
-  function renderLimits() {
-    var box = el.limitRows;
-    if (!box) return;
-    box.innerHTML = '';
-
-    var recorded = 0;
-
-    LIMIT_DEVICES.forEach(function (d) {
-      var p = PEOPLE[d.id];
-      var cur = limitState[d.id];
-      if (cur) recorded += 1;
-
-      var row = document.createElement('div');
-      row.className = 'limit-row';
-
-      var who = document.createElement('div');
-      who.className = 'limit-who';
-
-      var av = document.createElement('div');
-      av.className = 'avatar ' + p.cls;
-      av.textContent = p.initial;
-
-      var txt = document.createElement('div');
-      txt.className = 'limit-who-txt';
-      var nm = document.createElement('b');
-      nm.textContent = p.name;
-      var dv = document.createElement('span');
-      dv.textContent = d.device + (cur && cur.at ? ' · ' + shortStamp(cur.at) : '');
-      txt.appendChild(nm);
-      txt.appendChild(dv);
-
-      who.appendChild(av);
-      who.appendChild(txt);
-
-      var seg = document.createElement('div');
-      seg.className = 'seg';
-      seg.setAttribute('role', 'group');
-      seg.setAttribute('aria-label', p.name + ' 상태');
-
-      LIMIT_STATES.forEach(function (s) {
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'st-' + s.id;
-        b.textContent = s.label;
-        var on = !!(cur && cur.status === s.id);
-        b.setAttribute('aria-pressed', on ? 'true' : 'false');
-        b.setAttribute('aria-label', p.name + ' ' + s.label + (on ? ' · 누르면 기록 해제' : ' 상태로 기록'));
-        b.addEventListener('click', function () { setLimitStatus(d.id, s.id); });
-        seg.appendChild(b);
-      });
-
-      row.appendChild(who);
-      row.appendChild(seg);
-      box.appendChild(row);
-    });
-
-    if (el.limitSaved) {
-      el.limitSaved.textContent = recorded ? recorded + '/' + LIMIT_DEVICES.length + ' 기록' : '미기록';
-    }
-  }
-
   /* ---------------- ✍️ 블로그 ---------------- */
   /* 원고·키워드·디렉토리는 2026-11-25 정리본 기준입니다.
      발행 상태와 디렉토리 진행은 이 브라우저(localStorage)에만 저장됩니다. */
@@ -1702,27 +1719,38 @@
 
   function startPolling() {
     if (SB.timer) clearInterval(SB.timer);
+    var tick = 0;
     SB.timer = setInterval(function () {
-      if (document.visibilityState === 'visible') pullAll().catch(function () {});
+      if (document.visibilityState !== 'visible') return;
+      tick += 1;
+      pullMessages().catch(function () {});
+      /* 할 일 탭을 보고 있을 때는 매번, 다른 화면에서는 4번에 한 번만 맞춥니다 */
+      if (state.view === 'tasks' || tick % 4 === 0) pullTasks().catch(function () {});
     }, 4500);
   }
 
-  function pullAll() {
+  function pullMessages() {
     if (!SB.connected || SB.busy) return Promise.reject(new Error('not connected'));
     SB.busy = true;
+    return sbRequest('/rest/v1/office_messages?select=*&order=created_at.asc&limit=400')
+      .then(function (rows) {
+        SB.busy = false;
+        SB.lastPull = Date.now();
+        mergeMessages(rows || []);
+        return true;
+      })
+      .catch(function (e) {
+        SB.busy = false;
+        throw e;
+      });
+  }
+
+  function pullAll() {
+    if (!SB.connected) return Promise.reject(new Error('not connected'));
     return Promise.all([
-      sbRequest('/rest/v1/office_messages?select=*&order=created_at.asc&limit=400'),
-      sbRequest('/rest/v1/office_tasks?select=*&order=created_at.asc&limit=200')
-    ]).then(function (r) {
-      SB.busy = false;
-      SB.lastPull = Date.now();
-      mergeMessages(r[0] || []);
-      mergeTasks(r[1] || []);
-      return true;
-    }).catch(function (e) {
-      SB.busy = false;
-      throw e;
-    });
+      pullMessages(),
+      pullTasks()
+    ]).then(function () { return true; });
   }
 
   function mergeMessages(rows) {
@@ -1745,23 +1773,6 @@
       if (state.view === 'office') renderChat();
     }
     updateMap();
-  }
-
-  function mergeTasks(rows) {
-    if (!Array.isArray(rows) || !rows.length) return;
-    var changed = false;
-    rows.forEach(function (r) {
-      if (!r || !r.id) return;
-      var idx = state.tasks.findIndex(function (t) { return t.id === r.id; });
-      if (idx === -1) {
-        state.tasks.push({ id: r.id, title: r.title || '(제목 없음)', done: !!r.done });
-        changed = true;
-      } else {
-        if (state.tasks[idx].done !== !!r.done) { state.tasks[idx].done = !!r.done; changed = true; }
-        if (r.title && state.tasks[idx].title !== r.title) { state.tasks[idx].title = r.title; changed = true; }
-      }
-    });
-    if (changed) renderTasks();
   }
 
   /* ---------------- toast ---------------- */
@@ -1847,10 +1858,17 @@
     el.plusBtn = document.getElementById('plusBtn');
     el.mentionMenu = document.getElementById('mentionMenu');
     el.roomMeta = document.getElementById('roomMeta');
-    el.todoList = document.getElementById('todoList');
-    el.todoForm = document.getElementById('todoForm');
-    el.todoInput = document.getElementById('todoInput');
-    el.memoProgress = document.getElementById('memoProgress');
+    el.taskForm = document.getElementById('taskForm');
+    el.taskInput = document.getElementById('taskInput');
+    el.taskOwner = document.getElementById('taskOwner');
+    el.taskBadge = document.getElementById('taskBadge');
+    el.taskSummary = document.getElementById('taskSummary');
+    el.taskOpenList = document.getElementById('taskOpenList');
+    el.taskDoneList = document.getElementById('taskDoneList');
+    el.taskOpenCount = document.getElementById('taskOpenCount');
+    el.taskDoneCount = document.getElementById('taskDoneCount');
+    el.taskSyncNote = document.getElementById('taskSyncNote');
+    el.taskServerChip = document.getElementById('taskServerChip');
     el.crewRow = document.getElementById('crewRow');
     el.crewList = document.getElementById('crewList');
     el.mapFigs = document.getElementById('mapFigs');
@@ -1867,8 +1885,6 @@
     el.sheetTime = document.getElementById('sheetTime');
     el.sheetRooms = document.getElementById('sheetRooms');
     el.sheetClose = document.getElementById('sheetClose');
-    el.limitRows = document.getElementById('limitRows');
-    el.limitSaved = document.getElementById('limitSaved');
     el.kwList = document.getElementById('kwList');
     el.dirRows = document.getElementById('dirRows');
     el.dirProgress = document.getElementById('dirProgress');
@@ -1964,12 +1980,12 @@
     document.getElementById('sbTest').addEventListener('click', testFromModal);
     document.getElementById('sbClear').addEventListener('click', clearServer);
 
-    el.todoForm.addEventListener('submit', function (e) {
+    el.taskForm.addEventListener('submit', function (e) {
       e.preventDefault();
-      var v = (el.todoInput.value || '').trim();
+      var v = (el.taskInput.value || '').trim();
       if (!v) return;
-      addTask(v);
-      el.todoInput.value = '';
+      addTask(v, el.taskOwner.value);
+      el.taskInput.value = '';
     });
 
     document.querySelectorAll('#view-blog [data-copy]').forEach(function (b) {
@@ -2005,9 +2021,7 @@
     cacheEls();
     var had = load();
     if (!had) seed();
-    if (!state.tasks.length) {
-      state.tasks = TASKS_SEED.map(function (t) { return { id: uid(), title: t, done: false }; });
-    }
+    if (!state.tasks.length) state.tasks = seedTasks();
     applyTheme(state.theme);
     el.todayLabel.textContent = koDate();
     el.roomMeta.textContent = ROOMS[state.room].meta;
@@ -2021,8 +2035,6 @@
     renderMapFigures();
     renderTasks();
     renderCrew();
-    loadLimits();
-    renderLimits();
     loadBlog();
     renderBlog();
     bind();

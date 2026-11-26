@@ -17,14 +17,13 @@
 | 🧵 스레드 | 3채널 오늘 예약 현황과 운영 수칙 |
 | 🎬 유튜브 | 1~10회 대본 진행 상황 |
 | ✍️ 블로그 | 도매에빠지다 네이버 블로그 SEO — 공략 키워드(복사), 도매몰 디렉토리 3곳 진행(나셀러·셀러위키·도매리스트닷컴, 이 브라우저에만 저장), 11/25 원고(제목·본문·해시태그 11개) 원클릭 복사와 발행 상태(초안·발행완료) |
-| ⚡ AI한도 | 피클 4인방(총괄이사→쭈1→쭈2→쭈3) 릴레이 순서, 기기별 상태 기록(여유·주의·소진, 이 브라우저에만 저장), Supabase 한도(11/26 확인), Claude·ChatGPT 한도 구조 |
-| 📝 메모 | 오늘 할 일 체크리스트(하단 바 `📁 메모`) |
+| 📋 할 일 | 오늘 할 일·결정 대기 — Supabase `office_tasks`와 동기화. 제목 + 담당(대표님 결정·총괄이사·쭈1·쭈2·쭈3) 빠른 추가, 체크로 진행 중/완료 분리, 삭제, 상단에 미완료 건수 배지. AI 서버 미연결 시 이 기기에만 저장 (하단 바 `📋 할 일`) |
 | 🤖 비서 | 4인방 역할 카드 |
 
 ## 동작 방식
 
-1. **로컬 모드(기본)** — 서버 없이 바로 동작합니다. 회의실 메시지·메모는 그 기기 브라우저(localStorage)에 저장됩니다.
-2. **AI 서버 연결(Supabase)** — 우측 상단 `AI 서버` 배지를 눌러 Project URL 과 anon key 를 넣으면 `office_messages` · `office_tasks` 테이블과 동기화됩니다. 4.5초 주기로 주고받으며, 여러 기기에서 같은 회의실을 봅니다.
+1. **로컬 모드(기본)** — 서버 없이 바로 동작합니다. 회의실 메시지·할 일은 그 기기 브라우저(localStorage)에 저장됩니다.
+2. **AI 서버 연결(Supabase)** — 우측 상단 `AI 서버` 배지를 눌러 Project URL 과 anon key 를 넣으면 `office_messages` · `office_tasks` 테이블과 동기화됩니다. 4.5초 주기로 주고받으며, 여러 기기에서 같은 회의실·할 일을 봅니다. 할 일은 `📋 할 일` 탭을 보고 있을 때 매 주기, 다른 화면에서는 4주기에 한 번 맞춥니다.
 
 ### 원터치 연결 (주소 한 줄)
 
@@ -57,12 +56,29 @@ curl -X POST "$SUPABASE_URL/rest/v1/office_messages" \
 
 `room` 은 `grand`(대회의실) · `command`(지휘실) · `lounge`(라운지) 중 하나입니다.
 
+### 할 일(`office_tasks`) 컬럼
+
+`id`(uuid) · `title`(text) · `owner`(text — `boss`·`director`·`jju1`·`jju2`·`jju3`) · `done`(boolean) · `due_date`(date, 선택) · `created_at` · `updated_at`
+
+비서 쪽에서 할 일을 올리거나 완료 처리할 때:
+
+```bash
+curl -X POST "$SUPABASE_URL/rest/v1/office_tasks" \
+  -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"에이블리 페이백 결정","owner":"boss","done":false}'
+
+curl -X PATCH "$SUPABASE_URL/rest/v1/office_tasks?id=eq.<id>" \
+  -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" -d '{"done":true}'
+```
+
 ## 파일
 
 ```
 index.html                  화면
 styles.css                  크림·브라운·골드 테마(라이트/다크)
-app.js                      회의실·오피스 맵·메모·서버 동기화
+app.js                      회의실·오피스 맵·할 일·서버 동기화
 assets/office-floorplan.jpg  오피스 맵 평면도(1402×1122)
 manifest.json               PWA 설치 정보
 sw.js                       오프라인 캐시
