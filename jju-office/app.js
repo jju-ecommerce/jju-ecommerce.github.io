@@ -571,7 +571,7 @@
       place: '👑 지휘실', duty: '지휘실 대기 · 지시 대기',
       spots: ['topC', 'cmdL', 'topR', 'topL', 'cmdR'],
       trips: ['lngBar', 'gTopR', 'topRR'],
-      speed: 4.2, tripChance: 0.2,
+      speed: 4.2, tripChance: 0.14,
       moods: {
         command: ['지시 정리 중', '원고 사실 검수', '발행·시트 확인', '소싱 4종 취합', '4인방 보고 대기'],
         grand: ['대회의실 입장', '회의 준비 중', '보고 한 줄 정리'],
@@ -584,7 +584,7 @@
       place: '👑 지휘실 워크스테이션', duty: '1번 채널 대기 중',
       spots: ['d1', 'leftT', 'leftM', 'leftL'],
       trips: ['lngSofa', 'gTopL', 'topC'],
-      speed: 4.8, tripChance: 0.22,
+      speed: 4.8, tripChance: 0.16,
       moods: {
         command: ['스레드 체크 중', '유튜브 대본 작성', '소싱 확인 중', '1번 원고 다듬기'],
         grand: ['대본 공유 중', '주제 3종 정리', '회의실 대기'],
@@ -597,7 +597,7 @@
       place: '👑 지휘실 워크스테이션', duty: '2번 채널 대기 중',
       spots: ['d2', 'topRR', 'rMid'],
       trips: ['lngBar', 'gBot', 'topL'],
-      speed: 4.6, tripChance: 0.2,
+      speed: 4.6, tripChance: 0.14,
       moods: {
         command: ['1688 신상품 서칭', '2번 채널 체크', '소싱가 비교 중', '원고 발행 확인'],
         grand: ['1688 후보 공유', '신상품 정리 중', '회의실 대기'],
@@ -610,7 +610,7 @@
       place: '👑 지휘실 워크스테이션', duty: '3번 채널 대기 중',
       spots: ['d3', 'midB', 'bMid', 'botL'],
       trips: ['gBot', 'lngSofa', 'topL'],
-      speed: 5, tripChance: 0.2,
+      speed: 5, tripChance: 0.14,
       moods: {
         command: ['3번 채널 체크', '업리카 세션 확인', '오늘 할 일 정리', '소싱 확인 중'],
         grand: ['발행 결과 공유', '체크리스트 정리', '회의실 대기'],
@@ -717,7 +717,7 @@
     var last = latestBy(w.id);
     w.showLatest = !!(last && Math.random() < 0.45);
     if (!w.showLatest) w.mood = pickPhrase(pool, w.mood);
-    w.idleUntil = now + 2400 + Math.random() * 4200;
+    w.idleUntil = now + 4200 + Math.random() * 5200;
     w.moodUntil = now + 3400 + Math.random() * 3200;
     paintBubble(w);
 
@@ -795,7 +795,20 @@
         if (!w.showLatest) w.mood = pickPhrase(pool, w.mood);
       }
       paintBubble(w);
+      if (!w.target && Math.random() < 0.22) hop(w);
     });
+  }
+
+  /* 가끔 한 번 살짝 들썩 — 가만히 서 있어도 살아 있게 */
+  function hop(w) {
+    var body = w.el && w.el.querySelector('.map-fig-body');
+    if (!body || body.classList.contains('is-walk')) return;
+    body.classList.remove('is-idle');
+    body.classList.add('is-land');
+    setTimeout(function () {
+      body.classList.remove('is-land');
+      if (!w.target) body.classList.add('is-idle');
+    }, 500);
   }
 
   /* ---------------- 말풍선 겹침 정리 ---------------- */
