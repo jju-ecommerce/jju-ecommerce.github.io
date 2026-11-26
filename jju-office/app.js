@@ -2202,7 +2202,7 @@
     });
   }
 
-  function pushHelpLines(perm, hasSub, connected) {
+  function pushHelpLines(perm, hasSub, connected, lastError) {
     if (perm === 'unsupported') return ['이 브라우저는 웹 알림을 지원하지 않아요. 크롬 앱에서 이 주소를 열어 주세요.'];
     if (perm === 'denied') return [
       '폰에서 이 앱의 알림이 막혀 있어요. 아래 순서대로 한 번만 풀어 주세요.',
@@ -2210,6 +2210,14 @@
       '② 크롬에서 열었다면 주소창 왼쪽 자물쇠 → 알림 → 허용',
       '③ 돌아와서 [알림 허용하고 켜기]를 다시 누르기'
     ];
+    if (lastError && /AbortError|InvalidStateError|NotSupportedError/.test(lastError)) return [
+      '폰의 푸시 알림 서비스가 막힌 상태예요(오류: ' + lastError + ').',
+      '① 앱을 완전히 종료했다가 다시 열기',
+      '② 크롬에서 「jju-ecommerce.github.io/jju-office」를 직접 열어 한 번 더 시도',
+      '③ 그래도 안 되면 Chrome 앱 정보 → 알림 → ‘허용’ 확인'
+    ];
+    if (lastError && /권한|cancel|denied/i.test(lastError)) return ['알림 권한이 허용되지 않았어요. [알림 허용하고 켜기]를 다시 눌러 ‘허용’을 선택해 주세요.'];
+    if (lastError && /서버 저장/.test(lastError)) return ['이 기기 알림은 켜졌지만 서버 등록이 실패했어요. AI 연결을 확인하고 다시 눌러 주세요.'];
     if (perm === 'granted' && !hasSub) return ['알림 권한은 허용됐는데 이 기기 등록이 아직이에요. [알림 허용하고 켜기]를 눌러 주세요.'];
     if (hasSub && !connected) return ['이 기기 알림은 켜졌어요. AI 연결을 하면 서버에도 자동 등록되어 다른 비서 글도 받습니다.'];
     if (hasSub) return ['알림이 켜져 있어요. 새 글이 올라오면 앱을 닫아 두어도 폰 상단에 뜹니다.'];
@@ -2251,7 +2259,7 @@
 
     if (el.pushHelp) {
       el.pushHelp.innerHTML = '';
-      pushHelpLines(perm, hasSub, connected).forEach(function (line) {
+      pushHelpLines(perm, hasSub, connected, PUSH.lastError).forEach(function (line) {
         var p = document.createElement('p');
         p.textContent = line;
         el.pushHelp.appendChild(p);
