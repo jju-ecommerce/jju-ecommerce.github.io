@@ -161,6 +161,35 @@ img { display: block; max-width: 100%; }
 .server-pill.err { border-color: rgba(160, 58, 42, .4); }
 .server-pill.err .server-state { color: var(--danger); }
 
+/* ---------------- 🔔 웹 푸시 알림 버튼 ---------------- */
+.push-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.push-btn .push-ico { font-size: 13px; line-height: 1; }
+.push-btn .push-label { color: var(--brown); letter-spacing: -.2px; }
+.push-btn.is-on { border-color: rgba(63, 138, 91, .45); background: rgba(63, 138, 91, .08); }
+.push-btn.is-on .push-label { color: var(--ok); }
+.push-btn.is-off { opacity: .92; }
+.push-btn.is-denied, .push-btn.is-unsupported { opacity: .62; }
+.push-btn[hidden] { display: none; }
+
+@media (max-width: 400px) {
+  .push-btn { padding: 8px 9px; }
+  .push-btn .push-label { display: none; }
+  .push-btn .push-ico { font-size: 15px; }
+}
+
 .theme-btn {
   width: 42px;
   height: 42px;

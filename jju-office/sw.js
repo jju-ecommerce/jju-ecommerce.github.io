@@ -1,5 +1,5 @@
 /* 쭈대표 AI 오피스 · service worker */
-var CACHE = 'jju-office-v22';
+var CACHE = 'jju-office-v23';
 var ASSETS = [
   './',
   './index.html',
@@ -30,6 +30,48 @@ self.addEventListener('activate', function (e) {
         return caches.delete(k);
       }));
     }).then(function () { return self.clients.claim(); })
+  );
+});
+
+/* ---------------- 🔔 웹 푸시 알림 ---------------- */
+var OFFICE_URL = 'https://jju-ecommerce.github.io/jju-office/';
+
+self.addEventListener('push', function (e) {
+  var data = {};
+  try { data = e.data ? e.data.json() : {}; } catch (err) {
+    try { data = { body: e.data ? e.data.text() : '' }; } catch (e2) { data = {}; }
+  }
+  var title = data.title || '쭈대표 AI 오피스';
+  var body = data.body || '새 글이 도착했어요.';
+  var url = data.url || OFFICE_URL;
+  var tag = data.tag || ('office-' + Date.now());
+
+  e.waitUntil(
+    self.registration.showNotification(title, {
+      body: body,
+      tag: tag,
+      renotify: true,
+      icon: './icons/icon-192.png',
+      badge: './icons/favicon-32.png',
+      data: { url: url },
+      vibrate: [90, 40, 90]
+    })
+  );
+});
+
+self.addEventListener('notificationclick', function (e) {
+  e.notification.close();
+  var target = (e.notification.data && e.notification.data.url) || OFFICE_URL;
+
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
+      for (var i = 0; i < list.length; i++) {
+        var c = list[i];
+        if (c.url.indexOf('/jju-office/') !== -1 && 'focus' in c) return c.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(target);
+      return null;
+    })
   );
 });
 

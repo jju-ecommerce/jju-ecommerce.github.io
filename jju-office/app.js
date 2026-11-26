@@ -2039,6 +2039,223 @@
     updateMap();
   }
 
+  /* ---------------- 🔔 웹 푸시 알림 ---------------- */
+  /* VAPID 공개키는 공개 정보입니다(비밀키는 Supabase Edge Function 시크릿에만 저장). */
+  var VAPID_PUBLIC_KEY = 'BLsYdjB1PvxgqFW1LsvjOKqEfQ6qry4P77QkHh04m2z7yXbYx5pAx4OtnRy4_XlqHofAiABdweCvsc_qRUrq0pA';
+  var PUSH = { busy: false, sub: null, synced: false };
+
+  function pushSupported() {
+    return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
+  }
+
+  function urlBase64ToUint8Array(base64String) {
+    var pad = new Array(((4 - (base64String.length % 4)) % 4) + 1).join('=');
+    var base64 = (base64String + pad).replace(/-/g, '+').replace(/_/g, '/');
+    var raw = atob(base64);
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  function bufToB64u(buf) {
+    var bytes = new Uint8Array(buf);
+    var s = '';
+    for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  function pushRegistration() {
+    if (!('serviceWorker' in navigator)) return Promise.reject(new Error('unsupported'));
+    return navigator.serviceWorker.getRegistration().then(function (reg) {
+      if (reg && (reg.active || reg.installing || reg.waiting)) return navigator.serviceWorker.ready;
+      return navigator.serviceWorker.register('sw.js').then(function () {
+        return navigator.serviceWorker.ready;
+      });
+    });
+  }
+
+  function renderPushBtn(mode) {
+    if (!el.pushBtn) return;
+    el.pushBtn.classList.remove('is-on', 'is-off', 'is-denied', 'is-unsupported');
+    if (mode === 'unsupported') {
+      el.pushBtn.classList.add('is-unsupported');
+      el.pushBtn.hidden = true;
+      return;
+    }
+    el.pushBtn.hidden = false;
+    if (mode === 'wait') {
+      el.pushBtn.classList.add('is-off');
+      el.pushLabel.textContent = '…';
+      return;
+    }
+    if (mode === 'on') {
+      el.pushBtn.classList.add('is-on');
+      el.pushIcon.textContent = '🔔';
+      el.pushLabel.textContent = '알림 ON';
+      el.pushBtn.setAttribute('aria-pressed', 'true');
+      el.pushBtn.title = '알림 켜짐 · 눌러서 끄기';
+      return;
+    }
+    if (mode === 'denied') {
+      el.pushBtn.classList.add('is-denied');
+      el.pushIcon.textContent = '🔕';
+      el.pushLabel.textContent = '알림 차단';
+      el.pushBtn.setAttribute('aria-pressed', 'false');
+      el.pushBtn.title = '브라우저 설정에서 이 사이트 알림을 허용해 주세요';
+      return;
+    }
+    el.pushBtn.classList.add('is-off');
+    el.pushIcon.textContent = '🔔';
+    el.pushLabel.textContent = '알림';
+    el.pushBtn.setAttribute('aria-pressed', 'false');
+    el.pushBtn.title = '새 글이 오면 폰으로 알림';
+  }
+
+  function refreshPushState() {
+    if (!pushSupported()) { renderPushBtn('unsupported'); return Promise.resolve(); }
+    if (Notification.permission === 'denied') { renderPushBtn('denied'); return Promise.resolve(); }
+    return pushRegistration().then(function (reg) {
+      return reg.pushManager.getSubscription();
+    }).then(function (sub) {
+      PUSH.sub = sub || null;
+      renderPushBtn(sub && Notification.permission === 'granted' ? 'on' : 'off');
+    }).catch(function () {
+      renderPushBtn('off');
+    });
+  }
+
+  function subKeys(sub) {
+    var json = null;
+    try { json = sub.toJSON ? sub.toJSON() : null; } catch (e) { json = null; }
+    if (json && json.keys && json.keys.p256dh) return json.keys;
+    return {
+      p256dh: sub.getKey ? bufToB64u(sub.getKey('p256dh')) : '',
+      auth: sub.getKey ? bufToB64u(sub.getKey('auth')) : ''
+    };
+  }
+
+  function savePushSubscription(sub) {
+    if (!state.supabase.url || !state.supabase.key) return Promise.reject(new Error('no-server'));
+    var keys = subKeys(sub);
+    return sbRequest('/rest/v1/office_push_subscriptions?on_conflict=endpoint', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: {
+        endpoint: sub.endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+        user_agent: (navigator.userAgent || '').slice(0, 400)
+      }
+    });
+  }
+
+  function deletePushSubscription(endpoint) {
+    if (!state.supabase.url || !state.supabase.key || !endpoint) return Promise.resolve();
+    return sbRequest('/rest/v1/office_push_subscriptions?endpoint=eq.' + encodeURIComponent(endpoint), {
+      method: 'DELETE'
+    }).catch(function () { /* 기기 쪽 구독 해지는 이미 끝났습니다 */ });
+  }
+
+  /* 앱을 새로 열었을 때 이미 만든 구독을 서버에 다시 맞춰 둡니다. */
+  function syncPushSubscription() {
+    if (!pushSupported() || PUSH.synced || Notification.permission !== 'granted') return;
+    if (!state.supabase.url || !state.supabase.key) return;
+    PUSH.synced = true;
+    pushRegistration().then(function (reg) {
+      return reg.pushManager.getSubscription();
+    }).then(function (sub) {
+      if (!sub) { PUSH.sub = null; return; }
+      PUSH.sub = sub;
+      return savePushSubscription(sub).catch(function () { PUSH.synced = false; });
+    }).catch(function () { PUSH.synced = false; });
+  }
+
+  function enablePush() {
+    if (PUSH.busy) return Promise.resolve();
+    if (!pushSupported()) { toast('이 브라우저는 웹 알림을 지원하지 않아요'); return Promise.resolve(); }
+    if (!state.supabase.url || !state.supabase.key) {
+      toast('AI 서버를 먼저 연결해야 알림을 켤 수 있어요');
+      return Promise.resolve();
+    }
+    PUSH.busy = true;
+    renderPushBtn('wait');
+    return Notification.requestPermission().then(function (perm) {
+      if (perm !== 'granted') {
+        renderPushBtn(perm === 'denied' ? 'denied' : 'off');
+        toast(perm === 'denied' ? '브라우저 설정에서 알림을 허용해 주세요' : '알림 허용을 취소했어요');
+        return null;
+      }
+      return pushRegistration().then(function (reg) {
+        return reg.pushManager.getSubscription().then(function (existing) {
+          if (existing) return existing;
+          return reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+          });
+        });
+      }).then(function (sub) {
+        PUSH.sub = sub;
+        return savePushSubscription(sub).then(function () {
+          PUSH.synced = true;
+          renderPushBtn('on');
+          toast('알림을 켰어요 · 새 글이 오면 폰 상단에 뜹니다');
+        });
+      });
+    }).catch(function (e) {
+      var name = (e && e.name) || '';
+      if (name === 'NotAllowedError') {
+        renderPushBtn(Notification.permission === 'denied' ? 'denied' : 'off');
+        toast('알림 허용이 막혀 있어요 · 브라우저 설정에서 허용해 주세요');
+      } else if (name === 'NotSupportedError' || name === 'AbortError') {
+        renderPushBtn('off');
+        toast('이 브라우저에서는 알림을 켤 수 없어요 (홈 화면에 추가한 앱에서 시도해 주세요)');
+      } else if (e && e.message === 'no-server') {
+        renderPushBtn('off');
+        toast('AI 서버를 먼저 연결해야 알림을 켤 수 있어요');
+      } else {
+        renderPushBtn('off');
+        toast('알림 설정에 실패했어요 · 잠시 후 다시 시도해 주세요');
+      }
+    }).then(function () {
+      PUSH.busy = false;
+    });
+  }
+
+  function disablePush() {
+    if (PUSH.busy) return Promise.resolve();
+    PUSH.busy = true;
+    renderPushBtn('wait');
+    return pushRegistration().then(function (reg) {
+      return reg.pushManager.getSubscription();
+    }).then(function (sub) {
+      if (!sub) { renderPushBtn('off'); return null; }
+      var ep = sub.endpoint;
+      PUSH.sub = null;
+      return sub.unsubscribe().then(function () {
+        return deletePushSubscription(ep);
+      }).then(function () {
+        renderPushBtn('off');
+        toast('알림을 껐어요');
+      });
+    }).catch(function () {
+      renderPushBtn('off');
+      toast('알림을 끄지 못했어요 · 잠시 후 다시 시도해 주세요');
+    }).then(function () {
+      PUSH.busy = false;
+    });
+  }
+
+  function togglePush() {
+    if (PUSH.busy) return;
+    if (!pushSupported()) { toast('이 브라우저는 웹 알림을 지원하지 않아요'); return; }
+    if (Notification.permission === 'denied') {
+      toast('브라우저 설정 → 사이트 설정에서 이 사이트 알림을 허용해 주세요');
+      return;
+    }
+    if (Notification.permission === 'granted' && PUSH.sub) { disablePush(); return; }
+    enablePush();
+  }
+
   /* ---------------- toast ---------------- */
   var toastTimer = null;
   function toast(text) {
@@ -2081,6 +2298,9 @@
         setServerState('ok');
         pullAll().catch(function () {});
         startPolling();
+        PUSH.synced = false;
+        refreshPushState();
+        syncPushSubscription();
         toast('AI 서버에 연결했어요');
         setTimeout(closeModal, 600);
       } else {
@@ -2176,6 +2396,9 @@
     el.sbUrl = document.getElementById('sbUrl');
     el.sbKey = document.getElementById('sbKey');
     el.liveDot = document.getElementById('liveDot');
+    el.pushBtn = document.getElementById('pushBtn');
+    el.pushIcon = document.getElementById('pushIcon');
+    el.pushLabel = document.getElementById('pushLabel');
     el.toast = document.getElementById('toast');
     el.todayLabel = document.getElementById('todayLabel');
   }
@@ -2238,6 +2461,8 @@
     el.themeBtn.addEventListener('click', function () {
       applyTheme(state.theme === 'dark' ? 'light' : 'dark');
     });
+
+    if (el.pushBtn) el.pushBtn.addEventListener('click', togglePush);
 
     el.serverBtn.addEventListener('click', openModal);
     document.getElementById('serverClose').addEventListener('click', closeModal);
@@ -2343,6 +2568,9 @@
     var autoConnected = applyHashConfig();
     connectStored(autoConnected);
     if (autoConnected) toast('AI 서버에 자동 연결됐어요');
+
+    refreshPushState();
+    syncPushSubscription();
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
