@@ -41,10 +41,13 @@
   <div class="wrap">
     <div class="phone">
       <div class="screen">
-        <iframe src="./index.html?view=office" title="쭈대표 AI 오피스 모바일 미리보기"></iframe>
+        <iframe id="appFrame" title="쭈대표 AI 오피스 모바일 미리보기"></iframe>
       </div>
     </div>
-    <p class="caption">모바일 미리보기 · <b>390 × 844</b> · 실제 앱은 <a href="./">jju-ecommerce.github.io/jju-office/</a></p>
+    <script>
+    document.getElementById('appFrame').src = './index.html?view=office&t=' + Date.now();
+  </script>
+  <p class="caption">모바일 미리보기 · <b>390 × 844</b> · 실제 앱은 <a href="./">jju-ecommerce.github.io/jju-office/</a></p>
   </div>
 </body>
 </html>
