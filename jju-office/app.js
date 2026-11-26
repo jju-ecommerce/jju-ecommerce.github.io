@@ -849,13 +849,13 @@
     return BLOG_POST.title + '\n\n' + BLOG_POST.body + '\n\n' + BLOG_POST.hashtags;
   }
 
-  var COPY_LABEL = { all: '원고 전체', title: '제목', body: '본문', tags: '해시태그' };
+  var COPY_LABEL = { all: '원고 전체를', title: '제목을', body: '본문을', tags: '해시태그를' };
 
   function copyBlog(kind) {
     var text = blogCopyText(kind);
     writeClipboard(text).then(function (ok) {
       if (ok) {
-        toast(COPY_LABEL[kind] + '를 복사했어요 · ' + text.length.toLocaleString('ko-KR') + '자');
+        toast(COPY_LABEL[kind] + ' 복사했어요 · ' + text.length.toLocaleString('ko-KR') + '자');
       } else {
         toast('복사가 안 됐어요 · 본문을 길게 눌러 선택해 주세요');
       }
