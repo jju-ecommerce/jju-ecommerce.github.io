@@ -1292,6 +1292,37 @@ html[data-theme="dark"] .bn-item.active {
 
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* ---------------- 🔔 알림 설정 ---------------- */
+.push-status {
+  list-style: none;
+  margin: 12px 0 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--card-soft);
+  border: 1px solid var(--line);
+}
+
+.push-status li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.push-status li + li { border-top: 1px dashed var(--line); }
+
+.push-status .ps-k { color: var(--muted); font-weight: 600; }
+.push-status .ps-v { color: var(--ink-2); font-weight: 800; text-align: right; }
+.push-status .ps-v.ok { color: var(--ok); }
+.push-status .ps-v.bad { color: var(--danger); }
+
+.push-help { margin-bottom: 12px; }
+.push-help p { margin: 0 0 4px; font-size: 12px; line-height: 1.55; color: var(--ink-2); }
+.push-help p:first-child { font-weight: 700; }
+
 /* ---------------- modal ---------------- */
 .modal { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 18px; }
 .modal[hidden] { display: none; }

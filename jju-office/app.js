@@ -2042,7 +2042,8 @@
   /* ---------------- 🔔 웹 푸시 알림 ---------------- */
   /* VAPID 공개키는 공개 정보입니다(비밀키는 Supabase Edge Function 시크릿에만 저장). */
   var VAPID_PUBLIC_KEY = 'BLsYdjB1PvxgqFW1LsvjOKqEfQ6qry4P77QkHh04m2z7yXbYx5pAx4OtnRy4_XlqHofAiABdweCvsc_qRUrq0pA';
-  var PUSH = { busy: false, sub: null, synced: false };
+  var PUSH = { busy: false, sub: null, synced: false, lastError: '', opened: false };
+  var APP_VERSION = 'v30';
 
   function pushSupported() {
     return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
@@ -2119,8 +2120,10 @@
     }).then(function (sub) {
       PUSH.sub = sub || null;
       renderPushBtn(sub && Notification.permission === 'granted' ? 'on' : 'off');
+      if (PUSH.opened) renderPushPanel();
     }).catch(function () {
       renderPushBtn('off');
+      if (PUSH.opened) renderPushPanel();
     });
   }
 
@@ -2166,23 +2169,150 @@
     }).then(function (sub) {
       if (!sub) { PUSH.sub = null; return; }
       PUSH.sub = sub;
-      return savePushSubscription(sub).catch(function () { PUSH.synced = false; });
+      return savePushSubscription(sub).then(function () {
+        PUSH.synced = true;
+        if (PUSH.opened) renderPushPanel();
+      }, function () { PUSH.synced = false; });
     }).catch(function () { PUSH.synced = false; });
+  }
+
+  function permState() {
+    return ('Notification' in window) ? Notification.permission : 'unsupported';
+  }
+
+  /* 구형 콜백 방식·신형 Promise 방식·예외를 모두 받아 한 번만 결과를 냅니다. */
+  function requestNotifyPermission() {
+    return new Promise(function (resolve) {
+      var done = false;
+      function finish(p) {
+        if (done) return;
+        done = true;
+        resolve(p || permState());
+      }
+      var ret;
+      try {
+        ret = Notification.requestPermission(function (p) { finish(p); });
+      } catch (e) {
+        finish(permState());
+        return;
+      }
+      if (ret && typeof ret.then === 'function') ret.then(finish, function () { finish(); });
+      /* 안드로이드에서 권한 창이 응답 없이 사라지는 경우에도 12초 뒤엔 멈춥니다. */
+      setTimeout(function () { finish(); }, 12000);
+    });
+  }
+
+  function pushHelpLines(perm, hasSub, connected) {
+    if (perm === 'unsupported') return ['이 브라우저는 웹 알림을 지원하지 않아요. 크롬 앱에서 이 주소를 열어 주세요.'];
+    if (perm === 'denied') return [
+      '폰에서 이 앱의 알림이 막혀 있어요. 아래 순서대로 한 번만 풀어 주세요.',
+      '① 홈 화면의 「쭈대표 오피스」 아이콘을 길게 누르기 → 앱 정보 → 알림 → ‘허용’',
+      '② 크롬에서 열었다면 주소창 왼쪽 자물쇠 → 알림 → 허용',
+      '③ 돌아와서 [알림 허용하고 켜기]를 다시 누르기'
+    ];
+    if (perm === 'granted' && !hasSub) return ['알림 권한은 허용됐는데 이 기기 등록이 아직이에요. [알림 허용하고 켜기]를 눌러 주세요.'];
+    if (hasSub && !connected) return ['이 기기 알림은 켜졌어요. AI 연결을 하면 서버에도 자동 등록되어 다른 비서 글도 받습니다.'];
+    if (hasSub) return ['알림이 켜져 있어요. 새 글이 올라오면 앱을 닫아 두어도 폰 상단에 뜹니다.'];
+    return ['[알림 허용하고 켜기]를 누르면 폰에 권한 창이 뜹니다. 한 번만 허용해 주세요.'];
+  }
+
+  function renderPushPanel() {
+    if (!el.pushModal || !el.pushStatus) return;
+    var perm = permState();
+    var supported = pushSupported();
+    var connected = !!(state.supabase.url && state.supabase.key);
+    var swOn = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
+    var hasSub = !!PUSH.sub;
+    var saved = !!(hasSub && PUSH.synced);
+
+    var rows = [
+      ['알림 권한', perm === 'granted' ? '허용됨' : (perm === 'denied' ? '차단됨' : (perm === 'default' ? '아직 묻지 않음' : '지원 안 함')), perm === 'granted' ? 'ok' : (perm === 'denied' ? 'bad' : '')],
+      ['푸시 지원', supported ? '지원' : '지원 안 함', supported ? 'ok' : 'bad'],
+      ['서비스워커', swOn ? '동작 중' : '준비 중', swOn ? 'ok' : ''],
+      ['AI 서버', connected ? '연결됨' : '연결 안 됨', connected ? 'ok' : ''],
+      ['이 기기 등록', saved ? '완료 · 서버 저장' : (hasSub ? '기기에만 저장' : '아직'), saved ? 'ok' : '']
+    ];
+    if (PUSH.lastError) rows.push(['최근 오류', PUSH.lastError, 'bad']);
+    rows.push(['앱 버전', APP_VERSION, '']);
+
+    el.pushStatus.innerHTML = '';
+    rows.forEach(function (r) {
+      var li = document.createElement('li');
+      var k = document.createElement('span');
+      k.className = 'ps-k';
+      k.textContent = r[0];
+      var v = document.createElement('b');
+      v.className = 'ps-v' + (r[2] ? ' ' + r[2] : '');
+      v.textContent = r[1];
+      li.appendChild(k);
+      li.appendChild(v);
+      el.pushStatus.appendChild(li);
+    });
+
+    if (el.pushHelp) {
+      el.pushHelp.innerHTML = '';
+      pushHelpLines(perm, hasSub, connected).forEach(function (line) {
+        var p = document.createElement('p');
+        p.textContent = line;
+        el.pushHelp.appendChild(p);
+      });
+    }
+
+    if (el.pushMain) {
+      var on = (perm === 'granted' && hasSub);
+      el.pushMain.textContent = on ? '알림 끄기' : '알림 허용하고 켜기';
+      el.pushMain.classList.toggle('primary', !on);
+      el.pushMain.classList.toggle('ghost', on);
+    }
+  }
+
+  function openPushPanel() {
+    if (!el.pushModal) return;
+    PUSH.opened = true;
+    el.pushModal.hidden = false;
+    renderPushPanel();
+  }
+
+  function closePushPanel() {
+    if (!el.pushModal) return;
+    PUSH.opened = false;
+    el.pushModal.hidden = true;
+  }
+
+  /* 서비스워커·캐시를 모두 지우고 새로 받아 옵니다(구버전이 물려 있을 때 복구용). */
+  function hardRefresh() {
+    toast('최신 버전으로 새로 고치는 중이에요…', 6000);
+    var jobs = [];
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        jobs.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+          return Promise.all(regs.map(function (reg) { return reg.unregister(); }));
+        }));
+      }
+    } catch (e) {}
+    try {
+      if (window.caches && caches.keys) {
+        jobs.push(caches.keys().then(function (keys) {
+          return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+        }));
+      }
+    } catch (e) {}
+    Promise.all(jobs).catch(function () {}).then(function () { location.reload(); });
   }
 
   function enablePush() {
     if (PUSH.busy) return Promise.resolve();
-    if (!pushSupported()) { toast('이 브라우저는 웹 알림을 지원하지 않아요'); return Promise.resolve(); }
-    if (!state.supabase.url || !state.supabase.key) {
-      toast('AI 서버를 먼저 연결해야 알림을 켤 수 있어요');
-      return Promise.resolve();
-    }
     PUSH.busy = true;
+    PUSH.lastError = '';
     renderPushBtn('wait');
-    return Notification.requestPermission().then(function (perm) {
+    renderPushPanel();
+    /* 어떤 경우에도 버튼이 잠긴 채로 남지 않도록 20초 뒤 자동 해제합니다. */
+    var unlock = setTimeout(function () { PUSH.busy = false; }, 20000);
+    return requestNotifyPermission().then(function (perm) {
       if (perm !== 'granted') {
+        PUSH.lastError = '권한 ' + perm;
         renderPushBtn(perm === 'denied' ? 'denied' : 'off');
-        toast(perm === 'denied' ? '브라우저 설정에서 알림을 허용해 주세요' : '알림 허용을 취소했어요');
+        toast(perm === 'denied' ? '폰 설정에서 알림을 허용해야 켤 수 있어요' : '알림 허용이 취소됐어요');
         return null;
       }
       return pushRegistration().then(function (reg) {
@@ -2195,36 +2325,47 @@
         });
       }).then(function (sub) {
         PUSH.sub = sub;
+        renderPushBtn('on');
+        toast('알림을 켰어요 · 기기 등록 중…');
         return savePushSubscription(sub).then(function () {
           PUSH.synced = true;
-          renderPushBtn('on');
+          PUSH.lastError = '';
           toast('알림을 켰어요 · 새 글이 오면 폰 상단에 뜹니다');
+        }, function (e) {
+          PUSH.synced = false;
+          PUSH.lastError = '서버 저장 실패 ' + ((e && (e.status || e.name)) || '');
+          toast('이 기기에서는 켰어요 · AI 연결을 확인해 주세요');
         });
       });
     }).catch(function (e) {
       var name = (e && e.name) || '';
+      PUSH.lastError = name || (e && e.message) || '알 수 없는 오류';
       if (name === 'NotAllowedError') {
-        renderPushBtn(Notification.permission === 'denied' ? 'denied' : 'off');
-        toast('알림 허용이 막혀 있어요 · 브라우저 설정에서 허용해 주세요');
-      } else if (name === 'NotSupportedError' || name === 'AbortError') {
+        renderPushBtn(permState() === 'denied' ? 'denied' : 'off');
+        toast('알림 허용이 막혀 있어요 · 앱 정보 → 알림에서 허용해 주세요');
+      } else if (name === 'AbortError' || name === 'NotSupportedError' || name === 'InvalidStateError') {
         renderPushBtn('off');
-        toast('이 브라우저에서는 알림을 켤 수 없어요 (홈 화면에 추가한 앱에서 시도해 주세요)');
-      } else if (e && e.message === 'no-server') {
+        toast('폰 알림 서비스가 막혀 있어요 · 크롬에서 한 번 열어 시도해 주세요');
+      } else if (name === 'no-server') {
         renderPushBtn('off');
-        toast('AI 서버를 먼저 연결해야 알림을 켤 수 있어요');
+        toast('AI 연결을 하면 서버에도 등록돼요');
       } else {
         renderPushBtn('off');
         toast('알림 설정에 실패했어요 · 잠시 후 다시 시도해 주세요');
       }
     }).then(function () {
+      clearTimeout(unlock);
       PUSH.busy = false;
+      renderPushPanel();
     });
   }
 
   function disablePush() {
     if (PUSH.busy) return Promise.resolve();
     PUSH.busy = true;
+    PUSH.lastError = '';
     renderPushBtn('wait');
+    renderPushPanel();
     return pushRegistration().then(function (reg) {
       return reg.pushManager.getSubscription();
     }).then(function (sub) {
@@ -2237,32 +2378,38 @@
         renderPushBtn('off');
         toast('알림을 껐어요');
       });
-    }).catch(function () {
+    }).catch(function (e) {
+      PUSH.lastError = '해제 실패 ' + ((e && e.name) || '');
       renderPushBtn('off');
       toast('알림을 끄지 못했어요 · 잠시 후 다시 시도해 주세요');
     }).then(function () {
       PUSH.busy = false;
+      renderPushPanel();
     });
   }
 
+  /* 종 버튼: 어떤 상태에서도 첫 줄에서 즉시 반응하고, 설정 창을 띄워 원인을 보여 줍니다. */
   function togglePush() {
+    toast('알림 설정을 확인하고 있어요…', 3200);
+    openPushPanel();
     if (PUSH.busy) return;
-    if (!pushSupported()) { toast('이 브라우저는 웹 알림을 지원하지 않아요'); return; }
-    if (Notification.permission === 'denied') {
-      toast('브라우저 설정 → 사이트 설정에서 이 사이트 알림을 허용해 주세요');
-      return;
-    }
-    if (Notification.permission === 'granted' && PUSH.sub) { disablePush(); return; }
+    var perm = permState();
+    if (!pushSupported() || perm === 'denied') return;
+    if (perm === 'granted' && PUSH.sub) return;
     enablePush();
   }
 
+  /* index.html의 종 버튼(onclick)에서 부릅니다. */
+  window.JJU_PUSH = togglePush;
+
   /* ---------------- toast ---------------- */
   var toastTimer = null;
-  function toast(text) {
+  function toast(text, ms) {
+    if (!el.toast) return;
     el.toast.textContent = text;
     el.toast.classList.add('show');
     if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.toast.classList.remove('show'); }, 2600);
+    toastTimer = setTimeout(function () { el.toast.classList.remove('show'); }, ms || 2600);
   }
 
   /* ---------------- modal ---------------- */
@@ -2399,6 +2546,12 @@
     el.pushBtn = document.getElementById('pushBtn');
     el.pushIcon = document.getElementById('pushIcon');
     el.pushLabel = document.getElementById('pushLabel');
+    el.pushModal = document.getElementById('pushModal');
+    el.pushStatus = document.getElementById('pushStatus');
+    el.pushHelp = document.getElementById('pushHelp');
+    el.pushMain = document.getElementById('pushMain');
+    el.pushOff = document.getElementById('pushOff');
+    el.pushRefresh = document.getElementById('pushRefresh');
     el.toast = document.getElementById('toast');
     el.todayLabel = document.getElementById('todayLabel');
   }
@@ -2462,7 +2615,19 @@
       applyTheme(state.theme === 'dark' ? 'light' : 'dark');
     });
 
-    if (el.pushBtn) el.pushBtn.addEventListener('click', togglePush);
+    /* 종 버튼은 index.html의 onclick(window.JJU_BELL)이 받습니다 — 여기서 또 걸면 두 번 실행됩니다. */
+    if (el.pushMain) el.pushMain.addEventListener('click', function () {
+      if (permState() === 'granted' && PUSH.sub) disablePush(); else enablePush();
+    });
+    if (el.pushOff) el.pushOff.addEventListener('click', function () { disablePush(); });
+    if (el.pushRefresh) el.pushRefresh.addEventListener('click', hardRefresh);
+    if (el.pushModal) {
+      el.pushModal.addEventListener('click', function (e) {
+        if (e.target.dataset.close) closePushPanel();
+      });
+      var pushClose = document.getElementById('pushClose');
+      if (pushClose) pushClose.addEventListener('click', closePushPanel);
+    }
 
     el.serverBtn.addEventListener('click', openModal);
     document.getElementById('serverClose').addEventListener('click', closeModal);
@@ -2470,7 +2635,7 @@
       if (e.target.dataset.close) closeModal();
     });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') { closeModal(); closeSheet(); hideMentions(); }
+      if (e.key === 'Escape') { closeModal(); closeSheet(); hideMentions(); closePushPanel(); }
     });
     document.getElementById('sbSave').addEventListener('click', saveServer);
     document.getElementById('sbTest').addEventListener('click', testFromModal);
@@ -2569,12 +2734,22 @@
     connectStored(autoConnected);
     if (autoConnected) toast('AI 서버에 자동 연결됐어요');
 
-    refreshPushState();
+    refreshPushState().then(renderPushPanel);
     syncPushSubscription();
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
-        navigator.serviceWorker.register('sw.js').catch(function () { /* offline install unavailable */ });
+        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
+          if (reg && reg.update) reg.update().catch(function () {});
+        }).catch(function () { /* offline install unavailable */ });
+      });
+      /* 새 서비스워커가 이 화면을 인계하면 최신 app.js·styles.css로 한 번만 새로 고칩니다. */
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        var last = 0;
+        try { last = Number(sessionStorage.getItem('jju-office-sw-reload') || 0); } catch (e) { last = 0; }
+        if (Date.now() - last < 15000) return;
+        try { sessionStorage.setItem('jju-office-sw-reload', String(Date.now())); } catch (e) {}
+        location.reload();
       });
     }
   }

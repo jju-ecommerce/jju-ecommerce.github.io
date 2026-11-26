@@ -1,5 +1,5 @@
 /* 쭈대표 AI 오피스 · service worker */
-var CACHE = 'jju-office-v23';
+var CACHE = 'jju-office-v24';
 var ASSETS = [
   './',
   './index.html',
@@ -18,7 +18,10 @@ var ASSETS = [
 self.addEventListener('install', function (e) {
   e.waitUntil(
     caches.open(CACHE).then(function (c) {
-      return c.addAll(ASSETS).catch(function () { /* partial cache is fine */ });
+      /* HTTP 캐시에 남은 옛 파일을 쓰지 않고 새로 받습니다. */
+      return Promise.all(ASSETS.map(function (url) {
+        return c.add(new Request(url, { cache: 'reload' })).catch(function () { /* partial cache is fine */ });
+      }));
     }).then(function () { return self.skipWaiting(); })
   );
 });
@@ -31,6 +34,10 @@ self.addEventListener('activate', function (e) {
       }));
     }).then(function () { return self.clients.claim(); })
   );
+});
+
+self.addEventListener('message', function (e) {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 /* ---------------- 🔔 웹 푸시 알림 ---------------- */
