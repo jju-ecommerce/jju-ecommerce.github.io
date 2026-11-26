@@ -17,7 +17,7 @@
 | 🧵 스레드 | 3채널 오늘 예약 현황과 운영 수칙 |
 | 🎬 유튜브 | 1~10회 대본 진행 상황 |
 | ✍️ 블로그 | 도매에빠지다 네이버 블로그 SEO — 공략 키워드(복사), 도매몰 디렉토리 3곳 진행(나셀러·셀러위키·도매리스트닷컴, 이 브라우저에만 저장), 11/25 원고(제목·본문·해시태그 11개) 원클릭 복사와 발행 상태(초안·발행완료) |
-| 📋 할 일 | 오늘 할 일·결정 대기 — Supabase `office_tasks`와 동기화. 제목 + 담당(대표님 결정·총괄이사·쭈1·쭈2·쭈3) 빠른 추가, 체크로 진행 중/완료 분리, 삭제, 상단에 미완료 건수 배지. AI 서버 미연결 시 이 기기에만 저장 (하단 바 `📋 할 일`) |
+| 📋 할 일 | 할 일·약속 — Supabase `office_tasks`와 동기화. 제목 + 담당(대표님 결정·총괄이사·쭈1·쭈2·쭈3) + **날짜(약속)** 빠른 추가(오늘·내일·날짜 없음 칩, 날짜 선택), 날짜 배지(`오늘`·`내일`·`11/28 (토)`·`지남`)를 눌러 날짜 변경/삭제, 약속은 날짜순·날짜 없는 할 일은 뒤로 정렬, 보기 필터(전체·오늘·날짜없음·예정된 약속), 체크로 진행 중/완료 분리, 삭제, 상단에 미완료 건수 배지. AI 서버 미연결 시 이 기기에만 저장 (하단 바 `📋 할 일`) |
 | 🤖 비서 | 4인방 역할 카드 |
 
 ## 동작 방식
@@ -71,6 +71,19 @@ curl -X POST "$SUPABASE_URL/rest/v1/office_tasks" \
 curl -X PATCH "$SUPABASE_URL/rest/v1/office_tasks?id=eq.<id>" \
   -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
   -H "Content-Type: application/json" -d '{"done":true}'
+```
+
+날짜 약속은 `due_date` 에 `YYYY-MM-DD` 를 넣습니다(비우면 날짜 없는 할 일). 앱에서도 같은 방식으로 저장되고, 화면에서는 `오늘`·`내일`·`11/28 (토)`·`지남` 배지로 보입니다.
+
+```bash
+curl -X POST "$SUPABASE_URL/rest/v1/office_tasks" \
+  -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"달리바 상세페이지 검수 약속","owner":"boss","done":false,"due_date":"2026-11-28"}'
+
+curl -X PATCH "$SUPABASE_URL/rest/v1/office_tasks?id=eq.<id>" \
+  -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" -d '{"due_date":null}'
 ```
 
 ## 파일

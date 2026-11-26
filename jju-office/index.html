@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="styles.css?v=17">
+<link rel="stylesheet" href="styles.css?v=18">
 </head>
 <body>
 <div class="app" id="app">
@@ -413,12 +413,12 @@
     <section class="view" id="view-tasks" aria-label="할 일">
       <div class="card">
         <div class="card-head">
-          <h3>📋 오늘 할 일</h3>
+          <h3>📋 할 일 · 약속</h3>
           <span class="chip chip-gold" id="taskBadge">진행 중 0건</span>
         </div>
-        <p class="muted-note" id="taskSummary">대표님 결정 대기 0건 · 완료 0건</p>
+        <p class="muted-note" id="taskSummary">오늘 0건 · 예정 0건 · 날짜 없음 0건 · 완료 0건</p>
         <form class="task-add" id="taskForm">
-          <input id="taskInput" type="text" autocomplete="off" placeholder="할 일을 입력하고 Enter">
+          <input id="taskInput" type="text" autocomplete="off" placeholder="할 일·약속을 입력하고 Enter">
           <div class="task-add-row">
             <select id="taskOwner" aria-label="담당 선택">
               <option value="boss">대표님 결정</option>
@@ -427,10 +427,29 @@
               <option value="jju2">쭈2</option>
               <option value="jju3">쭈3</option>
             </select>
-            <button type="submit">추가</button>
+            <label class="task-due-box" id="taskDueBox">
+              <span class="task-due-ico" aria-hidden="true">📅</span>
+              <input id="taskDue" type="date" aria-label="약속 날짜(선택)">
+            </label>
+          </div>
+          <div class="task-add-foot">
+            <div class="task-due-chips" id="taskDueChips">
+              <button type="button" data-due="today">오늘</button>
+              <button type="button" data-due="tomorrow">내일</button>
+              <button type="button" data-due="none" class="active">날짜 없음</button>
+            </div>
+            <button type="submit" class="task-add-btn">추가</button>
           </div>
         </form>
         <p class="tiny-note" id="taskSyncNote">이 기기에만 저장 · AI 서버를 연결하면 4인방과 실시간 공유</p>
+      </div>
+
+      <div class="card task-filter-card">
+        <div class="task-filter" id="taskFilter" role="group" aria-label="할 일 보기">
+          <button type="button" data-filter="all" class="active" aria-pressed="true">전체 <b id="tfAll">0</b></button>
+          <button type="button" data-filter="today" aria-pressed="false">오늘·날짜없음 <b id="tfToday">0</b></button>
+          <button type="button" data-filter="upcoming" aria-pressed="false">예정된 약속 <b id="tfUp">0</b></button>
+        </div>
       </div>
 
       <div class="card">
@@ -447,6 +466,7 @@
         <div class="card-head"><h3>이 화면의 값</h3><span class="chip chip-soft" id="taskServerChip">기기 저장</span></div>
         <ul class="dot-list">
           <li>할 일은 Supabase <b>office_tasks</b> 테이블과 동기화됩니다(AI 서버 연결 시).</li>
+          <li><b>날짜</b>를 고르면 약속·일정으로 저장되고(<b>due_date</b>), 날짜 배지를 눌러 언제든 바꿀 수 있습니다.</li>
           <li>체크·삭제는 누르는 즉시 서버에 반영되고, 4.5초 주기로 다른 기기와 맞춰집니다.</li>
           <li>AI 서버가 연결되지 않으면 이 브라우저(localStorage)에만 저장됩니다.</li>
         </ul>
@@ -531,6 +551,6 @@
 
   <noscript><p style="padding:20px;text-align:center">자바스크립트를 켜야 오피스가 열립니다.</p></noscript>
 </div>
-<script src="app.js?v=25" defer></script>
+<script src="app.js?v=26" defer></script>
 </body>
 </html>

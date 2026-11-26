@@ -51,12 +51,16 @@
     { title: '유튜브 [10회] 4050 AI 이렇게 시작하세요 QPrompt 확인·촬영', owner: 'boss' },
     { title: '컴퓨존 데스크탑 i51722 램 32GB·윈도우·배송지 결정', owner: 'boss' },
     { title: '소싱 시트 33~36행 검토 및 목요일 소싱 재개 여부 결정', owner: 'boss' },
-    { title: '내일(11/27)부터 도매에빠지다 최신상품순 블로그 작성 개시', owner: 'jju2' }
+    { title: '내일(11/27)부터 도매에빠지다 최신상품순 블로그 작성 개시', owner: 'jju2', due: 1 }
   ];
 
   function seedTasks() {
     return TASKS_SEED.map(function (t) {
-      return { id: uid(), title: t.title, owner: t.owner, done: false, created_at: new Date().toISOString() };
+      return {
+        id: uid(), title: t.title, owner: t.owner, done: false,
+        due_date: t.due === undefined ? '' : shiftISO(t.due),
+        created_at: new Date().toISOString()
+      };
     });
   }
 
@@ -67,6 +71,7 @@
     room: 'grand',
     messages: [],
     tasks: [],
+    taskFilter: 'all',
     supabase: { url: '', key: '' }
   };
 
@@ -122,6 +127,7 @@
         room: state.room,
         messages: state.messages.slice(-400),
         tasks: state.tasks,
+        taskFilter: state.taskFilter,
         supabase: state.supabase
       }));
     } catch (e) { /* storage full or blocked */ }
@@ -144,10 +150,12 @@
           title: String((t && t.title) || ''),
           owner: (t && PEOPLE[t.owner]) ? t.owner : 'boss',
           done: !!(t && t.done),
+          due_date: (t && t.due_date) || '',
           created_at: (t && t.created_at) || new Date().toISOString(),
           unsynced: !!(t && t.unsynced)
         };
       }).filter(function (t) { return t.title; });
+      state.taskFilter = (s.taskFilter === 'today' || s.taskFilter === 'upcoming') ? s.taskFilter : 'all';
       if (s.supabase && typeof s.supabase === 'object') {
         state.supabase.url = s.supabase.url || '';
         state.supabase.key = s.supabase.key || '';
@@ -417,6 +425,87 @@
     return TASK_OWNERS[0].label;
   }
 
+  /* ---- 날짜(약속) 도우미 ---- */
+  var WEEK_KO = ['일', '월', '화', '수', '목', '금', '토'];
+
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+  function isoDate(d) {
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+
+  function todayISO() { return isoDate(new Date()); }
+
+  function shiftISO(days) {
+    var d = new Date();
+    d.setDate(d.getDate() + (days || 0));
+    return isoDate(d);
+  }
+
+  /* 'YYYY-MM-DD'를 new Date(str)로 읽으면 UTC 자정이라 하루 밀립니다. 로컬 자정으로 직접 만듭니다. */
+  function parseISODate(s) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || ''));
+    if (!m) return null;
+    var d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  function dayGap(s) {
+    var d = parseISODate(s);
+    if (!d) return null;
+    var t = parseISODate(todayISO());
+    return Math.round((d.getTime() - t.getTime()) / 86400000);
+  }
+
+  function dueState(s) {
+    if (!s) return 'none';
+    var g = dayGap(s);
+    if (g === null) return 'none';
+    if (g < 0) return 'past';
+    if (g === 0) return 'today';
+    if (g === 1) return 'tomorrow';
+    return 'future';
+  }
+
+  function dueLabel(s) {
+    var d = parseISODate(s);
+    if (!d) return '';
+    var g = dayGap(s);
+    var md = (d.getMonth() + 1) + '/' + d.getDate() + ' (' + WEEK_KO[d.getDay()] + ')';
+    if (g === 0) return '오늘';
+    if (g === 1) return '내일';
+    if (g === -1) return '어제';
+    if (g < -1) return md + ' 지남';
+    return md;
+  }
+
+  /* 날짜 있는 약속을 날짜순으로 먼저, 같은 날짜면 등록순. 날짜 없는 할 일은 그 뒤에. */
+  function byDueThenCreated(a, b) {
+    var ad = a.due_date ? dayGap(a.due_date) : null;
+    var bd = b.due_date ? dayGap(b.due_date) : null;
+    if (ad !== null && bd !== null) {
+      if (ad !== bd) return ad - bd;
+      return byCreated(a, b);
+    }
+    if (ad !== null) return -1;
+    if (bd !== null) return 1;
+    return byCreated(a, b);
+  }
+
+  function taskMatchesFilter(t, f) {
+    if (f === 'today') {
+      if (!t.due_date) return true;      /* 날짜 없는 할 일은 늘 오늘 볼 것 */
+      var g = dayGap(t.due_date);
+      return g !== null && g <= 0;       /* 오늘 + 지난 날짜 */
+    }
+    if (f === 'upcoming') {
+      if (!t.due_date) return false;
+      var gu = dayGap(t.due_date);
+      return gu !== null && gu > 0;      /* 내일 이후 예정된 약속 */
+    }
+    return true;
+  }
+
   function taskFromRow(r) {
     return {
       id: r.id,
@@ -429,6 +518,63 @@
   }
 
   function byCreated(a, b) { return new Date(a.created_at) - new Date(b.created_at); }
+
+  function renderDueControl(t) {
+    var wrap = document.createElement('span');
+    wrap.className = 'todo-due-wrap';
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    var st = dueState(t.due_date);
+    btn.className = 'todo-due ' + (t.due_date ? 'st-' + st : 'none');
+    btn.textContent = t.due_date ? dueLabel(t.due_date) : '📅 날짜';
+    btn.setAttribute('aria-label', t.due_date
+      ? '약속 날짜 ' + t.due_date + ' 바꾸기'
+      : '약속 날짜 정하기');
+    btn.addEventListener('click', function () { openDueEditor(t, wrap); });
+    wrap.appendChild(btn);
+    return wrap;
+  }
+
+  /* 배지를 누르면 그 자리에서 날짜를 고르고 바로 서버에 반영합니다. */
+  function openDueEditor(t, wrap) {
+    wrap.innerHTML = '';
+    var input = document.createElement('input');
+    input.type = 'date';
+    input.className = 'todo-due-input';
+    input.value = t.due_date || '';
+    input.setAttribute('aria-label', '약속 날짜 선택');
+
+    var clear = document.createElement('button');
+    clear.type = 'button';
+    clear.className = 'todo-due-clear';
+    clear.textContent = '날짜 없음';
+    clear.setAttribute('aria-label', '날짜 없애기');
+
+    var settled = false;
+    function settle(val) {
+      if (settled) return;
+      settled = true;
+      if ((val || '') === (t.due_date || '')) renderTasks();
+      else setTaskDue(t, val || '');
+    }
+
+    input.addEventListener('change', function () { settle(input.value); });
+    input.addEventListener('blur', function () {
+      setTimeout(function () { if (!settled) settle(input.value); }, 150);
+    });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' || e.key === 'Esc') { settled = true; renderTasks(); }
+    });
+    clear.addEventListener('click', function () { settled = true; setTaskDue(t, ''); });
+
+    wrap.appendChild(input);
+    wrap.appendChild(clear);
+    try {
+      input.focus();
+      if (input.showPicker) input.showPicker();
+    } catch (e) { /* picker unavailable on this browser */ }
+  }
 
   function renderTaskRow(t) {
     var li = document.createElement('li');
@@ -451,8 +597,12 @@
     body.appendChild(tx);
 
     var meta = document.createElement('span');
-    meta.className = 'todo-owner ow-' + (t.owner || 'boss');
-    meta.textContent = ownerLabel(t.owner) + (t.unsynced ? ' · 기기에만' : '');
+    meta.className = 'todo-meta';
+    var owner = document.createElement('span');
+    owner.className = 'todo-owner ow-' + (t.owner || 'boss');
+    owner.textContent = ownerLabel(t.owner) + (t.unsynced ? ' · 기기에만' : '');
+    meta.appendChild(owner);
+    meta.appendChild(renderDueControl(t));
     body.appendChild(meta);
 
     var del = document.createElement('button');
@@ -478,14 +628,20 @@
   function renderTasks() {
     if (!el.taskOpenList || !el.taskDoneList) return;
 
-    var open = state.tasks.filter(function (t) { return !t.done; }).sort(byCreated);
-    var done = state.tasks.filter(function (t) { return t.done; }).sort(function (a, b) { return byCreated(b, a); });
+    var f = state.taskFilter || 'all';
+    var openAll = state.tasks.filter(function (t) { return !t.done; });
+    var doneAll = state.tasks.filter(function (t) { return t.done; });
+    var open = openAll.filter(function (t) { return taskMatchesFilter(t, f); }).sort(byDueThenCreated);
+    var done = doneAll.filter(function (t) { return taskMatchesFilter(t, f); })
+      .sort(function (a, b) { return byCreated(b, a); });
 
     el.taskOpenList.innerHTML = '';
     if (open.length) {
       open.forEach(function (t) { el.taskOpenList.appendChild(renderTaskRow(t)); });
     } else {
-      el.taskOpenList.appendChild(emptyTaskRow('진행 중인 할 일이 없습니다. 위에 한 줄 추가해 보세요.'));
+      el.taskOpenList.appendChild(emptyTaskRow(f === 'upcoming'
+        ? '예정된 약속이 없습니다. 위에서 날짜를 골라 추가해 보세요.'
+        : (f === 'today' ? '오늘·날짜 없는 할 일이 없습니다.' : '진행 중인 할 일이 없습니다. 위에 한 줄 추가해 보세요.')));
     }
 
     el.taskDoneList.innerHTML = '';
@@ -495,18 +651,42 @@
       el.taskDoneList.appendChild(emptyTaskRow('완료한 일이 아직 없습니다.'));
     }
 
-    var bossOpen = open.filter(function (t) { return t.owner === 'boss'; }).length;
-    el.taskBadge.textContent = '진행 중 ' + open.length + '건';
+    var todayN = 0, soonN = 0, pastN = 0, noneN = 0;
+    openAll.forEach(function (t) {
+      var st = dueState(t.due_date);
+      if (st === 'today') todayN += 1;
+      else if (st === 'tomorrow' || st === 'future') soonN += 1;
+      else if (st === 'past') pastN += 1;
+      else noneN += 1;
+    });
+
+    el.taskBadge.textContent = '진행 중 ' + openAll.length + '건';
     el.taskOpenCount.textContent = open.length + '건';
     el.taskDoneCount.textContent = done.length + '건';
-    el.taskSummary.textContent = '대표님 결정 대기 ' + bossOpen + '건 · 완료 ' + done.length + '건';
+
+    var bits = ['오늘 ' + todayN + '건', '예정 ' + soonN + '건'];
+    if (pastN) bits.push('지남 ' + pastN + '건');
+    bits.push('날짜 없음 ' + noneN + '건', '완료 ' + doneAll.length + '건');
+    el.taskSummary.textContent = bits.join(' · ');
+
+    if (el.taskFilter) {
+      el.taskFilter.querySelectorAll('button[data-filter]').forEach(function (b) {
+        var k = b.dataset.filter || 'all';
+        b.classList.toggle('active', k === f);
+        b.setAttribute('aria-pressed', k === f ? 'true' : 'false');
+      });
+    }
+    if (el.tfAll) el.tfAll.textContent = openAll.length;
+    if (el.tfToday) el.tfToday.textContent = openAll.filter(function (t) { return taskMatchesFilter(t, 'today'); }).length;
+    if (el.tfUp) el.tfUp.textContent = openAll.filter(function (t) { return taskMatchesFilter(t, 'upcoming'); }).length;
+
     el.taskSyncNote.textContent = SB.connected
       ? 'AI 서버 연결됨 · 4인방과 실시간 공유 중'
       : '이 기기에만 저장 · AI 서버를 연결하면 4인방과 실시간 공유';
     if (el.taskServerChip) el.taskServerChip.textContent = SB.connected ? '서버 연동' : '기기 저장';
 
     taskSig = state.tasks.map(function (t) {
-      return t.id + ':' + (t.done ? 1 : 0) + ':' + (t.unsynced ? 1 : 0) + ':' + t.title + ':' + (t.owner || '');
+      return t.id + ':' + (t.done ? 1 : 0) + ':' + (t.unsynced ? 1 : 0) + ':' + t.title + ':' + (t.owner || '') + ':' + (t.due_date || '');
     }).join('|');
     save();
   }
@@ -520,23 +700,66 @@
     return promise.then(function (r) { done(); return r; }, function (e) { done(); throw e; });
   }
 
-  function addTask(title, owner) {
+  function addTask(title, owner, dueDate) {
+    var due = /^\d{4}-\d{2}-\d{2}$/.test(String(dueDate || '')) ? dueDate : '';
     var t = {
       id: uid(),
       title: title,
       owner: PEOPLE[owner] ? owner : 'boss',
       done: false,
+      due_date: due,
       created_at: new Date().toISOString()
     };
     state.tasks.push(t);
     renderTasks();
-    if (!SB.connected) { toast('이 기기에 저장했어요'); return; }
-    taskWrite(sbInsert('office_tasks', { id: t.id, title: t.title, owner: t.owner, done: false }))
+    var what = due ? '약속(' + dueLabel(due) + ')으로 담았어요' : '할 일로 담았어요';
+    if (!SB.connected) { toast(what + ' · 이 기기에 저장'); return; }
+    taskWrite(sbInsert('office_tasks', { id: t.id, title: t.title, owner: t.owner, done: false, due_date: due || null }))
       .then(function () { return pullTasks(); })
       .catch(function () {
         t.unsynced = true;
         renderTasks();
         toast('서버 저장 실패 · 이 기기에만 담아 뒀어요');
+      });
+  }
+
+  /* 입력줄의 날짜 칸·빠른 칩(오늘·내일·날짜 없음) 동기화 */
+  function setDueInput(v) {
+    if (el.taskDue) el.taskDue.value = v || '';
+    syncDueChips();
+  }
+
+  function syncDueChips() {
+    var v = el.taskDue ? el.taskDue.value : '';
+    var st = v ? dueState(v) : 'none';
+    if (el.taskDueBox) el.taskDueBox.classList.toggle('has-date', !!v);
+    if (!el.taskDueChips) return;
+    el.taskDueChips.querySelectorAll('button[data-due]').forEach(function (b) {
+      var k = b.dataset.due;
+      var on = (k === 'today' && st === 'today') || (k === 'tomorrow' && st === 'tomorrow') ||
+               (k === 'none' && st === 'none');
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+
+  /* 기존 항목의 날짜만 바꾸기·지우기 */
+  function setTaskDue(t, due) {
+    var prev = t.due_date || '';
+    var next = /^\d{4}-\d{2}-\d{2}$/.test(String(due || '')) ? due : '';
+    if (next === prev) { renderTasks(); return; }
+    t.due_date = next;
+    renderTasks();
+    if (t.unsynced || !SB.connected) {
+      toast(next ? dueLabel(next) + ' 약속으로 바꿨어요 · 이 기기에만' : '날짜를 지웠어요 · 이 기기에만');
+      return;
+    }
+    taskWrite(sbPatch('office_tasks', t.id, { due_date: next || null, updated_at: new Date().toISOString() }))
+      .then(function () { return pullTasks().catch(function () {}); })
+      .catch(function () {
+        t.due_date = prev;
+        renderTasks();
+        toast('서버 반영 실패 · AI 서버 연결을 확인해 주세요');
       });
   }
 
@@ -575,7 +798,7 @@
     });
     list.sort(byCreated);
     var sig = list.map(function (t) {
-      return t.id + ':' + (t.done ? 1 : 0) + ':' + (t.unsynced ? 1 : 0) + ':' + t.title + ':' + (t.owner || '');
+      return t.id + ':' + (t.done ? 1 : 0) + ':' + (t.unsynced ? 1 : 0) + ':' + t.title + ':' + (t.owner || '') + ':' + (t.due_date || '');
     }).join('|');
     state.tasks = list;
     if (sig === taskSig) return;
@@ -1876,6 +2099,13 @@
     el.taskForm = document.getElementById('taskForm');
     el.taskInput = document.getElementById('taskInput');
     el.taskOwner = document.getElementById('taskOwner');
+    el.taskDue = document.getElementById('taskDue');
+    el.taskDueBox = document.getElementById('taskDueBox');
+    el.taskDueChips = document.getElementById('taskDueChips');
+    el.taskFilter = document.getElementById('taskFilter');
+    el.tfAll = document.getElementById('tfAll');
+    el.tfToday = document.getElementById('tfToday');
+    el.tfUp = document.getElementById('tfUp');
     el.taskBadge = document.getElementById('taskBadge');
     el.taskSummary = document.getElementById('taskSummary');
     el.taskOpenList = document.getElementById('taskOpenList');
@@ -1999,9 +2229,35 @@
       e.preventDefault();
       var v = (el.taskInput.value || '').trim();
       if (!v) return;
-      addTask(v, el.taskOwner.value);
+      addTask(v, el.taskOwner.value, el.taskDue ? el.taskDue.value : '');
       el.taskInput.value = '';
+      setDueInput('');
+      el.taskInput.focus();
     });
+
+    if (el.taskDueChips) {
+      el.taskDueChips.querySelectorAll('button[data-due]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var k = b.dataset.due;
+          setDueInput(k === 'today' ? todayISO() : (k === 'tomorrow' ? shiftISO(1) : ''));
+          if (el.taskInput) el.taskInput.focus();
+        });
+      });
+    }
+    if (el.taskDue) {
+      el.taskDue.addEventListener('change', syncDueChips);
+      el.taskDue.addEventListener('input', syncDueChips);
+    }
+    if (el.taskFilter) {
+      el.taskFilter.querySelectorAll('button[data-filter]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          state.taskFilter = b.dataset.filter || 'all';
+          save();
+          renderTasks();
+        });
+      });
+    }
+    setDueInput(el.taskDue ? el.taskDue.value : '');
 
     document.querySelectorAll('#view-blog [data-copy]').forEach(function (b) {
       b.addEventListener('click', function () { copyBlog(b.dataset.copy); });

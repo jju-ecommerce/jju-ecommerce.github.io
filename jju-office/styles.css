@@ -955,7 +955,216 @@ html[data-theme="dark"] .hero-yt { background: linear-gradient(150deg, #2A2118, 
   font-weight: 800;
 }
 
+.task-add-row button {
+  flex: none;
+  padding: 0 18px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #96612C, #7A4A1E);
+  color: #FFF8EC;
+  font-size: 13.5px;
+  font-weight: 800;
+}
+
+/* 날짜·약속 */
 .todo-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+
+.task-due-box {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--card-soft);
+  color: var(--muted);
+}
+
+.task-due-box.has-date {
+  border-color: rgba(199, 154, 59, .5);
+  background: rgba(199, 154, 59, .1);
+  color: #8A6520;
+}
+
+.task-due-ico { font-size: 12px; line-height: 1; flex: none; }
+
+.task-due-box input[type="date"] {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 0;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.task-due-box.has-date input[type="date"] { color: #7A4A1E; }
+html[data-theme="dark"] .task-due-box.has-date input[type="date"] { color: var(--gold); }
+
+.task-due-box input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: .55;
+  margin-left: 2px;
+  cursor: pointer;
+}
+
+.task-add-foot { display: flex; align-items: center; gap: 7px; }
+
+.task-due-chips { display: flex; gap: 5px; flex: 1; min-width: 0; }
+
+.task-due-chips button {
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card-soft);
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.task-due-chips button.active {
+  background: rgba(199, 154, 59, .18);
+  border-color: rgba(199, 154, 59, .46);
+  color: #8A6520;
+}
+
+html[data-theme="dark"] .task-due-chips button.active { color: var(--gold); }
+
+.task-add-btn {
+  flex: none;
+  padding: 9px 17px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #96612C, #7A4A1E);
+  color: #FFF8EC;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 800;
+}
+
+.task-add-btn:active { transform: translateY(1px); }
+
+/* 보기 필터 */
+.task-filter-card { padding: 9px 10px; }
+
+.task-filter { display: flex; gap: 5px; }
+
+.task-filter button {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 6px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: var(--card-soft);
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-filter button b { font-weight: 800; opacity: .7; margin-left: 1px; }
+
+.task-filter button.active {
+  background: rgba(199, 154, 59, .2);
+  border-color: rgba(199, 154, 59, .48);
+  color: #7A4A1E;
+}
+
+html[data-theme="dark"] .task-filter button.active { color: var(--gold); }
+
+/* 할 일 항목의 담당·날짜 줄 */
+.todo-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+
+.todo-due-wrap { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+
+.todo-due {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card-soft);
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: -.1px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.todo-due.none { color: var(--muted); font-weight: 700; opacity: .75; border-style: dashed; }
+
+.todo-due.st-today {
+  background: rgba(199, 154, 59, .22);
+  border-color: rgba(199, 154, 59, .52);
+  color: #8A5A18;
+}
+
+.todo-due.st-tomorrow {
+  background: rgba(199, 154, 59, .1);
+  border-color: rgba(199, 154, 59, .32);
+  color: #8A6520;
+}
+
+.todo-due.st-future {
+  background: rgba(120, 140, 110, .14);
+  border-color: rgba(120, 140, 110, .38);
+  color: #57694D;
+}
+
+.todo-due.st-past {
+  background: rgba(190, 80, 60, .14);
+  border-color: rgba(190, 80, 60, .42);
+  color: #A6432F;
+}
+
+html[data-theme="dark"] .todo-due.st-today,
+html[data-theme="dark"] .todo-due.st-tomorrow { color: var(--gold); }
+html[data-theme="dark"] .todo-due.st-future { color: #A9C09D; }
+html[data-theme="dark"] .todo-due.st-past { color: #E4A08C; }
+
+.todo-item.done .todo-due { opacity: .7; }
+
+.todo-due-input {
+  width: 128px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 3px 6px;
+  border-radius: 9px;
+  border: 1px solid var(--gold);
+  background: var(--card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  outline: none;
+}
+
+.todo-due-clear {
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card-soft);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
 
 .todo-owner {
   align-self: flex-start;
