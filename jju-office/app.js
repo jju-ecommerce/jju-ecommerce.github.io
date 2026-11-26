@@ -477,7 +477,7 @@
   /* 캐릭터 좌표는 평면도(1402×1122) 기준 비율입니다.
      말풍선은 각 비서가 office_messages에 올린 최신 보고를 18자로 줄여 보여 줍니다. */
   var MAP_CAST = [
-    { id: 'director', x: 57, y: 27, bubble: 'right', place: '👑 지휘실', duty: '지휘실 대기 · 지시 대기' },
+    { id: 'director', x: 57, y: 28, bubble: 'right', place: '👑 지휘실', duty: '지휘실 대기 · 지시 대기' },
     { id: 'jju1', x: 35, y: 38, bubble: 'up', place: '👑 지휘실 워크스테이션', duty: '1번 채널 대기 중' },
     { id: 'jju2', x: 70, y: 51, bubble: 'up', place: '👑 지휘실 워크스테이션', duty: '2번 채널 대기 중' },
     { id: 'jju3', x: 45, y: 64, bubble: 'up', place: '👑 지휘실 워크스테이션', duty: '3번 채널 대기 중' }

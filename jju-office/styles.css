@@ -1450,7 +1450,7 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
 
 .zone-tag {
   position: absolute;
-  top: 5px;
+  top: 3px;
   left: 5px;
   display: flex;
   flex-direction: column;
@@ -1590,8 +1590,8 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
 }
 
 .map-fig[data-bubble="right"] .map-bubble {
-  left: calc(50% + 14px);
-  top: 5px;
+  left: calc(50% + 18px);
+  top: 4px;
   bottom: auto;
   max-width: 100px;
   transform: none;
