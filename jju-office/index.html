@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>쭈대표 AI 오피스</title>
+<meta name="description" content="쭈대표님 전용 AI 비서 4인방 관제 오피스 — 회의실·대시보드·소싱·스레드·유튜브·메모">
+<meta name="theme-color" content="#F6EDE0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="쭈대표 오피스">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app" id="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand-mark" src="icons/logo-badge.png" alt="쭈대표 AI 오피스 로고" width="46" height="46">
+      <div class="brand-text">
+        <h1>쭈대표 AI 오피스</h1>
+        <p class="brand-sub"><span class="live-dot" id="liveDot"></span><span id="brandSub">쭈대표님 전용</span></p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="server-pill" id="serverBtn" aria-haspopup="dialog" aria-controls="serverModal" aria-label="AI 서버 연결 설정 열기">
+        <svg class="gear" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.9 19.3a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.7 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.7 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.7h.08A1.7 1.7 0 0 0 10.1 3.14V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.56 1.03H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+        <span class="server-label">AI</span>
+        <span class="server-state" id="serverPillState">서버</span>
+      </button>
+      <button class="theme-btn" id="themeBtn" aria-label="라이트·다크 테마 전환">
+        <span id="themeIcon">☀️</span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="menu-grid" aria-label="주요 메뉴">
+    <button class="menu-item active" data-view="office"><span class="menu-ico">🏛️</span><span class="menu-label">회의실</span></button>
+    <button class="menu-item" data-view="dashboard"><span class="menu-ico">📊</span><span class="menu-label">대시보드</span></button>
+    <button class="menu-item" data-view="sourcing"><span class="menu-ico">🛒</span><span class="menu-label">소싱</span></button>
+    <button class="menu-item" data-view="threads"><span class="menu-ico">🧵</span><span class="menu-label">스레드</span></button>
+    <button class="menu-item" data-view="youtube"><span class="menu-ico">🎬</span><span class="menu-label">유튜브</span></button>
+    <button class="menu-item" data-view="memo"><span class="menu-ico">📝</span><span class="menu-label">메모</span></button>
+  </nav>
+
+  <main id="main">
+
+    <!-- ============ 회의실 ============ -->
+    <section class="view active" id="view-office" aria-label="회의실">
+      <div class="card meeting-card">
+        <div class="room-tabs" role="tablist" aria-label="회의실 선택">
+          <button class="room-tab active" data-room="grand" role="tab" aria-selected="true">🏛️ 대회의실</button>
+          <button class="room-tab" data-room="command" role="tab" aria-selected="false">👑 지휘실</button>
+          <button class="room-tab" data-room="lounge" role="tab" aria-selected="false">☕ 라운지</button>
+        </div>
+        <div class="room-meta" id="roomMeta">🏛️ 총괄이사 · 쭈1 · 쭈2 · 쭈3 · 4명</div>
+        <div class="chat-log" id="chatLog" aria-live="polite"></div>
+        <div class="composer">
+          <button class="plus-btn" id="plusBtn" aria-label="멘션 빠른 입력" aria-expanded="false">+</button>
+          <input id="chatInput" type="text" autocomplete="off" placeholder="대표님, 지시를 한 줄로 (@all = 전원)" aria-label="회의실 지시 입력">
+          <button class="send-btn" id="sendBtn">보내기</button>
+          <div class="mention-menu" id="mentionMenu" hidden>
+            <button data-mention="@all">@all <small>전원</small></button>
+            <button data-mention="@총괄이사">@총괄이사 <small>본폰</small></button>
+            <button data-mention="@쭈1">@쭈1 <small>1번 폰</small></button>
+            <button data-mention="@쭈2">@쭈2 <small>2번 폰</small></button>
+            <button data-mention="@쭈3">@쭈3 <small>3번 폰</small></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 대시보드 ============ -->
+    <section class="view" id="view-dashboard" aria-label="대시보드">
+      <div class="card hero">
+        <p class="eyebrow" id="todayLabel">오늘</p>
+        <h2>대표님, 오늘 이렇게<br>돌아가고 있습니다</h2>
+        <div class="hero-stats">
+          <div class="stat"><b>6</b><span>스레드 예약</span></div>
+          <div class="stat"><b>4</b><span>소싱 검토 대기</span></div>
+          <div class="stat"><b>10</b><span>유튜브 대본</span></div>
+        </div>
+        <p class="hero-note">데이터 기준 2026-11-26</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>오늘의 운영</h3><span class="chip chip-gold">진행 중</span></div>
+        <ul class="status-list">
+          <li>
+            <span class="ico">🧵</span>
+            <div class="status-body"><b>스레드 3채널 6편 예약 완료</b><p>2번 11:10 · 21:30 / 3번 11:50 · 18:40 / 1번 12:31 · 19:21</p></div>
+            <span class="chip chip-ok">예약</span>
+          </li>
+          <li>
+            <span class="ico">🛒</span>
+            <div class="status-body"><b>일일 소싱 4종 등록·검증</b><p>33~36행 · 판매가 확정과 샘플 발주만 남음</p></div>
+            <span class="chip chip-warn">대기</span>
+          </li>
+          <li>
+            <span class="ico">🎬</span>
+            <div class="status-body"><b>[10회] 대본 시트 등록 완료</b><p>4050 AI, 이렇게 시작하세요 · 유튜브_대본 12행</p></div>
+            <span class="chip chip-ok">등록</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>대표님 결정 대기</h3><span class="chip chip-warn">3건</span></div>
+        <ol class="ask-list">
+          <li>
+            <b>원고 무단 복사 4계정</b>
+            <span>@liquidgroove · @mooni.lab.kr · @susieq286 · @hopkoohq — 신고·차단·보류 중 선택</span>
+          </li>
+          <li>
+            <b>에이블리 77% 페이백</b>
+            <span>12/1~3 비즈머니 증액분 · 12/9 지급 · 12/11까지 사용</span>
+          </li>
+          <li>
+            <b>데스크탑(컴퓨존 i51722)</b>
+            <span>11/25 보류 · 램 32GB·윈도우 11 추가 여부 남음</span>
+          </li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>비서 4인방</h3><button class="link-btn" data-view="assistants">전체 보기</button></div>
+        <div class="crew-row" id="crewRow"></div>
+      </div>
+    </section>
+
+    <!-- ============ 소싱 ============ -->
+    <section class="view" id="view-sourcing" aria-label="소싱">
+      <div class="card">
+        <div class="card-head"><h3>일일 소싱 4종</h3><span class="chip chip-warn">판매가 확정 대기</span></div>
+        <p class="muted-note">11월 25일 등록 · 33~36행 · 실링크와 경쟁가 검증 완료. 판매가 확정과 샘플 발주는 대표님 승인 뒤에 진행합니다.</p>
+      </div>
+
+      <article class="card src">
+        <div class="src-top"><span class="owner owner-director">총괄이사</span><span class="chip chip-soft">33행</span></div>
+        <h3 class="src-name">달리바 차량용 뒷좌석 4면 밀폐형 방수 시트커버</h3>
+        <dl class="src-grid">
+          <div><dt>1688</dt><dd>¥14.00~<small>도착 약 4,200원</small></dd></div>
+          <div><dt>판매가</dt><dd>19,900원<small>순마진 47.4%</small></dd></div>
+          <div><dt>경쟁가</dt><dd>19,800원<small>쿠팡 치프몰</small></dd></div>
+        </dl>
+        <p class="src-note">경쟁 대응가 18,900원(순마진 45.3%) 선택 가능</p>
+      </article>
+
+      <article class="card src">
+        <div class="src-top"><span class="owner owner-jju2">쭈2</span><span class="chip chip-soft">34행</span></div>
+        <h3 class="src-name">차량 뒷좌석 시트백 멀티 수납 오거나이저</h3>
+        <dl class="src-grid">
+          <div><dt>1688</dt><dd>¥14.00~<small>도착 약 4,200원</small></dd></div>
+          <div><dt>판매가</dt><dd>19,900원<small>순마진 46.9%</small></dd></div>
+          <div><dt>경쟁가</dt><dd>17,260원<small>쿠팡 피라모니</small></dd></div>
+        </dl>
+        <p class="src-note">진입가 17,900원 권장</p>
+      </article>
+
+      <article class="card src">
+        <div class="src-top"><span class="owner owner-jju3">쭈3</span><span class="chip chip-soft">35행</span></div>
+        <h3 class="src-name">달리바 더블존 이중분리형 운동화 세탁망</h3>
+        <dl class="src-grid">
+          <div><dt>1688</dt><dd>¥4.80~<small>150g 단일형 기준</small></dd></div>
+          <div><dt>판매가</dt><dd>12,900원<small>순마진 48.6%</small></dd></div>
+          <div><dt>경쟁가</dt><dd>12,700원<small>쿠팡 하니모아</small></dd></div>
+        </dl>
+        <p class="src-note">10,900원 침투가 · 2개입 19,900원 구성 선택 가능</p>
+      </article>
+
+      <article class="card src">
+        <div class="src-top"><span class="owner owner-jju1">쭈1</span><span class="chip chip-soft">36행</span></div>
+        <h3 class="src-name">여행용 수납 파우치 7종 세트</h3>
+        <dl class="src-grid">
+          <div><dt>1688</dt><dd>¥2.00~<small>낱개 · 세트 20~30위안 추정</small></dd></div>
+          <div><dt>판매가</dt><dd>21,900원<small>압축형 사양 확보 시</small></dd></div>
+          <div><dt>경쟁가</dt><dd>6,170~9,900원<small>다감컴퍼니 7,280원</small></dd></div>
+        </dl>
+        <p class="src-note">일반형은 가격 포화 — 압축형 사양 확보 전에는 진입 보류</p>
+      </article>
+
+      <div class="card">
+        <div class="card-head"><h3>소싱 원칙</h3></div>
+        <div class="tag-row">
+          <span class="tag">인증 제품 제외</span>
+          <span class="tag">시즌 상품 3개월 선행</span>
+          <span class="tag">사계절 상품 상시</span>
+          <span class="tag">중복 방지 3단 락</span>
+        </div>
+        <p class="muted-note">34~36행 1688 세부 SKU 단가와 무지 라벨 여부는 로그인 영역이라 미확인 — 발주 전 확인이 필요합니다.</p>
+      </div>
+    </section>
+
+    <!-- ============ 스레드 ============ -->
+    <section class="view" id="view-threads" aria-label="스레드">
+      <div class="card">
+        <div class="card-head"><h3>오늘 6편</h3><span class="chip chip-gold">전 채널 예약 완료</span></div>
+        <p class="muted-note">3채널 2편씩. 발행되면 링크 확인 후 시트에 발행완료로 갱신합니다. 예약 시각이 지나도 실제 게시 시각을 다시 확인합니다.</p>
+      </div>
+
+      <article class="card ch">
+        <header>
+          <span class="ch-no no1">1번</span>
+          <div class="ch-id"><h3>@jju20231004</h3><p>쭈1 · 1번 폰</p></div>
+          <a class="ch-link" href="https://www.threads.com/@jju20231004" target="_blank" rel="noopener">열기</a>
+        </header>
+        <div class="ch-slots">
+          <span class="slot"><b>12:31</b><i class="chip chip-ok">예약</i></span>
+          <span class="slot"><b>19:21</b><i class="chip chip-ok">예약</i></span>
+        </div>
+        <p class="ch-meta">팔로워 75명 <small>11/22 확인</small></p>
+      </article>
+
+      <article class="card ch">
+        <header>
+          <span class="ch-no no2">2번</span>
+          <div class="ch-id"><h3>@songdossanai</h3><p>쭈2 · 2번 폰</p></div>
+          <a class="ch-link" href="https://www.threads.com/@songdossanai" target="_blank" rel="noopener">열기</a>
+        </header>
+        <div class="ch-slots">
+          <span class="slot"><b>11:10</b><i class="chip chip-ok">예약</i></span>
+          <span class="slot"><b>21:30</b><i class="chip chip-ok">예약</i></span>
+        </div>
+        <p class="ch-meta">팔로워 14명 · 30일 조회 3,596회 <small>11/24 확인</small></p>
+      </article>
+
+      <article class="card ch">
+        <header>
+          <span class="ch-no no3">3번</span>
+          <div class="ch-id"><h3>@daliva_jnt</h3><p>쭈3 · 3번 폰</p></div>
+          <a class="ch-link" href="https://www.threads.com/@daliva_jnt" target="_blank" rel="noopener">열기</a>
+        </header>
+        <div class="ch-slots">
+          <span class="slot"><b>11:50</b><i class="chip chip-ok">예약</i></span>
+          <span class="slot"><b>18:40</b><i class="chip chip-ok">예약</i></span>
+        </div>
+        <p class="ch-meta">업리카 세션 만료 시 직접 발행으로 대체 <small>쭈3 운영 원칙</small></p>
+      </article>
+
+      <div class="card">
+        <div class="card-head"><h3>운영 수칙</h3></div>
+        <div class="tag-row">
+          <span class="tag">경력 강조 없이 공감글</span>
+          <span class="tag">사실 기반만</span>
+          <span class="tag">타인 글 댓글 하루 3~5건</span>
+          <span class="tag">예약 전후 30분 분리</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 유튜브 ============ -->
+    <section class="view" id="view-youtube" aria-label="유튜브">
+      <div class="card hero-yt">
+        <div class="yt-top">
+          <div>
+            <p class="eyebrow">유튜브 채널</p>
+            <h2>쭈대표의 이커머스</h2>
+            <p class="yt-handle">@JJU_E-Commerce · 구독자 150명 도달 <small>(11/19 알림)</small></p>
+          </div>
+          <a class="ch-link" href="https://www.youtube.com/@JJU_E-Commerce" target="_blank" rel="noopener">채널</a>
+        </div>
+        <div class="hero-stats">
+          <div class="stat"><b>10</b><span>대본 등록</span></div>
+          <div class="stat"><b>1</b><span>촬영 완료</span></div>
+          <div class="stat"><b>1</b><span>인트로 완성</span></div>
+        </div>
+      </div>
+
+      <ol class="ep-list">
+        <li class="card ep"><span class="ep-no">1회</span><div class="ep-body"><b>4050 인생 독백</b><p>대본·큐시트 완료 · 촬영 대기</p></div><span class="chip chip-soft">대본</span></li>
+        <li class="card ep"><span class="ep-no">2회</span><div class="ep-body"><b>어사이드 활용법</b><p>대본 2안 비교 · 채택 대기</p></div><span class="chip chip-soft">대본</span></li>
+        <li class="card ep"><span class="ep-no">3회</span><div class="ep-body"><b>AI 상세페이지</b><p>대본 완료</p></div><span class="chip chip-soft">대본</span></li>
+        <li class="card ep"><span class="ep-no">4회</span><div class="ep-body"><b>마진·원가</b><p>대본 완료</p></div><span class="chip chip-soft">대본</span></li>
+        <li class="card ep"><span class="ep-no">5회</span><div class="ep-body"><b>소싱·리스크</b><p>대본 완료</p></div><span class="chip chip-soft">대본</span></li>
+        <li class="card ep"><span class="ep-no">6회</span><div class="ep-body"><b>4050 이커머스, 정말 늦은 걸까</b><p>11/22 촬영 완료 · QPrompt 수정본 반영</p></div><span class="chip chip-ok">촬영</span></li>
+        <li class="card ep"><span class="ep-no">7회</span><div class="ep-body"><b>재고 두 달</b><p>대본 완료</p></div><span class="chip chip-soft">대본</span></li>
+        <li class="card ep"><span class="ep-no">8회</span><div class="ep-body"><b>상품명 SEO</b><p>대본 완료</p></div><span class="chip chip-soft">대본</span></li>
+        <li class="card ep"><span class="ep-no">9회</span><div class="ep-body"><b>12월 쿠팡 정책</b><p>QPrompt 순수 멘트 완성</p></div><span class="chip chip-soft">대본</span></li>
+        <li class="card ep"><span class="ep-no">10회</span><div class="ep-body"><b>4050 AI, 이렇게 시작하세요</b><p>11/26 시트 12행 등록 완료</p></div><span class="chip chip-ok">등록</span></li>
+      </ol>
+
+      <div class="card">
+        <div class="card-head"><h3>다음 순서</h3></div>
+        <ul class="dot-list">
+          <li>[10회] QPrompt 순수 멘트 촬영 준비</li>
+          <li>6회 편집 → 쇼츠 3종 분할</li>
+          <li>골드 윙 인트로 영상 삽입</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ 메모 ============ -->
+    <section class="view" id="view-memo" aria-label="메모">
+      <div class="card">
+        <div class="card-head"><h3>오늘 할 일</h3><span class="chip chip-soft" id="memoProgress">0/0</span></div>
+        <ul class="todo-list" id="todoList"></ul>
+        <form class="todo-add" id="todoForm">
+          <input id="todoInput" type="text" autocomplete="off" placeholder="할 일을 입력하고 Enter">
+          <button type="submit">추가</button>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>홈 화면에 추가</h3></div>
+        <ul class="dot-list">
+          <li>안드로이드 크롬 — 오른쪽 위 ⋮ → <b>앱 설치</b></li>
+          <li>아이폰 사파리 — 공유 → <b>홈 화면에 추가</b></li>
+        </ul>
+        <p class="muted-note">메모는 이 기기에 저장됩니다. AI 서버를 연결하면 office_tasks 테이블과도 동기화됩니다.</p>
+      </div>
+    </section>
+
+    <!-- ============ 비서 ============ -->
+    <section class="view" id="view-assistants" aria-label="비서">
+      <div class="card">
+        <div class="card-head"><h3>비서 4인방</h3><span class="chip chip-gold">대기 중</span></div>
+        <p class="muted-note">본폰 1대와 서브폰 3대로 나뉘어 움직입니다. 회의실에서 @이름으로 지시하면 담당이 받습니다.</p>
+      </div>
+      <div id="crewList" class="crew-list"></div>
+    </section>
+
+  </main>
+
+  <nav class="bottom-nav" aria-label="하단 메뉴">
+    <button class="bn-item" data-view="assistants"><span>🤖</span>비서</button>
+    <button class="bn-item active" data-view="office"><span>💬</span>대화</button>
+    <button class="bn-item" data-view="memo"><span>📁</span>메모</button>
+  </nav>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- AI 서버 설정 모달 -->
+  <div class="modal" id="serverModal" role="dialog" aria-modal="true" aria-labelledby="serverModalTitle" hidden>
+    <div class="modal-backdrop" data-close="1"></div>
+    <div class="modal-panel">
+      <div class="modal-head">
+        <h2 id="serverModalTitle">AI 서버 연결</h2>
+        <button class="modal-close" id="serverClose" aria-label="닫기">✕</button>
+      </div>
+      <p class="muted-note">Supabase Project URL과 anon key를 넣으면 회의실·메모가 4인방 DB와 동기화됩니다. 값은 이 기기 브라우저에만 저장되고 공개 저장소에는 남지 않습니다.</p>
+      <div class="server-status" id="serverStatus">연결되지 않음 · 로컬 모드로 동작 중</div>
+      <label class="field">
+        <span>Project URL</span>
+        <input id="sbUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://xxxxxxxx.supabase.co">
+      </label>
+      <label class="field">
+        <span>Anon key</span>
+        <input id="sbKey" type="text" autocomplete="off" spellcheck="false" placeholder="eyJhbGciOi...">
+      </label>
+      <div class="modal-actions">
+        <button class="btn ghost" id="sbTest">연결 테스트</button>
+        <button class="btn primary" id="sbSave">저장</button>
+      </div>
+      <div class="modal-foot">
+        <a class="link-btn" href="supabase-office-schema.sql" target="_blank" rel="noopener">스키마 SQL 열기</a>
+        <button class="link-btn danger" id="sbClear">연결 해제</button>
+      </div>
+      <p class="tiny-note">office_messages · office_tasks 테이블을 씁니다. 스키마는 저장소의 supabase-office-schema.sql에 있습니다.</p>
+    </div>
+  </div>
+
+  <noscript><p style="padding:20px;text-align:center">자바스크립트를 켜야 오피스가 열립니다.</p></noscript>
+</div>
+<script src="app.js" defer></script>
+</body>
+</html>

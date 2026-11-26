@@ -1,0 +1,27 @@
+{
+  "name": "쭈대표 AI 오피스",
+  "short_name": "쭈대표 오피스",
+  "description": "쭈대표님 전용 AI 비서 4인방 관제 오피스 — 회의실·대시보드·소싱·스레드·유튜브·메모",
+  "lang": "ko",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "id": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#FBF6EE",
+  "theme_color": "#F6EDE0",
+  "categories": ["productivity", "business"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "회의실", "short_name": "회의실", "url": "./?view=office", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "대시보드", "short_name": "대시보드", "url": "./?view=dashboard", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "메모", "short_name": "메모", "url": "./?view=memo", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
