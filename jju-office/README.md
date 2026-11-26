@@ -2,7 +2,8 @@
 
 쭈대표님 전용 모바일·PC 통합 관제 웹앱(PWA)입니다. 본폰 1대와 서브폰 3대에서 움직이는 비서 4인방(총괄이사 · 쭈1 · 쭈2 · 쭈3)을 한 화면에서 지휘합니다.
 
-- 주소: https://juhwan7812-dot.github.io/jju-office/
+- 주소: https://jju-ecommerce.github.io/jju-office/
+- 모바일 미리보기(PC에서 폰 화면 확인): https://jju-ecommerce.github.io/jju-office/preview.html
 - 설치: 안드로이드 크롬 `⋮ → 앱 설치` / 아이폰 사파리 `공유 → 홈 화면에 추가`
 
 ## 화면
