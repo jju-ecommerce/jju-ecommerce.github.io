@@ -746,41 +746,53 @@
 
   /* 기존 항목의 날짜만 바꾸기·지우기 */
   function setTaskDue(t, due) {
-    var prev = t.due_date || '';
+    var cur = liveTask(t);
+    var prev = cur.due_date || '';
     var next = /^\d{4}-\d{2}-\d{2}$/.test(String(due || '')) ? due : '';
     if (next === prev) { renderTasks(); return; }
-    t.due_date = next;
+    cur.due_date = next;
     renderTasks();
-    if (t.unsynced || !SB.connected) {
+    if (cur.unsynced || !SB.connected) {
       toast(next ? dueLabel(next) + ' 약속으로 바꿨어요 · 이 기기에만' : '날짜를 지웠어요 · 이 기기에만');
       return;
     }
-    taskWrite(sbPatch('office_tasks', t.id, { due_date: next || null, updated_at: new Date().toISOString() }))
+    taskWrite(sbPatch('office_tasks', cur.id, { due_date: next || null, updated_at: new Date().toISOString() }))
       .then(function () { return pullTasks().catch(function () {}); })
       .catch(function () {
-        t.due_date = prev;
+        cur.due_date = prev;
         renderTasks();
         toast('서버 반영 실패 · AI 서버 연결을 확인해 주세요');
       });
   }
 
+  /* 4.5초 조회가 돌면서 항목 객체가 새로 만들어지면, 화면이 들고 있던 옛 객체 대신
+     지금 목록에 있는 같은 id의 항목을 고쳐야 합니다. */
+  function liveTask(t) {
+    for (var i = 0; i < state.tasks.length; i++) {
+      if (state.tasks[i].id === t.id) return state.tasks[i];
+    }
+    return t;
+  }
+
   function toggleTask(t) {
-    var next = !t.done;
-    t.done = next;
+    var cur = liveTask(t);
+    var next = !cur.done;
+    cur.done = next;
     renderTasks();
     if (!SB.connected) return;
     taskWrite(sbPatch('office_tasks', t.id, { done: next, updated_at: new Date().toISOString() }))
       .catch(function () {
-        t.done = !next;
+        cur.done = !next;
         renderTasks();
         toast('서버 반영 실패 · AI 서버 연결을 확인해 주세요');
       });
   }
 
   function removeTask(t) {
-    var idx = state.tasks.indexOf(t);
+    var cur = liveTask(t);
+    var idx = state.tasks.indexOf(cur);
     taskGone[t.id] = Date.now();
-    state.tasks = state.tasks.filter(function (x) { return x !== t; });
+    state.tasks = state.tasks.filter(function (x) { return x.id !== t.id; });
     renderTasks();
     if (!SB.connected) return;
     taskWrite(sbDelete('office_tasks', t.id)).then(function () {
@@ -788,7 +800,11 @@
       lastTaskWriteAt = Date.now();
     }).catch(function () {
       delete taskGone[t.id];
-      if (idx >= 0) state.tasks.splice(idx, 0, t);
+      var back = state.tasks.some(function (x) { return x.id === cur.id; });
+      if (!back) {
+        if (idx >= 0) state.tasks.splice(idx, 0, cur);
+        else state.tasks.push(cur);
+      }
       renderTasks();
       toast('서버 삭제 실패 · 연결을 확인해 주세요');
     });
