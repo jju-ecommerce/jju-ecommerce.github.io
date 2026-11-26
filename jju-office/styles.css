@@ -1371,7 +1371,6 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
   .menu-item { font-size: 10.5px; }
   .menu-item .menu-ico { font-size: 15px; }
   .post-actions .btn { font-size: 11.5px; }
-  .map-bubble { max-width: 96px; font-size: 8.5px; }
   .map-avatar { width: 28px; height: 28px; font-size: 11.5px; }
   .zone-tag { font-size: 8.5px; }
   .zone-tag small { font-size: 7px; }
@@ -1484,26 +1483,55 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
 
 .map-fig {
   position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  padding: 0;
+  border: none;
+  background: none;
+  transform: translate(0, 0) translate(-50%, -50%);
+  pointer-events: auto;
+  z-index: 4;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 몸통 — 걷기/대기 바운스는 여기서 (좌표 이동은 .map-fig 의 transform) */
+.map-fig-body {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1px;
-  padding: 0;
-  border: none;
-  background: none;
-  transform: translate(-50%, -50%);
-  pointer-events: auto;
-  animation: figDrift 7.5s ease-in-out infinite;
-  z-index: 4;
+  will-change: transform;
 }
 
-.map-fig.fig-jju1 { animation-duration: 8.4s; animation-delay: -1.2s; }
-.map-fig.fig-jju2 { animation-duration: 9.2s; animation-delay: -2.6s; }
-.map-fig.fig-jju3 { animation-duration: 8s; animation-delay: -3.8s; }
+.map-fig-body.is-idle { animation: figIdle 3.8s ease-in-out infinite; }
+.map-fig-body.is-walk { animation: figWalk .54s ease-in-out infinite; }
+.map-fig-body.is-land { animation: figLand .5s ease-out 1; }
 
-@keyframes figDrift {
-  0%, 100% { transform: translate(-50%, -50%); }
-  50% { transform: translate(-50%, calc(-50% - 5px)); }
+.map-fig.fig-jju1 .map-fig-body.is-idle { animation-delay: -.7s; }
+.map-fig.fig-jju2 .map-fig-body.is-idle { animation-delay: -1.6s; }
+.map-fig.fig-jju3 .map-fig-body.is-idle { animation-delay: -2.4s; }
+.map-fig.fig-jju1 .map-fig-body.is-walk { animation-duration: .5s; }
+.map-fig.fig-jju2 .map-fig-body.is-walk { animation-duration: .58s; }
+.map-fig.fig-jju3 .map-fig-body.is-walk { animation-duration: .46s; }
+
+@keyframes figIdle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2.5px); }
+}
+
+@keyframes figWalk {
+  0% { transform: translateY(0) rotate(-2.5deg); }
+  25% { transform: translateY(-3.5px) rotate(0deg); }
+  50% { transform: translateY(0) rotate(2.5deg); }
+  75% { transform: translateY(-3.5px) rotate(0deg); }
+  100% { transform: translateY(0) rotate(-2.5deg); }
+}
+
+@keyframes figLand {
+  0% { transform: translateY(-7px) scale(.96); }
+  60% { transform: translateY(0) scale(1.04); }
+  100% { transform: translateY(0) scale(1); }
 }
 
 .map-avatar {
@@ -1560,56 +1588,84 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
 
 .map-bubble {
   position: absolute;
-  bottom: calc(100% - 2px);
-  left: 50%;
-  transform: translateX(-50%);
   max-width: 104px;
   padding: 4px 7px;
   border-radius: 9px;
-  background: rgba(24, 18, 12, .9);
+  background: rgba(24, 18, 12, .92);
   border: 1px solid rgba(255, 240, 214, .16);
   color: #FFF6E9;
-  font-size: 9px;
   font-weight: 600;
   line-height: 1.35;
   letter-spacing: -.2px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .32);
+  backdrop-filter: blur(3px);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.bub-txt {
+  display: block;
+  max-width: 104px;
+  font-size: 9px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, .32);
-  backdrop-filter: blur(3px);
+  transform-origin: 50% 100%;
 }
+
+.bub-txt.is-pop { animation: bubPop .34s cubic-bezier(.2, .9, .3, 1.2) 1; }
+
+@keyframes bubPop {
+  0% { opacity: .15; transform: scale(.82) translateY(3px); }
+  55% { opacity: 1; transform: scale(1.05) translateY(-1px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* 자리 — JS가 겹침을 피해 네 방향 중 하나를 고릅니다 */
+.map-bubble[data-pos="up"] { left: 50%; bottom: 100%; transform: translate(-50%, -6px); }
+.map-bubble[data-pos="down"] { left: 50%; top: 100%; transform: translate(-50%, 6px); }
+.map-bubble[data-pos="right"] { left: 100%; top: 50%; transform: translate(6px, -50%); }
+.map-bubble[data-pos="left"] { right: 100%; top: 50%; transform: translate(-6px, -50%); }
 
 .map-bubble::after {
   content: "";
   position: absolute;
-  left: 50%;
-  bottom: -4px;
   width: 7px;
   height: 7px;
-  margin-left: -3.5px;
-  background: rgba(24, 18, 12, .9);
-  border-right: 1px solid rgba(255, 240, 214, .16);
-  border-bottom: 1px solid rgba(255, 240, 214, .16);
+  background: rgba(24, 18, 12, .92);
   transform: rotate(45deg);
 }
 
-.map-fig[data-bubble="right"] .map-bubble {
-  left: calc(50% + 18px);
-  top: 4px;
-  bottom: auto;
-  max-width: 100px;
-  transform: none;
+.map-bubble[data-pos="up"]::after {
+  left: 50%;
+  bottom: -4px;
+  margin-left: -3.5px;
+  border-right: 1px solid rgba(255, 240, 214, .16);
+  border-bottom: 1px solid rgba(255, 240, 214, .16);
 }
 
-.map-fig[data-bubble="right"] .map-bubble::after {
+.map-bubble[data-pos="down"]::after {
+  left: 50%;
+  top: -4px;
+  margin-left: -3.5px;
+  border-left: 1px solid rgba(255, 240, 214, .16);
+  border-top: 1px solid rgba(255, 240, 214, .16);
+}
+
+.map-bubble[data-pos="right"]::after {
   left: -4px;
-  top: 8px;
-  bottom: auto;
-  margin-left: 0;
-  border: none;
+  top: 50%;
+  margin-top: -3.5px;
   border-left: 1px solid rgba(255, 240, 214, .16);
   border-bottom: 1px solid rgba(255, 240, 214, .16);
+}
+
+.map-bubble[data-pos="left"]::after {
+  right: -4px;
+  top: 50%;
+  margin-top: -3.5px;
+  border-right: 1px solid rgba(255, 240, 214, .16);
+  border-top: 1px solid rgba(255, 240, 214, .16);
 }
 
 .map-legend {
@@ -1618,6 +1674,12 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
   line-height: 1.5;
   color: var(--muted);
   text-align: center;
+}
+
+/* 좀은 폭에서는 말풍선을 줄여 겹침을 줄입니다 (기본 규칙 뒤에 와야 적용됨) */
+@media (max-width: 359px) {
+  .map-bubble, .bub-txt { max-width: 92px; }
+  .bub-txt { font-size: 8.4px; }
 }
 
 /* 하단 상태 바 */
@@ -1721,7 +1783,8 @@ html[data-theme="dark"] .sheet-rooms button.here { background: linear-gradient(1
   .menu-item { font-size: 13px; }
   .map-avatar { width: 36px; height: 36px; font-size: 14px; }
   .map-name { font-size: 9.5px; }
-  .map-bubble { font-size: 10.5px; max-width: 150px; }
+  .bub-txt { font-size: 10.5px; max-width: 150px; }
+  .map-bubble { max-width: 150px; }
   .zone-tag { font-size: 11px; padding: 4px 8px; }
   .zone-tag small { font-size: 9px; }
   .map-legend { font-size: 11.5px; }

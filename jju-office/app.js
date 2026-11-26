@@ -220,6 +220,12 @@
       var v = target;
       v.scrollTop = 0;
     }
+    /* 오피스 맵을 보고 있을 때만 캐릭터가 걸어 다닙니다 */
+    if (name === 'map') {
+      window.requestAnimationFrame(startMapWalk);
+    } else {
+      stopMapWalk();
+    }
     try {
       var url = new URL(location.href);
       url.searchParams.set('view', name);
@@ -474,13 +480,141 @@
   }
 
   /* ---------------- 🗺️ 오피스 맵 ---------------- */
-  /* 캐릭터 좌표는 평면도(1402×1122) 기준 비율입니다.
-     말풍선은 각 비서가 office_messages에 올린 최신 보고를 18자로 줄여 보여 줍니다. */
+  /* 캐릭터는 평면도(1402×1122) 위 노드를 그래프로 이어 실제로 걸어 다닙니다.
+     노드의 room 값에 따라 말풍선 멘트와 '현재 위치' 카드가 방에 맞춰 바뀝니다. */
+  var MAP_NODES = {
+    /* 👑 지휘실 · 중앙 사무 공간 */
+    topC:    { x: 57,   y: 26,   room: 'command' },
+    topL:    { x: 44,   y: 25.5, room: 'command' },
+    cmdL:    { x: 42.5, y: 21.5, room: 'command' },
+    topR:    { x: 68,   y: 25.5, room: 'command' },
+    cmdR:    { x: 75,   y: 21.5, room: 'command' },
+    topRR:   { x: 76.5, y: 27,   room: 'command' },
+    d1:      { x: 49,   y: 33,   room: 'command' },
+    d2:      { x: 63.5, y: 47,   room: 'command' },
+    d3:      { x: 48,   y: 60,   room: 'command' },
+    midT:    { x: 56.5, y: 34,   room: 'command' },
+    midM:    { x: 56.5, y: 46,   room: 'command' },
+    midL:    { x: 56.5, y: 60,   room: 'command' },
+    midB:    { x: 53,   y: 74,   room: 'command' },
+    midBB:   { x: 52,   y: 87,   room: 'command' },
+    leftT:   { x: 37,   y: 26,   room: 'command' },
+    leftM:   { x: 37,   y: 46,   room: 'command' },
+    leftL:   { x: 37,   y: 68,   room: 'command' },
+    leftB:   { x: 37,   y: 84,   room: 'command' },
+    botL:    { x: 45,   y: 89,   room: 'command' },
+    /* 🏛️ 대회의실 */
+    door:    { x: 34,   y: 23.5, room: 'grand' },
+    gTopR:   { x: 30.5, y: 21,   room: 'grand' },
+    gTopL:   { x: 20,   y: 22,   room: 'grand' },
+    gMid:    { x: 31,   y: 47,   room: 'grand' },
+    gBot:    { x: 29.5, y: 70,   room: 'grand' },
+    /* ☕ 라운지 */
+    lngIn:   { x: 63,   y: 88,   room: 'lounge' },
+    lngSofa: { x: 70,   y: 79.5, room: 'lounge' },
+    lngBar:  { x: 85.5, y: 71.5, room: 'lounge' }
+  };
+
+  var MAP_EDGES = [
+    ['topC', 'topL'], ['topL', 'leftT'], ['topL', 'cmdL'],
+    ['topC', 'topR'], ['topR', 'cmdR'], ['topR', 'topRR'],
+    ['topC', 'midT'], ['midT', 'd1'], ['midT', 'midM'], ['midM', 'd2'],
+    ['midM', 'midL'], ['midL', 'd3'], ['midL', 'midB'], ['midB', 'midBB'],
+    ['midBB', 'botL'], ['botL', 'leftB'], ['leftB', 'leftL'], ['leftL', 'leftM'], ['leftM', 'leftT'],
+    ['midBB', 'lngIn'], ['lngIn', 'lngSofa'], ['lngSofa', 'lngBar'],
+    ['leftT', 'door'], ['door', 'gTopR'], ['gTopR', 'gTopL'], ['gTopR', 'gMid'], ['gMid', 'gBot']
+  ];
+
+  var MAP_LINK = {};
+  MAP_EDGES.forEach(function (e) {
+    (MAP_LINK[e[0]] = MAP_LINK[e[0]] || []).push(e[1]);
+    (MAP_LINK[e[1]] = MAP_LINK[e[1]] || []).push(e[0]);
+  });
+
+  /* 노드 그래프 최단 경로(BFS) — 복도만 따라 걷게 합니다. */
+  function mapPath(from, to) {
+    if (!MAP_NODES[from] || !MAP_NODES[to] || from === to) return [];
+    var prev = {};
+    var seen = {};
+    var q = [from];
+    seen[from] = true;
+    while (q.length) {
+      var cur = q.shift();
+      var nb = MAP_LINK[cur] || [];
+      for (var i = 0; i < nb.length; i++) {
+        var n = nb[i];
+        if (seen[n]) continue;
+        seen[n] = true;
+        prev[n] = cur;
+        if (n === to) {
+          var out = [to];
+          var p = to;
+          while (p !== from) {
+            p = prev[p];
+            if (!p) return [];
+            out.unshift(p);
+          }
+          return out.slice(1);
+        }
+        q.push(n);
+      }
+    }
+    return [];
+  }
+
   var MAP_CAST = [
-    { id: 'director', x: 57, y: 28, bubble: 'right', place: '👑 지휘실', duty: '지휘실 대기 · 지시 대기' },
-    { id: 'jju1', x: 35, y: 38, bubble: 'up', place: '👑 지휘실 워크스테이션', duty: '1번 채널 대기 중' },
-    { id: 'jju2', x: 70, y: 51, bubble: 'up', place: '👑 지휘실 워크스테이션', duty: '2번 채널 대기 중' },
-    { id: 'jju3', x: 45, y: 64, bubble: 'up', place: '👑 지휘실 워크스테이션', duty: '3번 채널 대기 중' }
+    {
+      id: 'director', station: 'topC', bubble: 'right',
+      place: '👑 지휘실', duty: '지휘실 대기 · 지시 대기',
+      spots: ['topC', 'cmdL', 'topR', 'topL', 'cmdR'],
+      trips: ['lngBar', 'gTopR', 'topRR'],
+      speed: 4.2, tripChance: 0.2,
+      moods: {
+        command: ['지시 정리 중', '원고 사실 검수', '발행·시트 확인', '소싱 4종 취합', '4인방 보고 대기'],
+        grand: ['대회의실 입장', '회의 준비 중', '보고 한 줄 정리'],
+        lounge: ['커피 한 잔', '잠깐 환기 중', '라운지에서 정리'],
+        walk: ['이동 중…', '자리 비움', '잠시 이동']
+      }
+    },
+    {
+      id: 'jju1', station: 'd1', bubble: 'up',
+      place: '👑 지휘실 워크스테이션', duty: '1번 채널 대기 중',
+      spots: ['d1', 'midT', 'leftT', 'leftM', 'topL'],
+      trips: ['lngSofa', 'gTopL', 'topC'],
+      speed: 4.8, tripChance: 0.22,
+      moods: {
+        command: ['스레드 체크 중', '유튜브 대본 작성', '소싱 확인 중', '1번 원고 다듬기'],
+        grand: ['대본 공유 중', '주제 3종 정리', '회의실 대기'],
+        lounge: ['커피 타는 중', '머리 식히는 중'],
+        walk: ['이동 중…', '복도 지나는 중']
+      }
+    },
+    {
+      id: 'jju2', station: 'd2', bubble: 'up',
+      place: '👑 지휘실 워크스테이션', duty: '2번 채널 대기 중',
+      spots: ['d2', 'midM', 'midT', 'topR'],
+      trips: ['lngBar', 'gBot', 'topL'],
+      speed: 4.6, tripChance: 0.2,
+      moods: {
+        command: ['1688 신상품 서칭', '2번 채널 체크', '소싱가 비교 중', '원고 발행 확인'],
+        grand: ['1688 후보 공유', '신상품 정리 중', '회의실 대기'],
+        lounge: ['커피 한 모금', '소파에서 점검'],
+        walk: ['이동 중…', '1688 보러 가는 중']
+      }
+    },
+    {
+      id: 'jju3', station: 'd3', bubble: 'up',
+      place: '👑 지휘실 워크스테이션', duty: '3번 채널 대기 중',
+      spots: ['d3', 'midL', 'midB', 'botL'],
+      trips: ['gBot', 'lngSofa', 'midT'],
+      speed: 5, tripChance: 0.2,
+      moods: {
+        command: ['3번 채널 체크', '업리카 세션 확인', '오늘 할 일 정리', '소싱 확인 중'],
+        grand: ['발행 결과 공유', '체크리스트 정리', '회의실 대기'],
+        lounge: ['잠깐 숨 고르기', '라운지 대기'],
+        walk: ['이동 중…', '잠시 자리 비움']
+      }
+    }
   ];
 
   var ROOM_LABEL = { grand: '🏛️ 대회의실', command: '👑 지휘실', lounge: '☕ 라운지' };
@@ -501,44 +635,329 @@
     return chars.slice(0, max - 1).join('') + '…';
   }
 
+  function pickPhrase(pool, prev) {
+    if (!pool || !pool.length) return '대기 중';
+    if (pool.length === 1) return pool[0];
+    var pick = pool[Math.floor(Math.random() * pool.length)];
+    var guard = 0;
+    while (pick === prev && guard++ < 6) pick = pool[Math.floor(Math.random() * pool.length)];
+    return pick;
+  }
+
+  /* ---------------- 걷기 엔진 ---------------- */
+  var WALKERS = [];
+  var WALK = { raf: 0, on: false, last: 0, w: 0, h: 0, layoutAt: 0, moodAt: 0 };
+
+  function walkerOf(id) {
+    for (var i = 0; i < WALKERS.length; i++) if (WALKERS[i].id === id) return WALKERS[i];
+    return null;
+  }
+
+  function measureStage() {
+    if (!el.mapStage) return false;
+    WALK.w = el.mapStage.clientWidth;
+    WALK.h = el.mapStage.clientHeight;
+    return !!(WALK.w && WALK.h);
+  }
+
+  function moveFig(w) {
+    if (!w.el) return;
+    var px = (WALK.w || 0) * w.x / 100;
+    var py = (WALK.h || 0) * w.y / 100;
+    w.el.style.transform = 'translate(' + px.toFixed(1) + 'px,' + py.toFixed(1) + 'px) translate(-50%,-50%)';
+    w.el.style.zIndex = String(10 + Math.round(w.y));
+  }
+
+  function setWalkState(w, walking) {
+    var body = w.el && w.el.querySelector('.map-fig-body');
+    if (!body) return;
+    if (w.landTimer) { clearTimeout(w.landTimer); w.landTimer = 0; }
+    body.classList.remove('is-land');
+    body.classList.toggle('is-walk', walking);
+    body.classList.toggle('is-idle', !walking);
+  }
+
+  function planWalker(w, now) {
+    var cfg = w.cfg;
+    var trip = Math.random() < (cfg.tripChance || 0.18);
+    var pool = (trip ? cfg.trips : cfg.spots) || [cfg.station];
+    var goal = pool[Math.floor(Math.random() * pool.length)];
+    if (goal === w.node && pool.length > 1) {
+      goal = pool[(pool.indexOf(goal) + 1) % pool.length];
+    }
+    var path = mapPath(w.node, goal);
+    if (!path.length) {
+      w.idleUntil = now + 2400;
+      return;
+    }
+    w.trip = trip;
+    w.path = path;
+    w.target = w.path.shift();
+    w.showLatest = false;
+    w.mood = pickPhrase(cfg.moods.walk, w.mood);
+    w.moodUntil = now + 3400 + Math.random() * 1600;
+    paintBubble(w);
+    setWalkState(w, true);
+  }
+
+  function arrive(w, now) {
+    setWalkState(w, false);
+    var room = (MAP_NODES[w.node] || {}).room || 'command';
+    var pool = (w.cfg.moods && w.cfg.moods[room]) || w.cfg.moods.command || ['대기 중'];
+    var last = latestBy(w.id);
+    w.showLatest = !!(last && Math.random() < 0.45);
+    if (!w.showLatest) w.mood = pickPhrase(pool, w.mood);
+    w.idleUntil = now + 2400 + Math.random() * 4200;
+    w.moodUntil = now + 3400 + Math.random() * 3200;
+    paintBubble(w);
+
+    var body = w.el && w.el.querySelector('.map-fig-body');
+    if (body) {
+      body.classList.remove('is-walk', 'is-idle');
+      body.classList.add('is-land');
+      w.landTimer = setTimeout(function () {
+        w.landTimer = 0;
+        body.classList.remove('is-land');
+        body.classList.add('is-idle');
+      }, 520);
+    }
+    updateMap(false);
+  }
+
+  function stepWalker(w, dt, now) {
+    if (!w.target) {
+      if (now < w.idleUntil) return;
+      planWalker(w, now);
+      return;
+    }
+    var t = MAP_NODES[w.target];
+    if (!t) { w.target = null; return; }
+    var dx = t.x - w.x;
+    var dy = t.y - w.y;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    var step = (w.cfg.speed || 4.6) * dt;
+    if (dist <= step) {
+      w.x = t.x;
+      w.y = t.y;
+      w.node = w.target;
+      w.target = null;
+      if (w.path.length) { w.target = w.path.shift(); return; }
+      arrive(w, now);
+      return;
+    }
+    w.x += (dx / dist) * step;
+    w.y += (dy / dist) * step;
+  }
+
+  function paintBubble(w) {
+    if (!w.el) return;
+    var txtEl = w.el.querySelector('.bub-txt');
+    if (!txtEl) return;
+    var txt = w.mood || w.cfg.duty;
+    if (w.showLatest) {
+      var last = latestBy(w.id);
+      if (last && last.body) txt = clipText(last.body, 18);
+    }
+    if (txtEl.textContent === txt) return;
+    txtEl.textContent = txt;
+    txtEl.classList.remove('is-pop');
+    void txtEl.offsetWidth;
+    txtEl.classList.add('is-pop');
+    WALK.layoutAt = 0;
+  }
+
+  function rollMoods(now) {
+    WALKERS.forEach(function (w) {
+      if (now < w.moodUntil) return;
+      w.moodUntil = now + 3800 + Math.random() * 3600;
+      if (w.target) {
+        w.showLatest = false;
+        w.mood = pickPhrase(w.cfg.moods.walk, w.mood);
+      } else {
+        var room = (MAP_NODES[w.node] || {}).room || 'command';
+        var pool = (w.cfg.moods && w.cfg.moods[room]) || w.cfg.moods.command || ['대기 중'];
+        var last = latestBy(w.id);
+        w.showLatest = !!(last && Math.random() < 0.4);
+        if (!w.showLatest) w.mood = pickPhrase(pool, w.mood);
+      }
+      paintBubble(w);
+    });
+  }
+
+  /* ---------------- 말풍선 겹침 정리 ---------------- */
+  var BUB_GAP = 6;
+
+  function overlapArea(a, b) {
+    var w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+    var h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+    return (w > 0 && h > 0) ? w * h : 0;
+  }
+
+  function bubRect(pos, cx, cy, fx, fy, fw, fh, bw, bh) {
+    if (pos === 'up') return { x: cx - bw / 2, y: fy - BUB_GAP - bh, w: bw, h: bh };
+    if (pos === 'down') return { x: cx - bw / 2, y: fy + fh + BUB_GAP, w: bw, h: bh };
+    if (pos === 'left') return { x: fx - BUB_GAP - bw, y: cy - bh / 2, w: bw, h: bh };
+    return { x: fx + fw + BUB_GAP, y: cy - bh / 2, w: bw, h: bh };
+  }
+
+  function bubScore(r, placed, sw, sh) {
+    var out = 0;
+    if (r.x < 2) out += 2 - r.x;
+    if (r.y < 2) out += 2 - r.y;
+    if (r.x + r.w > sw - 2) out += r.x + r.w - (sw - 2);
+    if (r.y + r.h > sh - 2) out += r.y + r.h - (sh - 2);
+    var over = 0;
+    for (var i = 0; i < placed.length; i++) over += overlapArea(r, placed[i]);
+    return over + out * 80;
+  }
+
+  function layoutBubbles() {
+    if (!el.mapStage) return;
+    var sw = WALK.w || el.mapStage.clientWidth;
+    var sh = WALK.h || el.mapStage.clientHeight;
+    if (!sw || !sh) return;
+
+    var placed = [];
+    var order = WALKERS.slice().sort(function (a, b) { return b.y - a.y; });
+
+    order.forEach(function (w) {
+      var fig = w.el;
+      if (!fig) return;
+      var bub = fig.querySelector('.map-bubble');
+      if (!bub) return;
+      var bw = bub.offsetWidth;
+      var bh = bub.offsetHeight;
+      if (!bw || !bh) return;
+
+      var fw = fig.offsetWidth;
+      var fh = fig.offsetHeight;
+      var cx = sw * w.x / 100;
+      var cy = sh * w.y / 100;
+      var fx = cx - fw / 2;
+      var fy = cy - fh / 2;
+
+      var pref = w.cfg.bubble === 'right' ? ['right', 'up', 'down', 'left'] : ['up', 'right', 'left', 'down'];
+      var best = null;
+      for (var i = 0; i < pref.length; i++) {
+        var r = bubRect(pref[i], cx, cy, fx, fy, fw, fh, bw, bh);
+        var score = bubScore(r, placed, sw, sh) + i * 40;
+        if (!best || score < best.score) best = { pos: pref[i], r: r, score: score };
+        if (score < 40) break;
+      }
+
+      /* 자리가 자주 바뀌면 깜빡이므로, 지금 자리가 조금 나빠도 유지합니다. */
+      var cur = bub.dataset.pos;
+      if (cur && cur !== best.pos) {
+        var cr = bubRect(cur, cx, cy, fx, fy, fw, fh, bw, bh);
+        var cs = bubScore(cr, placed, sw, sh) + Math.max(0, pref.indexOf(cur)) * 40;
+        if (cs <= best.score + 120) best = { pos: cur, r: cr, score: cs };
+      }
+
+      if (bub.dataset.pos !== best.pos) bub.dataset.pos = best.pos;
+      placed.push(best.r);
+    });
+  }
+
+  /* ---------------- 프레임 루프 ---------------- */
+  function walkFrame(ts) {
+    if (!WALK.on) return;
+    var now = ts || performance.now();
+    var dt = WALK.last ? Math.min(0.1, (now - WALK.last) / 1000) : 0.016;
+    WALK.last = now;
+
+    if (!WALK.w || !WALK.h) {
+      if (!measureStage()) { WALK.raf = requestAnimationFrame(walkFrame); return; }
+      WALKERS.forEach(moveFig);
+    }
+
+    for (var i = 0; i < WALKERS.length; i++) stepWalker(WALKERS[i], dt, now);
+    for (i = 0; i < WALKERS.length; i++) moveFig(WALKERS[i]);
+
+    if (now - WALK.layoutAt > 300) { WALK.layoutAt = now; layoutBubbles(); }
+    if (now - WALK.moodAt > 700) { WALK.moodAt = now; rollMoods(now); }
+
+    WALK.raf = requestAnimationFrame(walkFrame);
+  }
+
+  function startMapWalk() {
+    if (WALK.on) return;
+    if (state.view !== 'map') return;
+    if (document.visibilityState === 'hidden') return;
+    if (!measureStage()) return;
+    WALK.on = true;
+    WALK.last = 0;
+    WALK.layoutAt = 0;
+    WALKERS.forEach(moveFig);
+    layoutBubbles();
+    WALK.raf = requestAnimationFrame(walkFrame);
+  }
+
+  function stopMapWalk() {
+    WALK.on = false;
+    if (WALK.raf) cancelAnimationFrame(WALK.raf);
+    WALK.raf = 0;
+    WALK.last = 0;
+  }
+
+  /* ---------------- 그리기 ---------------- */
   function renderMapFigures() {
     var box = el.mapFigs;
     if (!box) return;
     box.innerHTML = '';
+    WALKERS = [];
+
     MAP_CAST.forEach(function (c) {
       var p = PEOPLE[c.id];
+      var st = MAP_NODES[c.station] || { x: 50, y: 50 };
+      var w = {
+        id: c.id, cfg: c, node: c.station,
+        x: st.x, y: st.y,
+        path: [], target: null, trip: false,
+        idleUntil: 0, moodUntil: 0, mood: '', showLatest: false,
+        landTimer: 0, el: null
+      };
+
       var fig = document.createElement('button');
       fig.type = 'button';
       fig.className = 'map-fig fig-' + c.id;
       fig.dataset.person = c.id;
-      fig.dataset.bubble = c.bubble;
-      fig.style.left = c.x + '%';
-      fig.style.top = c.y + '%';
       fig.setAttribute('aria-label', p.name + ' 최근 보고 보기');
 
       var bub = document.createElement('span');
       bub.className = 'map-bubble';
-      bub.dataset.bubbleFor = c.id;
-      bub.textContent = c.duty;
+      bub.dataset.pos = c.bubble === 'right' ? 'right' : 'up';
+      var bubTxt = document.createElement('span');
+      bubTxt.className = 'bub-txt';
+      bubTxt.textContent = c.duty;
+      bub.appendChild(bubTxt);
 
+      var body = document.createElement('span');
+      body.className = 'map-fig-body is-idle';
       var av = document.createElement('span');
       av.className = 'map-avatar ' + p.cls;
       av.textContent = p.initial;
-
       var nm = document.createElement('span');
       nm.className = 'map-name';
       nm.textContent = p.name;
+      body.appendChild(av);
+      body.appendChild(nm);
 
       fig.appendChild(bub);
-      fig.appendChild(av);
-      fig.appendChild(nm);
+      fig.appendChild(body);
       fig.addEventListener('click', function () { openSheet(c.id); });
+
+      w.el = fig;
+      WALKERS.push(w);
       box.appendChild(fig);
+      moveFig(w);
     });
+
     updateMap(true);
+    startMapWalk();
   }
 
   var mapSig = '';
+  var mapCards = [];
 
   function updateMap(force) {
     if (!el.mapFigs) return;
@@ -553,59 +972,76 @@
 
     var rows = MAP_CAST.map(function (c) {
       var last = latestBy(c.id);
-      var bub = el.mapFigs.querySelector('[data-bubble-for="' + c.id + '"]');
-      if (bub) bub.textContent = last ? clipText(last.body, 18) : c.duty;
+      var w = walkerOf(c.id);
+      var here = w && MAP_NODES[w.node] ? ROOM_LABEL[MAP_NODES[w.node].room] : '';
+      var place = here || (last && ROOM_LABEL[last.room] ? ROOM_LABEL[last.room] : c.place);
+
+      if (w && last && (!w.lastSeen || w.lastSeen.id !== last.id)) {
+        w.lastSeen = last;
+        w.showLatest = true;
+        w.moodUntil = performance.now() + 6000;
+        paintBubble(w);
+      }
+
       return {
         c: c,
         p: PEOPLE[c.id],
         last: last,
-        place: last && ROOM_LABEL[last.room] ? ROOM_LABEL[last.room] : c.place,
+        place: place,
         status: last ? clipText(last.body, 22) : c.duty
       };
     });
 
     if (!el.mapStatus) return;
 
-    /* 4.5초 폴링마다 카드 DOM을 다시 만들면 누르던 탭이 끊깁니다. 바뀐 게 없으면 그대로 둡니다. */
     var sig = (connected ? '1' : '0') + '|' + rows.map(function (r) {
       return r.c.id + '·' + r.place + '·' + r.status;
     }).join('|');
     if (!force && sig === mapSig) return;
     mapSig = sig;
 
-    el.mapStatus.innerHTML = '';
-    rows.forEach(function (row) {
-      var card = document.createElement('button');
-      card.type = 'button';
-      card.className = 'map-stat';
-      card.setAttribute('aria-label', row.p.name + ' 빠른 시트 열기');
-      card.addEventListener('click', function () { openSheet(row.c.id); });
+    /* 카드는 한 번만 만들고 글자만 바꿉니다 — 폴링 중에 누르던 탭이 끊기지 않게. */
+    if (mapCards.length !== rows.length) {
+      el.mapStatus.innerHTML = '';
+      mapCards = rows.map(function (row) {
+        var card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'map-stat';
+        card.setAttribute('aria-label', row.p.name + ' 빠른 시트 열기');
+        card.addEventListener('click', function () { openSheet(row.c.id); });
 
-      var av = document.createElement('span');
-      av.className = 'map-avatar sm ' + row.p.cls;
-      av.textContent = row.p.initial;
+        var av = document.createElement('span');
+        av.className = 'map-avatar sm ' + row.p.cls;
+        av.textContent = row.p.initial;
 
-      var txt = document.createElement('span');
-      txt.className = 'map-stat-txt';
+        var txt = document.createElement('span');
+        txt.className = 'map-stat-txt';
 
-      var top = document.createElement('span');
-      top.className = 'map-stat-top';
-      var nm = document.createElement('b');
-      nm.textContent = row.p.name;
-      var pl = document.createElement('i');
-      pl.textContent = row.place;
-      top.appendChild(nm);
-      top.appendChild(pl);
+        var top = document.createElement('span');
+        top.className = 'map-stat-top';
+        var nm = document.createElement('b');
+        nm.textContent = row.p.name;
+        var pl = document.createElement('i');
+        top.appendChild(nm);
+        top.appendChild(pl);
 
-      var st = document.createElement('span');
-      st.className = 'map-stat-status';
-      st.textContent = row.status;
+        var st = document.createElement('span');
+        st.className = 'map-stat-status';
 
-      txt.appendChild(top);
-      txt.appendChild(st);
-      card.appendChild(av);
-      card.appendChild(txt);
-      el.mapStatus.appendChild(card);
+        txt.appendChild(top);
+        txt.appendChild(st);
+        card.appendChild(av);
+        card.appendChild(txt);
+        el.mapStatus.appendChild(card);
+        return { card: card, place: pl, status: st };
+      });
+    }
+
+    rows.forEach(function (row, i) {
+      var refs = mapCards[i];
+      if (!refs) return;
+      if (refs.place.textContent !== row.place) refs.place.textContent = row.place;
+      if (refs.status.textContent !== row.status) refs.status.textContent = row.status;
     });
   }
 
@@ -614,20 +1050,22 @@
     if (!c || !el.mapSheet) return;
     var p = PEOPLE[id];
     var last = latestBy(id);
+    var w = walkerOf(id);
+    var here = w && MAP_NODES[w.node] ? ROOM_LABEL[MAP_NODES[w.node].room] : '';
 
     el.sheetAvatar.className = 'map-avatar sheet-avatar ' + p.cls;
     el.sheetAvatar.textContent = p.initial;
     el.sheetName.textContent = p.name;
-    el.sheetMeta.textContent = p.device + ' · ' + (last && ROOM_LABEL[last.room] ? ROOM_LABEL[last.room] : c.place);
+    el.sheetMeta.textContent = p.device + ' · ' + (here || (last && ROOM_LABEL[last.room] ? ROOM_LABEL[last.room] : c.place));
     el.sheetBody.textContent = last
       ? clipText(last.body, 220)
       : '아직 올린 보고가 없습니다. 회의실에서 ' + p.name + '에게 지시하면 최근 보고가 여기에 뜹니다.';
     el.sheetTime.textContent = last ? timeLabel(last.created_at) + ' · ' + (ROOM_LABEL[last.room] || '') : '';
 
     el.sheetRooms.querySelectorAll('[data-map-room]').forEach(function (b) {
-      var here = !!(last && last.room === b.dataset.mapRoom);
-      b.classList.toggle('here', here);
-      b.setAttribute('aria-current', here ? 'true' : 'false');
+      var hereRoom = !!(last && last.room === b.dataset.mapRoom);
+      b.classList.toggle('here', hereRoom);
+      b.setAttribute('aria-current', hereRoom ? 'true' : 'false');
     });
 
     el.mapSheet.hidden = false;
@@ -1358,6 +1796,7 @@
     el.crewRow = document.getElementById('crewRow');
     el.crewList = document.getElementById('crewList');
     el.mapFigs = document.getElementById('mapFigs');
+    el.mapStage = document.getElementById('mapStage');
     el.mapStatus = document.getElementById('mapStatus');
     el.mapSyncChip = document.getElementById('mapSyncChip');
     el.mapLiveDot = document.getElementById('mapLiveDot');
@@ -1485,7 +1924,19 @@
     }
 
     document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState === 'visible' && SB.connected) pullAll().catch(function () {});
+      if (document.visibilityState === 'visible') {
+        if (SB.connected) pullAll().catch(function () {});
+        if (state.view === 'map') startMapWalk();
+      } else {
+        stopMapWalk();
+      }
+    });
+
+    window.addEventListener('resize', function () {
+      if (state.view !== 'map') return;
+      if (!measureStage()) return;
+      WALKERS.forEach(moveFig);
+      layoutBubbles();
     });
   }
 
