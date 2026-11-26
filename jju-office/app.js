@@ -1266,6 +1266,12 @@
       avatars.push({ x: ar.x - stageRect.x, y: ar.y - stageRect.y, w: ar.width, h: ar.height });
     });
 
+    /* 방 이름표(대회의실·지휘실·라운지)도 피합니다 */
+    var zoneRects = [].map.call(el.mapStage.querySelectorAll('.zone-tag'), function (tag) {
+      var tr = tag.getBoundingClientRect();
+      return { x: tr.x - stageRect.x, y: tr.y - stageRect.y, w: tr.width, h: tr.height };
+    });
+
     order.forEach(function (w) {
       if (!w.el) return;
       var nm = w.el.querySelector('.map-name');
@@ -1285,6 +1291,7 @@
         if (r.x < 2) score += (2 - r.x) * 40;
         if (r.x + r.w > sw - 2) score += (r.x + r.w - sw + 2) * 40;
         for (var a = 0; a < avatars.length; a++) score += overlapArea(r, avatars[a]) * 1.4;
+        for (var z = 0; z < zoneRects.length; z++) score += overlapArea(r, zoneRects[z]) * 0.9;
         for (var b = 0; b < placedNames.length; b++) score += overlapArea(r, placedNames[b]);
         if (off === cur) score -= 14;
         if (!best || score < best.score) best = { score: score, r: r, off: off };
@@ -2111,7 +2118,7 @@
   /* VAPID 공개키는 공개 정보입니다(비밀키는 Supabase Edge Function 시크릿에만 저장). */
   var VAPID_PUBLIC_KEY = 'BLsYdjB1PvxgqFW1LsvjOKqEfQ6qry4P77QkHh04m2z7yXbYx5pAx4OtnRy4_XlqHofAiABdweCvsc_qRUrq0pA';
   var PUSH = { busy: false, sub: null, synced: false, lastError: '', opened: false };
-  var APP_VERSION = 'v33';
+  var APP_VERSION = 'v34';
 
   function pushSupported() {
     return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
