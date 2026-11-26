@@ -839,9 +839,9 @@
     if (r.y + r.h > sh - 2) out += r.y + r.h - (sh - 2);
     var over = 0;
     for (var i = 0; i < placed.length; i++) over += overlapArea(r, placed[i]);
-    var onFig = 0;
-    for (var j = 0; j < blockers.length; j++) onFig += overlapArea(r, blockers[j]);
-    return over + onFig * 0.35 + out * 120;
+    var blocked = 0;
+    for (var j = 0; j < blockers.length; j++) blocked += overlapArea(r, blockers[j].r) * blockers[j].w;
+    return over + blocked + out * 120;
   }
 
   function layoutBubbles() {
@@ -862,7 +862,14 @@
       var cx = sw * w.x / 100;
       var cy = sh * w.y / 100;
       w.figBox = { x: cx - fw / 2, y: cy - fh / 2, w: fw, h: fh };
-      blockers.push({ x: cx - fw / 2 - 2, y: cy - fh / 2 - 2, w: fw + 4, h: fh + 4 });
+      blockers.push({ r: { x: cx - fw / 2 - 2, y: cy - fh / 2 - 2, w: fw + 4, h: fh + 4 }, w: 0.35 });
+    });
+
+    /* 방 이름표(존 태그)도 살짝 피해 갑니다 */
+    var stageRect = el.mapStage.getBoundingClientRect();
+    [].forEach.call(el.mapStage.querySelectorAll('.zone-tag'), function (tag) {
+      var tr = tag.getBoundingClientRect();
+      blockers.push({ r: { x: tr.x - stageRect.x, y: tr.y - stageRect.y, w: tr.width, h: tr.height }, w: 0.6 });
     });
 
     order.forEach(function (w) {
