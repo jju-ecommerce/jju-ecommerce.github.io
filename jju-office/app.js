@@ -9,44 +9,44 @@
   /* ---------------- people ---------------- */
   var PEOPLE = {
     boss:     { name: '쭈대표', initial: '대', cls: 'p-boss', device: '' },
-    director: { name: '총괄이사', initial: '총', cls: 'p-director', device: '본폰' },
-    jju1:     { name: '쭈1', initial: '1', cls: 'p-jju1', device: '1번 폰' },
-    jju2:     { name: '쭈2', initial: '2', cls: 'p-jju2', device: '2번 폰' },
-    jju3:     { name: '쭈3', initial: '3', cls: 'p-jju3', device: '3번 폰' }
+    director: { name: '주드', initial: '주', cls: 'p-director', device: '본폰' },
+    jju1:     { name: '하루', initial: '하', cls: 'p-jju1', device: '1번 폰' },
+    jju2:     { name: '다온', initial: '다', cls: 'p-jju2', device: '2번 폰' },
+    jju3:     { name: '로이', initial: '로', cls: 'p-jju3', device: '3번 폰' }
   };
 
   var CREW = [
     {
-      id: 'director', name: '총괄이사', device: '본폰', handle: '지휘 총괄',
+      id: 'director', name: '주드', device: '본폰', handle: '지휘 총괄',
       role: '4인방 지시 하달과 결과 취합. 원고 사실 검수, 발행·시트 반영 확인, 일일 소싱 1종을 맡습니다.',
       tags: ['지휘', '원고 검수', '발행 확인', '소싱 1종']
     },
     {
-      id: 'jju1', name: '쭈1', device: '1번 폰', handle: '@jju20231004',
+      id: 'jju1', name: '하루', device: '1번 폰', handle: '@jju20231004',
       role: '스레드 1번 채널 운영. 월요일 유튜브 주제·대본 3종 추천과 원고 작성, 일일 소싱 1종을 맡습니다.',
       tags: ['1번 채널', '유튜브 대본', '소싱 1종']
     },
     {
-      id: 'jju2', name: '쭈2', device: '2번 폰', handle: '@songdossanai',
+      id: 'jju2', name: '다온', device: '2번 폰', handle: '@songdossanai',
       role: '스레드 2번 채널 운영과 1688 신상품 서칭. 원고 작성과 발행 확인, 일일 소싱 1종을 맡습니다.',
       tags: ['2번 채널', '1688 서칭', '소싱 1종']
     },
     {
-      id: 'jju3', name: '쭈3', device: '3번 폰', handle: '@daliva_jnt',
+      id: 'jju3', name: '로이', device: '3번 폰', handle: '@daliva_jnt',
       role: '스레드 3번 채널 운영. 업리카 세션 만료 시 직접 발행으로 대체하고, 오늘 할 일 프로그램과 소싱 1종을 맡습니다.',
       tags: ['3번 채널', '업리카 대응', '소싱 1종']
     }
   ];
 
   var ROOMS = {
-    grand:   { meta: '🏛️ 총괄이사 · 쭈1 · 쭈2 · 쭈3 · 4명', placeholder: '지시를 한 줄로 (@all = 전원)' },
-    command: { meta: '👑 쭈대표 · 총괄이사 · 1:1', placeholder: '총괄이사에게 한 줄 지시' },
+    grand:   { meta: '🏛️ 주드 · 하루 · 다온 · 로이 · 4명', placeholder: '지시를 한 줄로 (@all = 전원)' },
+    command: { meta: '👑 쭈대표 · 주드 · 1:1', placeholder: '주드에게 한 줄 지시' },
     lounge:  { meta: '☕ 자유 기록 · 아이디어와 공지', placeholder: '라운지에 남길 메모' }
   };
 
   /* 2026-11-26 오피스 기준 실제 진행 중인 할 일 — AI 서버 미연결 시 이 기기 목록으로 씁니다. */
   var TASKS_SEED = [
-    { title: '쭈3(3번 폰) 오피스 외부 연동 승인하기', owner: 'boss' },
+    { title: '로이(3번 폰) 오피스 외부 연동 승인하기', owner: 'boss' },
     { title: '에이블리 12/1~3 77% 페이백 참여 여부 결정', owner: 'boss' },
     { title: '유튜브 [10회] 4050 AI 이렇게 시작하세요 QPrompt 확인·촬영', owner: 'boss' },
     { title: '컴퓨존 데스크탑 i51722 램 32GB·윈도우·배송지 결정', owner: 'boss' },
@@ -208,12 +208,12 @@
   function seed() {
     if (state.messages.length) return;
     state.messages = [
-      { id: 'seed-1', room: 'grand', author: 'director', author_name: '총괄이사', body: '[11/26] 3채널 6편 예약 완료, [10회] 대본도 시트 12행 등록.', created_at: iso(240) },
-      { id: 'seed-2', room: 'grand', author: 'jju1', author_name: '쭈1', body: '1번 폰 대기 중입니다. 12:31 · 19:21 발행 확인할게요.', created_at: iso(236) },
-      { id: 'seed-3', room: 'grand', author: 'jju2', author_name: '쭈2', body: '2번 대기 중입니다. 11:10 · 21:30 확인하고 링크 올리겠습니다.', created_at: iso(234) },
-      { id: 'seed-4', room: 'grand', author: 'jju3', author_name: '쭈3', body: '3번 대기 중입니다. 11:50 · 18:40이랑 업리카 세션 보겠습니다.', created_at: iso(232) },
-      { id: 'seed-5', room: 'command', author: 'director', author_name: '총괄이사', body: '지휘실입니다, 대표님. 오늘 결정하실 것 세 가지(원고 무단 복사 4계정 대응 · 에이블리 77% 페이백 · 데스크탑 보류) 정리해 뒀습니다. 말씀만 주세요.', created_at: iso(230) },
-      { id: 'seed-6', room: 'lounge', author: 'director', author_name: '총괄이사', body: '라운지 — 자유 기록. 아이디어나 공지를 남겨두면 회의실 지시로 이어서 처리합니다.', created_at: iso(228) }
+      { id: 'seed-1', room: 'grand', author: 'director', author_name: '주드', body: '[11/26] 3채널 6편 예약 완료, [10회] 대본도 시트 12행 등록.', created_at: iso(240) },
+      { id: 'seed-2', room: 'grand', author: 'jju1', author_name: '하루', body: '1번 폰 대기 중입니다. 12:31 · 19:21 발행 확인할게요.', created_at: iso(236) },
+      { id: 'seed-3', room: 'grand', author: 'jju2', author_name: '다온', body: '2번 대기 중입니다. 11:10 · 21:30 확인하고 링크 올리겠습니다.', created_at: iso(234) },
+      { id: 'seed-4', room: 'grand', author: 'jju3', author_name: '로이', body: '3번 대기 중입니다. 11:50 · 18:40이랑 업리카 세션 보겠습니다.', created_at: iso(232) },
+      { id: 'seed-5', room: 'command', author: 'director', author_name: '주드', body: '지휘실입니다, 대표님. 오늘 결정하실 것 세 가지(원고 무단 복사 4계정 대응 · 에이블리 77% 페이백 · 데스크탑 보류) 정리해 뒀습니다. 말씀만 주세요.', created_at: iso(230) },
+      { id: 'seed-6', room: 'lounge', author: 'director', author_name: '주드', body: '라운지 — 자유 기록. 아이디어나 공지를 남겨두면 회의실 지시로 이어서 처리합니다.', created_at: iso(228) }
     ];
     if (!state.tasks.length) {
       state.tasks = seedTasks();
@@ -298,7 +298,7 @@
       head.className = 'msg-head';
       var nm = document.createElement('span');
       nm.className = 'msg-name';
-      nm.textContent = m.author_name || p.name;
+      nm.textContent = PEOPLE[m.author] ? p.name : (m.author_name || p.name);
       head.appendChild(nm);
       if (p.device && m.author !== 'boss') {
         var dv = document.createElement('span');
@@ -408,10 +408,10 @@
 
   var TASK_OWNERS = [
     { id: 'boss', label: '대표님 결정' },
-    { id: 'director', label: '총괄이사' },
-    { id: 'jju1', label: '쭈1' },
-    { id: 'jju2', label: '쭈2' },
-    { id: 'jju3', label: '쭈3' }
+    { id: 'director', label: '주드' },
+    { id: 'jju1', label: '하루' },
+    { id: 'jju2', label: '다온' },
+    { id: 'jju3', label: '로이' }
   ];
 
   var taskSig = '';
@@ -2043,7 +2043,7 @@
   /* VAPID 공개키는 공개 정보입니다(비밀키는 Supabase Edge Function 시크릿에만 저장). */
   var VAPID_PUBLIC_KEY = 'BLsYdjB1PvxgqFW1LsvjOKqEfQ6qry4P77QkHh04m2z7yXbYx5pAx4OtnRy4_XlqHofAiABdweCvsc_qRUrq0pA';
   var PUSH = { busy: false, sub: null, synced: false, lastError: '', opened: false };
-  var APP_VERSION = 'v31';
+  var APP_VERSION = 'v32';
 
   function pushSupported() {
     return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
