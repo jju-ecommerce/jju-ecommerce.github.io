@@ -65,6 +65,11 @@
 
   var SB = { connected: false, timer: null, lastPull: 0, busy: false };
 
+  var DEMO = false;
+  try {
+    DEMO = new URLSearchParams(location.search).get('demo') === '1';
+  } catch (e) { DEMO = false; }
+
   var el = {};
 
   /* ---------------- utils ---------------- */
@@ -102,6 +107,7 @@
   }
 
   function save() {
+    if (DEMO) return;
     try {
       localStorage.setItem(LS_KEY, JSON.stringify({
         theme: state.theme,
@@ -115,6 +121,7 @@
   }
 
   function load() {
+    if (DEMO) return false;
     var raw = null;
     try { raw = localStorage.getItem(LS_KEY); } catch (e) { raw = null; }
     if (!raw) return false;
@@ -137,10 +144,10 @@
   function seed() {
     if (state.messages.length) return;
     state.messages = [
-      { id: 'seed-1', room: 'grand', author: 'director', author_name: '총괄이사', body: '[11/26 출근 보고] 대표님, 오늘 3채널 6편 예약(2번 11:10·21:30 / 3번 11:50·18:40 / 1번 12:31·19:21) 완료했고, [10회] 대본도 유튜브_대본 12행에 올려 뒀습니다. 발행되면 링크 확인해서 바로 보고드리겠습니다.', created_at: iso(240) },
-      { id: 'seed-2', room: 'grand', author: 'jju1', author_name: '쭈1', body: '1번 폰 대기 중입니다. 12:31 · 19:21 발행 확인하고 첫 댓글까지 챙기겠습니다.', created_at: iso(236) },
-      { id: 'seed-3', room: 'grand', author: 'jju2', author_name: '쭈2', body: '2번 대기 중입니다. 11:10 · 21:30 예약 확인하고, 발행되면 링크 올리겠습니다.', created_at: iso(234) },
-      { id: 'seed-4', room: 'grand', author: 'jju3', author_name: '쭈3', body: '3번 대기 중입니다. 11:50 · 18:40 예약과 업리카 세션 상태 함께 보겠습니다.', created_at: iso(232) },
+      { id: 'seed-1', room: 'grand', author: 'director', author_name: '총괄이사', body: '[11/26 출근 보고] 3채널 6편 예약 완료했고, [10회] 대본도 시트 12행에 올려 뒀습니다.', created_at: iso(240) },
+      { id: 'seed-2', room: 'grand', author: 'jju1', author_name: '쭈1', body: '1번 폰 대기 중입니다. 12:31 · 19:21 발행 확인할게요.', created_at: iso(236) },
+      { id: 'seed-3', room: 'grand', author: 'jju2', author_name: '쭈2', body: '2번 대기 중입니다. 11:10 · 21:30 확인하고 링크 올리겠습니다.', created_at: iso(234) },
+      { id: 'seed-4', room: 'grand', author: 'jju3', author_name: '쭈3', body: '3번 대기 중입니다. 11:50 · 18:40이랑 업리카 세션 보겠습니다.', created_at: iso(232) },
       { id: 'seed-5', room: 'command', author: 'director', author_name: '총괄이사', body: '지휘실입니다, 대표님. 오늘 결정하실 것 세 가지(원고 무단 복사 4계정 대응 · 에이블리 77% 페이백 · 데스크탑 보류) 정리해 뒀습니다. 말씀만 주세요.', created_at: iso(230) },
       { id: 'seed-6', room: 'lounge', author: 'director', author_name: '총괄이사', body: '라운지 — 자유 기록. 아이디어나 공지를 남겨두면 회의실 지시로 이어서 처리합니다.', created_at: iso(228) }
     ];
@@ -522,6 +529,7 @@
   function flashServer(mode) { if (mode === 'ok' && SB.connected) setServerState('ok'); }
 
   function connectStored() {
+    if (DEMO) { setServerState('none'); return; }
     if (!state.supabase.url || !state.supabase.key) {
       SB.connected = false;
       setServerState('none');
