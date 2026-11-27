@@ -3572,3 +3572,175 @@ body.has-update .topbar { padding-top: 12px; }
   .update-banner .update-later { width: 28px; height: 28px; font-size: 13px; }
   body.has-update .app { padding-top: calc(74px + env(safe-area-inset-top)); }
 }
+
+/* ════════════════════════════════════════════════════════════
+   🖥️ 13.3형 한 화면 압축 (v43 · styles v34)
+   ────────────────────────────────────────────────────────────
+   · 다온 과장(v42 패키지)의 "왼쪽 레일 스크롤 0" 압축을 v42 기능 위에 얹었습니다.
+     여백을 줄여 한 화면에 넣고, 글씨는 오히려 한 단계 더 키웠습니다.
+   · 단, 📂 작업물(자료실) · 🔋 AI 한도 는 v42 에서 상단 메뉴와 똑같은
+     아이콘 탭(아이콘 위 · 이름 아래, PC 2열)으로 통일한 그 형태를 그대로 두고
+     높이만 줄였습니다. 두 칸짜리 가로 막대로 되돌리지 않습니다.
+   · 1023px 이하(폰·태블릿)는 이 블록의 영향을 받지 않습니다.
+   ════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1024px) {
+  /* ---------- 상단 바 슬림화 ---------- */
+  .topbar { padding: 6px 22px 4px; }
+  .brand { gap: 10px; }
+  .brand-mark { width: 44px; height: 44px; }
+  .brand-text h1 { font-size: 21px; }
+  .brand-sub { font-size: 13.5px; }
+  .topbar-actions { gap: 8px; }
+  .push-btn { padding: 8px 13px; font-size: 14.5px; }
+  .push-btn .push-ico { font-size: 15px; }
+  .server-pill { padding: 8px 13px; font-size: 14.5px; }
+  .theme-btn { width: 42px; height: 42px; border-radius: 14px; font-size: 19px; }
+
+  /* ---------- 왼쪽 레일 ---------- */
+  .app { grid-template-columns: 312px minmax(0, 1fr); }
+
+  .side-col {
+    padding: 2px 12px 8px 14px;
+    gap: 6px;
+    overflow-y: auto;              /* 넘칠 때만 스크롤 — 13.3형에서는 생기지 않습니다 */
+  }
+
+  /* 메뉴 10칸 — v42 의 아이콘 탭(아이콘 위·이름 아래) 그대로, 위아래 여백만 압축.
+     자료실·AI 한도도 같은 탭 형태로 두 칸 중 한 칸씩 서고, 숫자만 오른쪽 위 배지. */
+  .menu-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px;
+    margin: 0;
+    padding: 4px;
+    border-radius: 18px;
+  }
+  .menu-item {
+    flex-direction: column;
+    justify-content: center;
+    gap: 1px;
+    min-height: 0;
+    padding: 2px 2px;
+    border-radius: 10px;
+    font-size: 14px;
+    letter-spacing: -.3px;
+  }
+  .menu-item .menu-ico { font-size: 17px; line-height: 1.1; }
+  .menu-item .menu-label { line-height: 1.2; }
+  .menu-item.menu-extra {
+    grid-column: auto;
+    justify-content: center;
+    gap: 1px;
+    padding: 2px 2px;
+    border-radius: 10px;
+    font-size: 14px;
+  }
+  .menu-item.menu-extra .menu-ico { font-size: 17px; line-height: 1.1; }
+  .menu-item.menu-extra .menu-label { letter-spacing: -.45px; }
+  .menu-wide-badge {
+    top: 1px;
+    right: 2px;
+    min-width: 15px;
+    padding: 0 4px;
+    font-size: 9.5px;
+    line-height: 13px;
+  }
+
+  /* 오피스 현황 카드 3장 — 여백 압축 + [자세히] 버튼을 카드 오른쪽 위로 */
+  .pc-side { gap: 4px; }
+  .pc-side-card { position: relative; padding: 6px 10px 6px; border-radius: 15px; }
+
+  .pc-side-head {
+    gap: 5px;
+    margin: 0 0 4px;
+    padding-right: 74px;           /* 오른쪽 위 버튼 자리 */
+    font-size: 15.5px;
+    line-height: 1.25;
+  }
+  .pc-side-head b { margin-left: 1px; font-size: 13px; }
+
+  .pc-more {
+    position: absolute;
+    top: 5px;
+    right: 7px;
+    width: auto;
+    margin: 0;
+    padding: 3px 8px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    line-height: 1.25;
+  }
+
+  .pc-crew { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 8px; }
+  .pc-crew .map-avatar { width: 26px; height: 26px; }
+  .pc-crew li { gap: 6px; }
+  .pc-crew-txt b { font-size: 14px; }
+  .pc-crew-txt span { font-size: 11.5px; }
+
+  .pc-tasks { gap: 1px; }
+  .pc-tasks li {
+    gap: 5px;
+    font-size: 14px;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;              /* 제목이 길어도 한 줄 — 카드 높이가 고정됩니다 */
+  }
+  .pc-tasks li > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+  .pc-tasks li .pc-task-owner { font-size: 11.5px; }
+  .pc-empty { font-size: 13.5px; line-height: 1.3; }
+
+  .pc-quota { gap: 2px; }
+  .pc-quota-row { gap: 6px; font-size: 13px; }
+  .pc-quota-row .pc-quota-name { width: 84px; }
+  .pc-quota-bar { height: 6px; }
+  .pc-quota-pct { width: 38px; }
+
+  /* ---------- 오른쪽 화면: 글씨 한 단계 더 크게 ---------- */
+  html, body { font-size: 17px; }
+  .app { font-size: 17px; }
+
+  .card-head { margin-bottom: 11px; }
+  .card-head h3 { font-size: 19.5px; }
+
+  /* 💬 회의실 */
+  .msg-name { font-size: 15.5px; }
+  .msg-device, .msg-time { font-size: 13.5px; }
+  .bubble {
+    font-size: 18.2px;
+    line-height: 1.6;
+    padding: 12px 18px;
+    border-radius: 5px 19px 19px 19px;
+  }
+  .msg.boss .bubble { border-radius: 19px 5px 19px 19px; }
+  .chat-empty { font-size: 16px; }
+  .unread-count { min-width: 21px; padding: 1px 6px; font-size: 13px; line-height: 18px; }
+
+  /* 입력창 — 🖼️ 사진 · 📷 카메라 아이콘은 v42 크기(46px/23px) 그대로 둡니다. */
+  .composer input { font-size: 18px; }
+  .send-btn { padding: 13px 24px; font-size: 16.5px; }
+  .plus-btn { width: 44px; height: 44px; font-size: 23px; }
+
+  /* 🗺️ 오피스 맵 — 구역·캐릭터 이름표 */
+  .zone-tag { padding: 6px 11px; font-size: 16px; }
+  .zone-tag small { font-size: 12.5px; }
+  .map-name { padding: 2px 9px; font-size: 14.5px; }
+  .map-bubble { max-width: 196px; padding: 7px 11px; }
+  .bub-txt { max-width: 196px; font-size: 14px; }
+  .map-legend { font-size: 14px; }
+  .map-stat-status { font-size: 14px; }
+  .map-summary { font-size: 14.5px; }
+
+  /* 📋 할 일 · 공통 목록 */
+  .todo-text { font-size: 17px; }
+  .status-body b { font-size: 16.5px; }
+  .status-body p { font-size: 14.5px; }
+  .ask-list b { font-size: 16.5px; }
+  .ask-list span { font-size: 14.5px; }
+  .dot-list li { font-size: 16px; }
+  .chip { font-size: 13.5px; }
+  .muted-note { font-size: 15px; }
+}
+
+@media (min-width: 1440px) {
+  .app { grid-template-columns: 336px minmax(0, 1fr); }
+}
