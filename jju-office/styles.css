@@ -2506,7 +2506,11 @@ html[data-theme="dark"] .quota-allnote { background: rgba(255, 250, 240, .06); b
 .quota-relay b { color: var(--brown); }
 .quota-legend { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
 
-.quota-list { display: grid; gap: 9px; margin-bottom: 10px; }
+.quota-list { display: grid; gap: 9px; margin-bottom: 10px;
+  /* 한 칸 트랙이 카드 내용의 최소 폭(예: 긴 플랜·리셋 문장)에 끌려 넓어지면
+     폰 화면(1023px 이하)에서 카드가 오른쪽으로 잘립니다 — 트랙이 줄어들 수 있게 고정합니다.
+     PC(1024px↑) 규칙이 이어서 열 수를 덮어씁니다. · v39 보정 */
+  grid-template-columns: minmax(0, 1fr); }
 
 .quota-card { padding: 13px 14px 12px; }
 .quota-card[data-status="out"] { opacity: .92; }
