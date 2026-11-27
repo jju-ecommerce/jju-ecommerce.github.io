@@ -21,6 +21,22 @@
   function pnameOf(id) { return pname(PEOPLE[id]) || id; }
   var CREW_IDS = ['director', 'jju1', 'jju2', 'jju3'];
 
+  /* ---------------- 캐릭터 아바타 (v36) ---------------- */
+  /* 4인방 아바타는 외부 파일 요청 없이 그리는 인라인 SVG입니다(선명·가벼움·오프라인 안전).
+     id·defs·외부 참조를 쓰지 않아 여러 번 복제해도 충돌하지 않습니다. */
+  var CHAR_ART = {
+    director: '<svg class="char-svg" viewBox="0 0 64 64" role="presentation" focusable="false" aria-hidden="true"><rect width="64" height="64" fill="#243152"/><ellipse cx="32" cy="63" rx="31" ry="12" fill="#1B2540"/><rect x="27.4" y="35" width="9.2" height="12" rx="4.2" fill="#E0B590"/><path d="M2 64 C2 51.6 15.6 45 32 45 C48.4 45 62 51.6 62 64 Z" fill="#2E3E60"/><path d="M27 45.2 C30 45.1 34 45.1 37 45.2 L34.4 54.2 L29.6 54.2 Z" fill="#F2EFE5"/><path d="M27 45.2 L31.4 45.2 L32 48.8 L28.1 49.6 Z" fill="#243250"/><path d="M37 45.2 L32.6 45.2 L32 48.8 L35.9 49.6 Z" fill="#243250"/><path d="M32 47.4 L33.9 49.6 L33 58.6 Q32 59.4 31 58.6 L30.1 49.6 Z" fill="#E3B14C"/><path d="M30.7 45.8 h2.6 l1 1.6 h-4.6 Z" fill="#F0CB79"/><circle cx="45.8" cy="53" r="2.4" fill="#E3B14C"/><circle cx="45.8" cy="53" r="1" fill="#F7E0AC"/><ellipse cx="32" cy="25.8" rx="17.4" ry="15.6" fill="#4A4455"/><circle cx="32" cy="30.8" r="15.8" fill="#F4CFAE"/><circle cx="16.8" cy="32.0" r="3.1" fill="#E4B996"/><circle cx="47.199999999999996" cy="32.0" r="3.1" fill="#E4B996"/><path d="M15.4 26.2 C15.6 17.4 22.2 11.6 32 11.6 C42.2 11.6 49.2 17.6 48.6 26.6 C47.6 22.6 44.8 20.6 41.2 20.8 C37.8 21 35.4 22.6 31.8 22.4 C27.2 22.2 24.4 20 21.4 20.6 C18.6 21.2 16.4 23.2 15.4 26.2 Z" fill="#4A4455"/><path d="M33.6 12.4 C33.2 15.6 33 18.8 32.9 21.8" stroke="#6B6478" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M26.6 14.4 C25.2 16.8 24.4 19 24.2 21.2" stroke="#767084" stroke-width="1.1" fill="none" stroke-linecap="round"/><path d="M40.4 15.4 C40.2 17.4 40 19.2 39.7 20.6" stroke="#767084" stroke-width="1.05" fill="none" stroke-linecap="round"/><path d="M15.8 24.4 C15.2 28.6 15.4 32.4 16.4 34.8 C17.4 31.6 17.8 27.8 17.4 24 Z" fill="#3E3849"/><path d="M48.2 24.4 C48.8 28.6 48.6 32.4 47.6 34.8 C46.6 31.6 46.2 27.8 46.6 24 Z" fill="#3E3849"/><rect x="24.5" y="28.2" width="3.6" height="1.5" rx="0.75" fill="#6A6376"/><rect x="35.900000000000006" y="28.2" width="3.6" height="1.5" rx="0.75" fill="#6A6376"/><g class="char-eyes"><circle cx="26.4" cy="32.6" r="2.5" fill="#2B2633"/><circle cx="37.6" cy="32.6" r="2.5" fill="#2B2633"/><circle cx="25.65" cy="31.700000000000003" r="0.85" fill="#FFFFFF"/><circle cx="36.85" cy="31.700000000000003" r="0.85" fill="#FFFFFF"/></g><g fill="none" stroke="#E3B14C" stroke-width="1.8" stroke-linejoin="round"><rect x="20.2" y="27.8" width="10.4" height="9" rx="2.4"/><rect x="33.4" y="27.8" width="10.4" height="9" rx="2.4"/><path d="M30.6 31.8 H33.4"/><path d="M20.2 30.6 L16.6 31.4"/><path d="M43.8 30.6 L47.4 31.4"/></g><path d="M21 28.6 H28.8 V31.4 H21 Z" fill="#FFFFFF" opacity="0.09"/><ellipse cx="21" cy="37" rx="3.2" ry="1.9" fill="#FF8A75" opacity="0.34"/><ellipse cx="43" cy="37" rx="3.2" ry="1.9" fill="#FF8A75" opacity="0.34"/><path d="M28.8 39.6 Q32 42 35.2 39.6" stroke="#A65C48" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>',
+    jju1: '<svg class="char-svg" viewBox="0 0 64 64" role="presentation" focusable="false" aria-hidden="true"><rect width="64" height="64" fill="#E4574C"/><ellipse cx="32" cy="63" rx="31" ry="12" fill="#CB463C"/><rect x="27.4" y="35" width="9.2" height="12" rx="4.2" fill="#E6AE7E"/><path d="M2 64 C2 51.6 15.6 45 32 45 C48.4 45 62 51.6 62 64 Z" fill="#F2604F"/><path d="M27 45.2 C30 45.1 34 45.1 37 45.2 L34.4 54.2 L29.6 54.2 Z" fill="#FFE8DC"/><path d="M27 45.2 L31.4 45.2 L32 48.8 L28.1 49.6 Z" fill="#D94E3F"/><path d="M37 45.2 L32.6 45.2 L32 48.8 L35.9 49.6 Z" fill="#D94E3F"/><path d="M14.4 30.4 C14.4 15.6 22.4 6.4 32 6.4 C41.6 6.4 49.6 15.6 49.6 30.4 L49.6 43.6 C49.6 45.4 47.6 45.8 46.4 44.4 C45.2 43 45 39.4 45 36.4 L45 28 C45 24 41 21.6 32 21.6 C23 21.6 19 24 19 28 L19 36.4 C19 39.4 18.8 43 17.6 44.4 C16.4 45.8 14.4 45.4 14.4 43.6 Z" fill="#6E3A2B"/><circle cx="32" cy="30.8" r="15.8" fill="#F8D3AF"/><circle cx="16.8" cy="32.0" r="3.1" fill="#E7B78D"/><circle cx="47.199999999999996" cy="32.0" r="3.1" fill="#E7B78D"/><path d="M15.2 27.4 C15.4 19.2 22.4 14 32 14 C41.6 14 48.8 19.2 48.8 27.4 C47.4 23.4 44 21.2 39.4 21.6 C35.4 22 32.6 24 28.4 23.4 C23.4 22.6 18 23.6 15.2 27.4 Z" fill="#6E3A2B"/><path d="M20.4 18.4 C26.6 13.2 39.8 13.6 44.4 20.2 C37 18.4 27.6 21 22.8 25.2 C19.6 27.8 19.2 21.4 20.4 18.4 Z" fill="#87482F"/><rect x="24.5" y="28" width="3.6" height="1.5" rx="0.75" fill="#8A4E33"/><rect x="35.900000000000006" y="28" width="3.6" height="1.5" rx="0.75" fill="#8A4E33"/><g class="char-eyes"><circle cx="26.4" cy="32.6" r="2.5" fill="#2E2330"/><circle cx="37.6" cy="32.6" r="2.5" fill="#2E2330"/><circle cx="25.65" cy="31.700000000000003" r="0.85" fill="#FFFFFF"/><circle cx="36.85" cy="31.700000000000003" r="0.85" fill="#FFFFFF"/></g><ellipse cx="21" cy="37" rx="3.2" ry="1.9" fill="#FF8A75" opacity="0.55"/><ellipse cx="43" cy="37" rx="3.2" ry="1.9" fill="#FF8A75" opacity="0.55"/><path d="M28.6 39 Q32 43 35.4 39" stroke="#C2503F" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M15.6 28.6 C13.2 12.4 25.4 4.6 32 4.6 C38.6 4.6 50.8 12.4 48.4 28.6" fill="none" stroke="#3B2B2C" stroke-width="2.5" stroke-linecap="round"/><rect x="11.2" y="26.6" width="6.6" height="10.4" rx="3.3" fill="#3B2B2C"/><rect x="12.2" y="28.4" width="4.6" height="6.8" rx="2.3" fill="#F2604F"/><rect x="46.2" y="26.6" width="6.6" height="10.4" rx="3.3" fill="#3B2B2C"/><rect x="47.2" y="28.4" width="4.6" height="6.8" rx="2.3" fill="#F2604F"/><path d="M17.6 34.4 C17.6 40 21.8 42.4 25.6 41.2" fill="none" stroke="#3B2B2C" stroke-width="1.8" stroke-linecap="round"/><circle cx="26.2" cy="41" r="2" fill="#3B2B2C"/><path d="M52.4 14.6 L53.4 18.2 L57 19.2 L53.4 20.2 L52.4 23.8 L51.4 20.2 L47.8 19.2 L51.4 18.2 Z" fill="#FFE7A0"/></svg>',
+    jju2: '<svg class="char-svg" viewBox="0 0 64 64" role="presentation" focusable="false" aria-hidden="true"><rect width="64" height="64" fill="#2E9E7E"/><ellipse cx="32" cy="63" rx="31" ry="12" fill="#25886C"/><rect x="27.4" y="35" width="9.2" height="12" rx="4.2" fill="#D5A47A"/><path d="M2 64 C2 51.6 15.6 45 32 45 C48.4 45 62 51.6 62 64 Z" fill="#3AA98A"/><path d="M27 45.2 C30 45.1 34 45.1 37 45.2 L34.4 54.2 L29.6 54.2 Z" fill="#F6FBF7"/><path d="M27 45.2 L31.4 45.2 L32 48.8 L28.1 49.6 Z" fill="#2C8E75"/><path d="M37 45.2 L32.6 45.2 L32 48.8 L35.9 49.6 Z" fill="#2C8E75"/><circle cx="32" cy="9" r="5.6" fill="#1F4B45"/><path d="M29.6 7.2 A3.4 3.4 0 0 1 34.4 6.6" stroke="#2E6A61" stroke-width="1.4" fill="none" stroke-linecap="round"/><circle cx="32" cy="28.8" r="17.2" fill="#1F4B45"/><circle cx="32" cy="30.8" r="15.8" fill="#F3CCA8"/><circle cx="16.8" cy="32.0" r="3.1" fill="#E0B48C"/><circle cx="47.199999999999996" cy="32.0" r="3.1" fill="#E0B48C"/><path d="M15.2 27.2 C15.4 19 22.4 13.8 32 13.8 C41.6 13.8 48.6 19 48.8 27.2 C47.2 23.4 43.8 21.4 39 21.8 C35 22.2 32.4 24 28.2 23.4 C23.2 22.6 18 23.4 15.2 27.2 Z" fill="#1F4B45"/><path d="M20.6 18 C27 12.6 39.6 13 44.2 19.6 C36.8 17.8 27.4 20.4 22.6 24.6 C19.4 27.2 19.4 21 20.6 18 Z" fill="#2C6A61"/><path d="M17.2 22.4 L19 26.6 L16.2 26.8 Z" fill="#8FE3C9"/><rect x="24.5" y="28" width="3.6" height="1.5" rx="0.75" fill="#173D38"/><rect x="35.900000000000006" y="28" width="3.6" height="1.5" rx="0.75" fill="#173D38"/><g class="char-eyes"><circle cx="26.4" cy="32.6" r="2.5" fill="#22302E"/><circle cx="37.6" cy="32.6" r="2.5" fill="#22302E"/><circle cx="25.65" cy="31.700000000000003" r="0.85" fill="#FFFFFF"/><circle cx="36.85" cy="31.700000000000003" r="0.85" fill="#FFFFFF"/></g><g fill="none" stroke="#134A43" stroke-width="1.15" opacity="0.85"><circle cx="26.4" cy="32.6" r="5.2"/><circle cx="37.6" cy="32.6" r="5.2"/><path d="M31.6 32.2 H32.4"/><path d="M21.2 31.6 L17.6 30.6"/><path d="M42.8 31.6 L46.4 30.6"/></g><ellipse cx="21" cy="37" rx="3.2" ry="1.9" fill="#FF8A75" opacity="0.45"/><ellipse cx="43" cy="37" rx="3.2" ry="1.9" fill="#FF8A75" opacity="0.45"/><path d="M29 39.4 Q32 41.8 35 39.4" stroke="#8E5B45" stroke-width="1.8" stroke-linecap="round" fill="none"/><rect x="40.2" y="49" width="9.8" height="8.6" rx="2.2" fill="#F6FBF7"/><rect x="42" y="53.6" width="1.8" height="2.4" fill="#3AA98A"/><rect x="44.5" y="51.8" width="1.8" height="4.2" fill="#2C8E75"/><rect x="47" y="50.4" width="1.8" height="5.6" fill="#3AA98A"/></svg>',
+    jju3: '<svg class="char-svg" viewBox="0 0 64 64" role="presentation" focusable="false" aria-hidden="true"><rect width="64" height="64" fill="#6E7FC8"/><ellipse cx="32" cy="63" rx="31" ry="12" fill="#5C6DB4"/><rect x="27.4" y="35" width="9.2" height="12" rx="4.2" fill="#E4AE84"/><path d="M2 64 C2 51.6 15.6 45 32 45 C48.4 45 62 51.6 62 64 Z" fill="#7C63C4"/><path d="M27 45.2 C30 45.1 34 45.1 37 45.2 L34.4 54.2 L29.6 54.2 Z" fill="#A9DCF7"/><path d="M27 45.2 L31.4 45.2 L32 48.8 L28.1 49.6 Z" fill="#6A52AE"/><path d="M37 45.2 L32.6 45.2 L32 48.8 L35.9 49.6 Z" fill="#6A52AE"/><path d="M32 49.6 L32 61" stroke="#5E47A8" stroke-width="1.4" fill="none"/><ellipse cx="32" cy="27.4" rx="17.2" ry="15.4" fill="#4B3A78"/><circle cx="32" cy="30.8" r="15.8" fill="#F7D2AE"/><circle cx="16.8" cy="32.0" r="3.1" fill="#E5B58C"/><circle cx="47.199999999999996" cy="32.0" r="3.1" fill="#E5B58C"/><path d="M16.4 21.8 C17.6 25.6 19.4 27.6 21.8 28.6 C20.2 25.2 19.6 22.8 19.8 20.4 Z" fill="#4B3A78"/><path d="M47.6 21.8 C46.4 25.6 44.6 27.6 42.2 28.6 C43.8 25.2 44.4 22.8 44.2 20.4 Z" fill="#4B3A78"/><path d="M17.4 23 C24 20.6 40 20.6 46.6 23 C40 22.4 24 22.4 17.4 23 Z" fill="#3F3168" opacity="0.55"/><path d="M15.6 23.2 C15.8 12.6 23 6.6 32 6.6 C41 6.6 48.2 12.8 48.4 23.2 C40 19.8 24 19.8 15.6 23.2 Z" fill="#8FD3F4"/><path d="M15.6 23.2 C16 18.8 17.6 15.4 20.4 13.2 C21.2 17.6 22.8 20.6 25.2 22.8 Z" fill="#7AC7EE"/><path d="M46.8 20.4 C51.4 20.2 55.2 21.4 56.8 23.4 C57.8 24.8 57 26.4 54.6 26.8 C50.6 27.4 46.8 26 44.8 24 Z" fill="#7AC7EE"/><circle cx="32" cy="6.9" r="1.9" fill="#7AC7EE"/><rect x="24.5" y="29" width="3.6" height="1.5" rx="0.75" fill="#3A2C60"/><rect x="35.900000000000006" y="29" width="3.6" height="1.5" rx="0.75" fill="#3A2C60"/><g class="char-eyes"><path d="M22.6 33.2 Q26.2 30 29.8 33.2" stroke="#2A2230" stroke-width="1.9" fill="none" stroke-linecap="round"/><circle cx="37.6" cy="32.8" r="2.6" fill="#2A2230"/><circle cx="36.85" cy="31.9" r="0.9" fill="#FFFFFF"/></g><ellipse cx="21" cy="37" rx="3.2" ry="1.9" fill="#FF8A75" opacity="0.6"/><ellipse cx="43" cy="37" rx="3.2" ry="1.9" fill="#FF8A75" opacity="0.6"/><path d="M28.2 39 Q32 43.6 35.8 39" stroke="#B96A52" stroke-width="1.8" stroke-linecap="round" fill="none"/><circle cx="22.6" cy="54" r="4.6" fill="#A9DCF7"/><path d="M23.6 50.6 L21 54.4 L22.9 54.4 L21.8 57.6 L24.6 53.6 L22.7 53.6 Z" fill="#6E7FC8"/></svg>',
+  };
+
+  /* 아바타 칸(.map-avatar) 안에 캐릭터 그림을 채웁니다. */
+  function paintAvatar(node, id) {
+    if (!node) return;
+    node.innerHTML = '<span class="avatar-face">' + (CHAR_ART[id] || '') + '</span>';
+  }
+
   var CREW = [
     {
       id: 'director', name: '주드 총괄이사', device: '본폰', handle: '지휘 총괄',
@@ -1095,6 +1111,13 @@
     body.classList.toggle('is-idle', !walking);
   }
 
+  /* 걷는 방향 — 그림만 좌우로 뒤집고 이름표 글자는 그대로 둡니다. */
+  function setFacing(w, dir) {
+    if (w.dir === dir) return;
+    w.dir = dir;
+    if (w.el) w.el.dataset.dir = dir;
+  }
+
   function planWalker(w, now) {
     var cfg = w.cfg;
     var trip = Math.random() < (cfg.tripChance || 0.18);
@@ -1160,6 +1183,8 @@
     var dx = t.x - w.x;
     var dy = t.y - w.y;
     var dist = Math.sqrt(dx * dx + dy * dy);
+    /* 걷는 방향으로 얼굴을 돌립니다(이름표 글자는 그대로 — 그림만 좌우 반전). */
+    if (Math.abs(dx) > 0.3) setFacing(w, dx < 0 ? 'l' : 'r');
     var step = (w.cfg.speed || 4.6) * dt;
     if (dist <= step) {
       w.x = t.x;
@@ -1443,7 +1468,7 @@
       var w = {
         id: c.id, cfg: c, node: c.station,
         x: st.x, y: st.y,
-        path: [], target: null, trip: false,
+        path: [], target: null, trip: false, dir: 'r',
         idleUntil: 0, moodUntil: 0, mood: '', moveLabel: '', showLatest: false,
         landTimer: 0, el: null
       };
@@ -1452,6 +1477,7 @@
       fig.type = 'button';
       fig.className = 'map-fig fig-' + c.id;
       fig.dataset.person = c.id;
+      fig.dataset.dir = 'r';
       fig.setAttribute('aria-label', pname(p) + ' 최근 보고 보기');
 
       var bub = document.createElement('span');
@@ -1469,7 +1495,7 @@
       body.className = 'map-fig-body is-idle';
       var av = document.createElement('span');
       av.className = 'map-avatar ' + p.cls;
-      av.textContent = p.initial;
+      paintAvatar(av, c.id);
       var nm = document.createElement('span');
       nm.className = 'map-name';
       var nmName = document.createElement('b');
@@ -1554,7 +1580,7 @@
 
         var av = document.createElement('span');
         av.className = 'map-avatar sm ' + row.p.cls;
-        av.textContent = row.p.initial;
+        paintAvatar(av, row.c.id);
 
         var txt = document.createElement('span');
         txt.className = 'map-stat-txt';
@@ -1596,7 +1622,7 @@
     var here = w && MAP_NODES[w.node] ? ROOM_LABEL[MAP_NODES[w.node].room] : '';
 
     el.sheetAvatar.className = 'map-avatar sheet-avatar ' + p.cls;
-    el.sheetAvatar.textContent = p.initial;
+    paintAvatar(el.sheetAvatar, id);
     el.sheetName.textContent = pname(p);
     el.sheetMeta.textContent = p.device + ' · ' + (here || (last && ROOM_LABEL[last.room] ? ROOM_LABEL[last.room] : c.place));
     el.sheetBody.textContent = last
@@ -2128,7 +2154,7 @@
   /* VAPID 공개키는 공개 정보입니다(비밀키는 Supabase Edge Function 시크릿에만 저장). */
   var VAPID_PUBLIC_KEY = 'BLsYdjB1PvxgqFW1LsvjOKqEfQ6qry4P77QkHh04m2z7yXbYx5pAx4OtnRy4_XlqHofAiABdweCvsc_qRUrq0pA';
   var PUSH = { busy: false, sub: null, synced: false, lastError: '', opened: false };
-  var APP_VERSION = 'v35';
+  var APP_VERSION = 'v36';
 
   function pushSupported() {
     return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
