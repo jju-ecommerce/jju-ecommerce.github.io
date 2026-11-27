@@ -2151,6 +2151,9 @@ html[data-theme="dark"] .dl-cat.active { background: linear-gradient(180deg, #B9
 
 .dl-sort-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
 .dl-sort.seg { margin-left: 0; }
+/* 선택된 정렬 칩: 흰 글자만 지정돼 배경이 비어 보이던 문제 보완 */
+.dl-sort.seg button[aria-pressed="true"] { background: linear-gradient(180deg, #C08A4E, #9A6530); }
+html[data-theme="dark"] .dl-sort.seg button[aria-pressed="true"] { background: linear-gradient(180deg, #B98449, #95632F); color: #1A130D; }
 .dl-count { font-size: 11.5px; font-weight: 700; color: var(--muted); }
 
 .dl-grid {
