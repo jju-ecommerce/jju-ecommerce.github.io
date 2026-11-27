@@ -1,5 +1,5 @@
 /* 쭈대표 AI 오피스 · service worker */
-var CACHE = 'jju-office-v37';
+var CACHE = 'jju-office-v38';
 var ASSETS = [
   './',
   './index.html',

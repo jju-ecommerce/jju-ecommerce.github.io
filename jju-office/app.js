@@ -341,11 +341,82 @@
     save();
   }
 
+  /* ---------------- 🖥️ PC 2단 배치 (v44) ----------------
+     1280px 이상 PC 에서 '오피스 맵'·'회의실'을 볼 때는 두 화면을 좌우로 함께 보여 줍니다.
+       왼쪽 = 오피스 맵 + 그 아래 4인방 배치 카드 / 오른쪽 = 대회의실 채팅창
+     · 폭 판정은 window.innerWidth 하나만 봅니다(창을 줄여 1279px 이하가 되면 곧바로 해제).
+     · 1279px 이하(폰·태블릿·좁은 창)는 예전처럼 탭 전환 방식 그대로입니다.
+     · 클래스(app.pc-split)만 켜고 끄고, 배치는 styles.css 의 @media (min-width:1280px) 가 맡습니다. */
+  var PC_SPLIT_MIN = 1280;
+
+  function pcSplitWide() {
+    var w = window.innerWidth ||
+      (document.documentElement && document.documentElement.clientWidth) || 0;
+    return w >= PC_SPLIT_MIN;
+  }
+
+  function pcSplitWanted() {
+    if (!pcSplitWide()) return false;
+    return state.view === 'map' || state.view === 'office';
+  }
+
+  /* 지금 2단(맵+회의실 동시)으로 보이는 중인가 — 채팅 관련 동작의 판정에 씁니다. */
+  function pcSplitOn() {
+    var app = document.getElementById('app');
+    return !!(app && app.classList.contains('pc-split'));
+  }
+
+  /* 대회의실 채팅이 화면에 보이는 중인가(회의실 탭이거나, PC 2단으로 함께 보일 때). */
+  function chatVisible() {
+    return state.view === 'office' || pcSplitOn();
+  }
+
+  /* 보이는 쪽(맵/회의실)을 1.1초 동안 테두리로 살짝 강조합니다. */
+  var PULSE = { timer: 0, el: null };
+  function pulseCol(name) {
+    if (!pcSplitOn()) return;
+    var col = document.getElementById(name === 'office' ? 'view-office' : 'view-map');
+    if (!col) return;
+    if (PULSE.timer) clearTimeout(PULSE.timer);
+    if (PULSE.el) PULSE.el.classList.remove('col-pulse');
+    col.classList.remove('col-pulse');
+    void col.offsetWidth;          /* 애니메이션을 처음부터 다시 */
+    col.classList.add('col-pulse');
+    PULSE.el = col;
+    PULSE.timer = setTimeout(function () {
+      col.classList.remove('col-pulse');
+      PULSE.el = null;
+      PULSE.timer = 0;
+    }, 1200);
+  }
+
+  /* 클래스 상태를 지금 화면 폭·탭에 맞춥니다. 바뀌었으면 true. */
+  function syncPcSplit() {
+    var app = document.getElementById('app');
+    if (!app) return false;
+    var on = pcSplitWanted();
+    var was = app.classList.contains('pc-split');
+    if (on === was) return false;
+    app.classList.toggle('pc-split', on);
+    if (on) {
+      /* 맵이 display:none → 보이는 상태로 바뀌었으니 크기를 다시 재고 캐릭터를 깨웁니다. */
+      window.requestAnimationFrame(function () {
+        if (!pcSplitOn()) return;
+        if (measureStage()) { WALKERS.forEach(moveFig); layoutBubbles(); }
+        startMapWalk();
+      });
+    } else if (state.view !== 'map') {
+      stopMapWalk();
+    }
+    return true;
+  }
+
   /* ---------------- view ---------------- */
   function setView(name) {
     var target = document.getElementById('view-' + name);
     if (!target) return;
     closeReadPop();
+    var prev = state.view;
     state.view = name;
     document.querySelectorAll('.view').forEach(function (v) {
       v.classList.toggle('active', v.id === 'view-' + name);
@@ -356,12 +427,16 @@
     document.querySelectorAll('.bn-item').forEach(function (b) {
       b.classList.toggle('active', b.dataset.view === name);
     });
+    /* PC 2단 — 맵/회의실을 볼 때만 두 화면을 함께 켭니다. */
+    syncPcSplit();
     if (name === 'office') {
       window.requestAnimationFrame(scrollChat);
+      if (prev !== name) pulseCol('office');
     } else {
       el.main.scrollTop = 0;
       var v = target;
       v.scrollTop = 0;
+      if (name === 'map' && prev !== name) pulseCol('map');
     }
     if (name === 'tasks') {
       renderTasks();
@@ -375,8 +450,8 @@
       renderQuota();
       pullQuotas();
     }
-    /* 오피스 맵을 보고 있을 때만 캐릭터가 걸어 다닙니다 */
-    if (name === 'map') {
+    /* 오피스 맵이 화면에 보이면(맵 탭 또는 PC 2단) 캐릭터가 걸어 다닙니다 */
+    if (name === 'map' || pcSplitOn()) {
       window.requestAnimationFrame(startMapWalk);
     } else {
       stopMapWalk();
@@ -673,7 +748,7 @@
       var mine = READ.mine[room];
       if (mine && (!map[ME.id] || map[ME.id] < mine)) map[ME.id] = mine;
       READ.byRoom[room] = map;
-      if (room === state.room && state.view === 'office') {
+      if (room === state.room && chatVisible()) {
         if (unreadBadgeGap(room) !== 0) renderChat();
         else paintUnread(room);
       }
@@ -690,7 +765,7 @@
   function markRead(room, force) {
     if (!SB.connected || READ.off) return;
     room = room || state.room;
-    if (!room || state.room !== room || state.view !== 'office') return;
+    if (!room || state.room !== room || !chatVisible()) return;
     if (pageHidden()) return;
     var now = Date.now();
     /* 내가 지금 보고 있으니 내 읽음은 바로 반영합니다(내 배지에서 나를 빼고 셈).
@@ -698,7 +773,7 @@
     READ.mine[room] = now;
     if (READ.byRoom[room]) {
       READ.byRoom[room][ME.id] = now;
-      if (state.view === 'office') paintUnread(room);
+      if (chatVisible()) paintUnread(room);
     }
     /* 같은 방·같은 순간에 여러 경로(입장·새 글·폴링)가 겹쳐도 쓰기는 한 번만 —
        force 도 1.5초 안의 중복은 건너뜁니다(전송량 절감). */
@@ -2370,11 +2445,20 @@
     WALK.raf = requestAnimationFrame(walkFrame);
   }
 
+  var WALK_RETRY = 0;
   function startMapWalk() {
     if (WALK.on) return;
-    if (state.view !== 'map') return;
+    if (state.view !== 'map' && !pcSplitOn()) return;
     if (document.visibilityState === 'hidden') return;
-    if (!measureStage()) return;
+    if (!measureStage()) {
+      /* 첫 프레임에 아직 맵 크기가 안 잡혔으면(2단으로 막 켠 순간) 한두 번만 다시 시도합니다. */
+      if (WALK_RETRY < 2) {
+        WALK_RETRY += 1;
+        window.requestAnimationFrame(startMapWalk);
+      }
+      return;
+    }
+    WALK_RETRY = 0;
     WALK.on = true;
     WALK.last = 0;
     WALK.layoutAt = 0;
@@ -2385,6 +2469,7 @@
 
   function stopMapWalk() {
     WALK.on = false;
+    WALK_RETRY = 0;
     if (WALK.raf) cancelAnimationFrame(WALK.raf);
     WALK.raf = 0;
     WALK.last = 0;
@@ -2603,6 +2688,7 @@
     selectRoom(room);
     closeSheet();
     setView('office');
+    pulseCol('office');
   }
 
   /* ---------------- ✍️ 블로그 ---------------- */
@@ -3064,8 +3150,8 @@
     if (state.view === 'tasks' || SB.tick % 5 === 0) pullTasks().catch(function () {});
     /* AI 한도는 그 화면을 볼 때만, 그것도 3번에 한 번(약 18초)만 확인합니다 */
     if (state.view === 'quota' && SB.tick % 3 === 0) pullQuotas().catch(function () {});
-    /* 회의실을 보고 있을 때만 읽음 기록·현황을 맞춥니다(각각 20초에 한 번 이내). */
-    if (state.view === 'office') {
+    /* 회의실 채팅이 화면에 보일 때만(회의실 탭·PC 2단) 읽음 기록·현황을 맞춥니다(각각 20초에 한 번 이내). */
+    if (chatVisible()) {
       markRead(state.room);
       pullReads(state.room).catch(function () {});
     }
@@ -3147,7 +3233,7 @@
     if (changed) {
       state.messages.sort(function (a, b) { return new Date(a.created_at) - new Date(b.created_at); });
       save();
-      if (state.view === 'office') {
+      if (chatVisible()) {
         /* 방을 보고 있는 중에 새 글이 왔으면 읽음으로 남기고(숨은 탭이면 내부에서 건너뜀)
            다른 사람의 읽음 현황도 다시 맞춥니다. */
         markRead(state.room);
@@ -3162,7 +3248,7 @@
   /* VAPID 공개키는 공개 정보입니다(비밀키는 Supabase Edge Function 시크릿에만 저장). */
   var VAPID_PUBLIC_KEY = 'BLsYdjB1PvxgqFW1LsvjOKqEfQ6qry4P77QkHh04m2z7yXbYx5pAx4OtnRy4_XlqHofAiABdweCvsc_qRUrq0pA';
   var PUSH = { busy: false, sub: null, synced: false, lastError: '', opened: false };
-  var APP_VERSION = 'v43';
+  var APP_VERSION = 'v44';
 
   function pushSupported() {
     return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
@@ -5005,7 +5091,11 @@
 
   function bind() {
     document.querySelectorAll('.menu-item').forEach(function (b) {
-      b.addEventListener('click', function () { setView(b.dataset.view); });
+      b.addEventListener('click', function () {
+        setView(b.dataset.view);
+        /* 2단에서는 같은 탭을 다시 눌러도 그 칼럼을 한 번 더 짚어 줍니다. */
+        if (b.dataset.view === 'map' || b.dataset.view === 'office') pulseCol(b.dataset.view);
+      });
     });
     document.querySelectorAll('.bn-item').forEach(function (b) {
       b.addEventListener('click', function () { setView(b.dataset.view); });
@@ -5073,7 +5163,7 @@
        (다른 입력칸·메모장의 글 붙여넣기는 건드리지 않습니다) */
     document.addEventListener('paste', function (e) {
       if (e.defaultPrevented) return;
-      if (state.view !== 'office') return;
+      if (!chatVisible()) return;
       var t = e.target;
       var tag = t && t.tagName ? String(t.tagName).toUpperCase() : '';
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (t && t.isContentEditable)) return;
@@ -5269,14 +5359,25 @@
         /* 돌아온 화면에서 보고 있는 방은 읽음으로 남깁니다. */
         markRead(state.room, true);
       }
-      if (state.view === 'map') startMapWalk();
+      if (state.view === 'map' || pcSplitOn()) startMapWalk();
     });
 
+    /* 창 폭이 바뀌면 2단↔탭 배치를 다시 판정하고, 보이는 맵의 크기를 다시 잽니다. */
+    var resizeW = window.innerWidth;
+    var resizeRaf = 0;
     window.addEventListener('resize', function () {
-      if (state.view !== 'map') return;
-      if (!measureStage()) return;
-      WALKERS.forEach(moveFig);
-      layoutBubbles();
+      if (resizeRaf) return;
+      resizeRaf = window.requestAnimationFrame(function () {
+        resizeRaf = 0;
+        if (window.innerWidth !== resizeW) {
+          resizeW = window.innerWidth;
+          syncPcSplit();
+        }
+        if (state.view !== 'map' && !pcSplitOn()) return;
+        if (!measureStage()) return;
+        WALKERS.forEach(moveFig);
+        layoutBubbles();
+      });
     });
   }
 
