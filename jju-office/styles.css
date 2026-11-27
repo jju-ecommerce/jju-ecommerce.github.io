@@ -2346,6 +2346,11 @@ html[data-theme="dark"] .dl-cat.active { background: linear-gradient(180deg, #B9
 
 .dl-loading { margin: 0; padding: 14px; font-size: 12px; color: var(--muted); text-align: center; }
 
+/* 좁은 폰 화면에서는 카테고리 칩 6개가 한 줄에 다 들어가지 않으므로 줄을 바꿔 모두 보이게 합니다. */
+@media (max-width: 480px) {
+  .dl-cats { flex-wrap: wrap; overflow-x: visible; row-gap: 6px; }
+}
+
 @media (min-width: 470px) {
   .dl-grid { grid-template-columns: 1fr 1fr; }
   .dl-card { flex-direction: column; }
