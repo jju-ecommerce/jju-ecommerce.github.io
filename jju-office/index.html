@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="styles.css?v=28">
+<link rel="stylesheet" href="styles.css?v=29">
 </head>
 <body>
 <div class="app" id="app">
@@ -104,16 +104,33 @@
         </div>
         <div class="room-meta" id="roomMeta">🏛️ 주드 총괄이사 · 하루 팀장 · 다온 과장 · 로이 대리 · 4명</div>
         <div class="chat-log" id="chatLog" aria-live="polite"></div>
-        <div class="composer">
-          <button class="plus-btn" id="plusBtn" aria-label="멘션 빠른 입력" aria-expanded="false">+</button>
-          <input id="chatInput" type="text" autocomplete="off" placeholder="지시를 한 줄로 (@all = 전원)" aria-label="회의실 지시 입력">
-          <button class="send-btn" id="sendBtn">보내기</button>
-          <div class="mention-menu" id="mentionMenu" hidden>
+        <div class="composer-wrap">
+          <div class="photo-strip" id="photoStrip" hidden>
+            <div class="photo-chip">
+              <img class="photo-thumb" id="photoThumb" alt="첨부 사진 미리보기">
+              <div class="photo-info">
+                <span class="photo-title">보낼 사진</span>
+                <span class="photo-meta" id="photoMeta"></span>
+                <span class="photo-note" id="photoNote" hidden></span>
+              </div>
+              <button class="photo-del" id="photoDel" type="button" aria-label="첨부 사진 삭제" title="첨부 사진 삭제">✕</button>
+            </div>
+          </div>
+          <div class="composer">
+            <button class="plus-btn" id="plusBtn" aria-label="멘션 빠른 입력" aria-expanded="false">+</button>
+            <button class="pic-btn" id="photoBtn" type="button" aria-label="사진 첨부(갤러리)" title="사진 첨부">🖼️</button>
+            <button class="pic-btn" id="cameraBtn" type="button" aria-label="카메라로 촬영" title="카메라로 촬영">📷</button>
+            <input id="chatInput" type="text" autocomplete="off" placeholder="지시를 한 줄로 (@all = 전원)" aria-label="회의실 지시 입력">
+            <button class="send-btn" id="sendBtn">보내기</button>
+            <div class="mention-menu" id="mentionMenu" hidden>
             <button data-mention="@all">@all <small>전원</small></button>
             <button data-mention="@주드">@주드 <small>총괄이사 · 본폰</small></button>
             <button data-mention="@하루">@하루 <small>팀장 · 1번 폰</small></button>
             <button data-mention="@다온">@다온 <small>과장 · 2번 폰</small></button>
             <button data-mention="@로이">@로이 <small>대리 · 3번 폰</small></button>
+            </div>
+            <input class="photo-input" id="photoInput" type="file" accept="image/*" hidden>
+            <input class="photo-input" id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
           </div>
         </div>
       </div>
@@ -639,7 +656,8 @@
         <a class="link-btn" href="supabase-office-schema.sql" target="_blank" rel="noopener">스키마 SQL 열기</a>
         <button class="link-btn danger" id="sbClear">연결 해제</button>
       </div>
-      <p class="tiny-note">office_messages · office_tasks · office_ai_quotas 테이블을 씁니다. 스키마는 저장소의 supabase-office-schema.sql에 있습니다.</p>
+      <p class="tiny-note" id="photoDbNote">📷 사진 첨부: 서버 연결 전 · 사진은 이 기기에만 저장됩니다</p>
+      <p class="tiny-note">office_messages · office_tasks · office_ai_quotas 테이블과 office-attachments 버킷을 씁니다. 스키마는 저장소의 supabase-office-schema.sql에 있습니다.</p>
     </div>
   </div>
 
@@ -657,6 +675,25 @@
         <a class="btn primary" id="dlOpenTab" href="#" target="_blank" rel="noopener">새 탭에서 열기</a>
         <a class="btn ghost" id="dlDownload" href="#" download>다운로드</a>
         <button class="btn ghost" id="dlCopyLink" type="button">링크 복사</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📷 사진 크게 보기(라이트박스) -->
+  <div class="modal photo-modal" id="photoModal" role="dialog" aria-modal="true" aria-labelledby="photoModalTitle" hidden>
+    <div class="modal-backdrop" data-close="1"></div>
+    <div class="modal-panel photo-panel">
+      <div class="modal-head">
+        <h2 id="photoModalTitle">📷 사진</h2>
+        <button class="modal-close" id="photoClose" aria-label="닫기">✕</button>
+      </div>
+      <div class="photo-stage">
+        <img class="photo-big" id="photoBig" alt="첨부 사진 크게 보기">
+      </div>
+      <p class="photo-meta-line" id="photoMetaLine"></p>
+      <div class="modal-actions photo-actions">
+        <a class="btn primary" id="photoDl" href="#" download="jju-office-photo.jpg">다운로드</a>
+        <button class="btn ghost" id="photoCloseBtn" type="button">닫기</button>
       </div>
     </div>
   </div>
@@ -725,6 +762,6 @@
   };
 })();
 </script>
-<script src="app.js?v=37" defer></script>
+<script src="app.js?v=38" defer></script>
 </body>
 </html>

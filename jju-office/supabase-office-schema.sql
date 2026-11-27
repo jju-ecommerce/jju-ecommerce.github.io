@@ -20,6 +20,14 @@ create table if not exists public.office_messages (
 create index if not exists office_messages_room_created_idx
   on public.office_messages (room, created_at desc);
 
+-- ---------- 📷 사진 첨부 컬럼 (v38) ----------
+-- 대회의실·자유대화에서 보낸 사진의 공개 주소(Storage)가 들어갑니다.
+-- 이 줄만 따로 실행해도 됩니다(이미 있으면 그냥 넘어갑니다).
+alter table public.office_messages add column if not exists image_url text;
+
+-- 사진은 Storage 공개 버킷(office-attachments)에 올리고 주소만 이 컴럼에 남깁니다.
+-- (메일에 base64를 통째로 넣는 방식은 행 크기·속도에서 불리해 쓰지 않습니다.)
+
 -- ---------- 오늘 할 일 ----------
 create table if not exists public.office_tasks (
   id         uuid primary key default gen_random_uuid(),
@@ -121,6 +129,29 @@ grant select, insert, update, delete on public.office_tasks    to anon;
 grant select, insert, update, delete on public.office_deliverables to anon;
 grant select, insert, update, delete on public.office_ai_quotas to anon;
 
+-- ---------- 📷 사진 저장소 — Storage 공개 버킷 (v38) ----------
+-- 앱은 사진을 긴 변 1280px · JPEG 0.82로 줄여 이 버킷에 올리고(office/YYYY-MM-DD/...) 공개 주소를 메시지에 남깁니다.
+-- 버킷이 없어도 앱은 그래도 동작합니다(사진은 기기에만, 글은 정상 전송).
+insert into storage.buckets (id, name, public)
+values ('office-attachments', 'office-attachments', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "office attachments anon insert" on storage.objects;
+create policy "office attachments anon insert"
+  on storage.objects for insert to anon
+  with check (bucket_id = 'office-attachments');
+
+drop policy if exists "office attachments anon read" on storage.objects;
+create policy "office attachments anon read"
+  on storage.objects for select to anon
+  using (bucket_id = 'office-attachments');
+
+drop policy if exists "office attachments anon update" on storage.objects;
+create policy "office attachments anon update"
+  on storage.objects for update to anon
+  using (bucket_id = 'office-attachments')
+  with check (bucket_id = 'office-attachments');
+
 -- ---------- Realtime (선택) ----------
 -- 앱은 4.5초 주기로 동기화하므로 Realtime 은 없어도 동작합니다.
 -- 바로 밀어주는 알림까지 쓰려면 아래 두 줄의 주석을 풀고 실행하세요.
@@ -134,3 +165,9 @@ union all
 select 'office_tasks', count(*) from public.office_tasks
 union all
 select 'office_ai_quotas', count(*) from public.office_ai_quotas;
+
+-- 사진 컬럼·버킷 확인 (v38)
+select column_name, data_type
+  from information_schema.columns
+ where table_schema = 'public' and table_name = 'office_messages' and column_name = 'image_url';
+select id, public from storage.buckets where id = 'office-attachments';

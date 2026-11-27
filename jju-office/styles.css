@@ -2589,3 +2589,182 @@ html[data-theme="dark"] .quota-pct-btn.active { background: linear-gradient(180d
 @media (min-width: 470px) {
   .quota-edit-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* ---------------- 📷 사진 · 카메라 (v38) ---------------- */
+.composer-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: none;
+  margin-top: 8px;
+}
+.composer-wrap .composer { margin-top: 0; }
+
+.photo-input { display: none; }
+
+/* 입력창 안의 🖼️ 사진 · 📷 카메라 버튼 */
+.pic-btn {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink-2);
+  font-size: 15px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  transition: transform .12s ease, background .12s ease;
+}
+.pic-btn:hover { background: var(--card-soft); }
+.pic-btn:active { transform: scale(.94); }
+.pic-btn.is-busy { opacity: .55; pointer-events: none; }
+
+/* 전송 전 미리보기 — 썸네일 + 정보 + ✕ */
+.photo-strip { display: flex; }
+.photo-strip[hidden] { display: none; }
+.photo-strip.is-loading { opacity: .6; }
+
+.photo-chip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card-soft);
+}
+
+.photo-thumb {
+  width: 54px;
+  height: 54px;
+  flex: none;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+
+.photo-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.photo-title { font-size: 11px; font-weight: 800; color: var(--gold); letter-spacing: -.2px; }
+.photo-meta { font-size: 11.5px; font-weight: 700; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.photo-note { font-size: 10.5px; color: var(--ok); line-height: 1.35; }
+.photo-note.warn { color: var(--danger); }
+.photo-note[hidden] { display: none; }
+
+.photo-del {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.photo-del:hover { color: var(--danger); border-color: rgba(160, 58, 42, .4); }
+
+/* 말풍선 안의 사진 */
+.bubble.has-photo { padding: 6px; }
+.bubble.has-photo .bubble-text { padding: 2px 6px 4px; }
+.bubble-text { display: block; }
+
+.bubble-photo {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: var(--card-soft);
+  overflow: hidden;
+  line-height: 0;
+}
+.bubble-photo img {
+  display: block;
+  width: 100%;
+  max-height: 230px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+.bubble-photo.is-broken { min-height: 74px; }
+.bubble-photo.is-broken img { display: none; }
+.bubble-photo.is-broken::after {
+  content: '사진을 불러오지 못했어요';
+  display: grid;
+  place-items: center;
+  min-height: 74px;
+  padding: 10px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.bubble-note {
+  display: block;
+  padding: 2px 6px 3px;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.bubble-photo-tag {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(28, 20, 12, .62);
+  color: #FFF8EC;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: -.1px;
+  line-height: 1.5;
+}
+.msg.boss .bubble-photo { margin-left: auto; }
+
+/* 라이트박스 */
+.photo-modal { padding: 14px; }
+.photo-panel { width: min(680px, 100%); display: flex; flex-direction: column; }
+
+.photo-stage {
+  display: grid;
+  place-items: center;
+  margin: 8px 0 6px;
+  padding: 6px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--card-soft);
+  max-height: 64dvh;
+  overflow: auto;
+}
+.photo-big {
+  display: block;
+  max-width: 100%;
+  max-height: 60dvh;
+  object-fit: contain;
+  border-radius: 10px;
+}
+.photo-meta-line { margin: 2px 0 8px; font-size: 11.5px; font-weight: 600; color: var(--muted); }
+.photo-actions .btn { flex: 1; text-align: center; text-decoration: none; }
+
+@media (max-width: 359px) {
+  .pic-btn { width: 29px; height: 29px; font-size: 14px; }
+  .composer { gap: 5px; }
+  .send-btn { padding: 10px 12px; font-size: 13px; }
+  .bubble-photo { max-width: 180px; }
+}

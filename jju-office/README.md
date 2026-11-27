@@ -11,7 +11,7 @@
 | 탭 | 내용 |
 | --- | --- |
 | 🗺️ 오피스 맵 | 탑다운 평면도 위 3구역(대회의실·지휘실·라운지) 핫스팟 + 4인방 캐릭터. **4명 얼굴 아바타**(주드=다크네이비·금테 안경·금 넥타이, 하루=코랄·헤드셋, 다온=에메랄드·둥근 안경·번 머리, 로이=퍼플·하늘색 볼캡)가 담당 구역을 걸어 다니고(가끔 다른 방으로 외출 후 복귀), 걸을 때는 바운스·정지하면 숨쉬기와 깜박임·좌우로 방향을 돌립니다. 말풍선은 상태 멘트와 최신 보고를 번갈아 보여 주고, 이름표는 겹칠 때 좌우로 비켜납니다. 구역을 누르면 회의실 탭으로 바로 입장, 캐릭터·말풍선을 누르면 최근 보고 시트 |
-| 🏛️ 회의실 | 대회의실(4인방 전원) · 지휘실(대표님–주드 총괄이사 1:1) · 라운지(자유 기록). `+` 로 `@all · @주드 · @하루 · @다온 · @로이` 멘션 삽입(직함은 옆에 표시) |
+| 🏛️ 회의실 | 대회의실(4인방 전원) · 지휘실(대표님–주드 총괄이사 1:1) · 라운지(자유 기록). 입력창의 `+` 로 `@all · @주드 · @하루 · @다온 · @로이` 멘션 삽입(직함은 옆에 표시). 입력창의 **🖼️ 사진**(갤러리) · **📷 카메라**(즉시 촬영) 버튼으로 사진을 붙이고 — 긴 변 1280px·JPEG 0.82로 자동 축소 — 전송 전 썸네일과 `✕` 삭제, 사진만 또는 글+사진 전송. 말풍선 사진은 누르면 라이트박스로 크게 보고 다운로드 |
 | 📊 대시보드 | 오늘의 운영, 대표님 결정 대기, 비서 4인방 상태 |
 | 🛒 소싱 | 일일 소싱 4종(등록 행·도착원가·판매가·경쟁가)과 소싱 원칙 |
 | 🧵 스레드 | 3채널 오늘 예약 현황과 운영 수칙 |
@@ -26,6 +26,38 @@
 
 1. **로컬 모드(기본)** — 서버 없이 바로 동작합니다. 회의실 메시지·할 일은 그 기기 브라우저(localStorage)에 저장됩니다.
 2. **AI 서버 연결(Supabase)** — 우측 상단 `AI 서버` 배지를 눌러 Project URL 과 anon key 를 넣으면 `office_messages` · `office_tasks` 테이블과 동기화됩니다. `🔋 AI 한도` 탭은 `office_ai_quotas` 테이블과 따로 동기화하며, 그 테이블이 없어도 앱의 다른 화면은 영향받지 않습니다. 4.5초 주기로 주고받으며, 여러 기기에서 같은 회의실·할 일을 봅니다. 할 일은 `📋 할 일` 탭을 보고 있을 때 매 주기, 다른 화면에서는 4주기에 한 번 맞춥니다.
+
+### 📷 사진 첨부 · 카메라 (v38)
+
+- **🖼️ 사진** — 폰 갤러리/PC 파일 선택(`accept="image/*"`).
+- **📷 카메라** — `capture="environment"` 로 **뒷카메라 즉시 촬영**. 폰에서는 카메라가 바로 열리고, PC에서는 파일 선택으로 대체됩니다(브라우저 규칙).
+- 고른 사진은 브라우저 Canvas에서 **긴 변 최대 1280px · JPEG 품질 0.82** 로 다시 인코딩합니다(작은 사진은 늘리지 않음 · 투명 PNG는 흰 바탕). 그래서 4000×3000 사진도 보통 200~400KB로 줄어 폰 데이터와 저장소를 아낍니다.
+- 전송 전 **썸네일 + 크기·용량 + `✕`** 가 입력창 위에 뜨고, 사진만 보내거나 글과 함께 보낼 수 있습니다. 보내기 전에는 기기 저장(data URL)으로 바로 보이고, 서버에 올라가면 공개 주소로 바뀝니다.
+- 말풍선 안 사진을 누르면 **인앱 라이트박스**가 열립니다. `다운로드`는 서버 사진이면 받아서(blob) 저장하고, ✕·배경·ESC로 닫힙니다.
+- 15MB가 넘는 원본·사진이 아닌 파일은 안내만 하고 붙이지 않습니다.
+
+**서버 준비(사진을 4기기로 함께 보려면)** — `supabase-office-schema.sql`의 두 블록이면 끝입니다.
+
+1. `alter table office_messages add column if not exists image_url text;` — 사진 주소 칸
+2. Storage 공개 버킷 `office-attachments` + anon 정책(insert/select/update)
+
+준비 전에도 앱은 고장 나지 않습니다:
+
+| 상태 | 동작 |
+| --- | --- |
+| 컬럼 없음(42703) | 사진은 이 기기 말풍선에만 남고, **글은 그대로 전송**됩니다. `image_url` 없이 같은 id로 다시 넣어 중복 행이 없습니다. 미리보기에 `DB 준비 전 · 이 기기에만 표시` |
+| 버킷 없음(404)/정책 거부(403) | 업로드를 건너뛰고 **글만 전송**, 사진은 기기에 남습니다. 안내: `스키마 SQL의 Storage 블록을 실행해 주세요` |
+| 서버 미연결 | 기기에만 저장(사진 포함). 연결하면 그 뒤 사진부터 4기기 공유 |
+| 확인 불가(네트워크) | 그대로 시도하고, 실패하면 글만 전송 |
+
+사진 주소를 직접 넣고 싶을 때:
+
+```bash
+curl -X POST "$SUPABASE_URL/rest/v1/office_messages" \
+  -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"room":"grand","author":"jju1","author_name":"하루 팀장","body":"신상품 샘플 사진입니다","image_url":"https://xfcmfytdfkwuqgsnqogo.supabase.co/storage/v1/object/public/office-attachments/office/2026-11-27/sample.jpg"}'
+```
 
 ### 원터치 연결 (주소 한 줄)
 
@@ -57,6 +89,10 @@ curl -X POST "$SUPABASE_URL/rest/v1/office_messages" \
 ```
 
 `room` 은 `grand`(대회의실) · `command`(지휘실) · `lounge`(라운지) 중 하나입니다.
+
+### 회의실 사진(`office_messages.image_url` · v38)
+
+`office_messages` 에 `image_url`(text, 선택)이 추가됩니다. 값은 Storage 공개 버킷 `office-attachments` 의 주소(`.../storage/v1/object/public/office-attachments/office/YYYY-MM-DD/<파일>.jpg`)이고, 사진은 앱이 올린 뒤 그 주소만 저장합니다. 글 없이 사진만 보낸 경우 `body` 는 `📷 사진` 으로 들어가 예전 버전(v37 이하) 앱에서도 빈 말풍선이 되지 않습니다. 사진 경로는 `office/날짜/` 아래에 쌓이므로 Storage 용량을 비우고 싶을 때 이 폴더 단위로 지우면 됩니다.
 
 ### 할 일(`office_tasks`) 컬럼
 
@@ -93,7 +129,7 @@ curl -X PATCH "$SUPABASE_URL/rest/v1/office_tasks?id=eq.<id>" \
 ```
 index.html                  화면
 styles.css                  크림·브라운·골드 테마(라이트/다크)
-app.js                      회의실·오피스 맵·할 일·자료실·AI 한도·서버 동기화
+app.js                      회의실·오피스 맵·할 일·자료실·AI 한도·사진 첨부·서버 동기화
 assets/office-floorplan.jpg  오피스 맵 평면도(1402×1122)
 assets/jju-ecom-logo-transparent.png        쭈대표 이커머스 투명 로고
 assets/jnt-logo-luxury-mono.png             JNT 인터내셔날 로고 시안(럭셔리 모노)
@@ -103,8 +139,8 @@ assets/coupang-ads-playbook-2026-11-26.md   쿠팡 광고 관리 비법 리서�
 assets/weekly-youtube-3picks-2026-11-23.md  주간 유튜브 추천 3선 대본
 assets/domeggook-best100-2026-11-25.xlsx    도매꾹 베스트100 분석(사진 포함)
 manifest.json               PWA 설치 정보
-sw.js                       오프라인 캐시(v31 · 영상·Range 요청은 캐시 제외)
-supabase-office-schema.sql  서버 테이블·정책
+sw.js                       오프라인 캐시(v32 · 영상·Range 요청은 캐시 제외)
+supabase-office-schema.sql  서버 테이블·정책(+ 사진 컬럼·office-attachments 버킷)
 icons/                      앱 아이콘(192·512·maskable·apple-touch)
 scripts/make-icons.py       아이콘 생성 스크립트
 ```

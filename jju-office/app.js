@@ -143,22 +143,55 @@
     }
   }
 
+  function savePack(msgs) {
+    return {
+      theme: state.theme,
+      view: state.view,
+      room: state.room,
+      messages: msgs,
+      tasks: state.tasks,
+      taskFilter: state.taskFilter,
+      dlCat: state.dlCat,
+      dlSort: state.dlSort,
+      quotas: state.quotas,
+      supabase: state.supabase
+    };
+  }
+
+  function writeStore(pack) {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(pack));
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /* 기기 저장(data URL) 사진은 무겁습니다. 저장 한도를 넘으면 최근 keep장만 남긴 사본을 만듭니다
+     — 화면(state)의 메시지는 건드리지 않습니다. */
+  function trimPhotoCopies(msgs, keep) {
+    var out = [];
+    var seen = 0;
+    for (var i = msgs.length - 1; i >= 0; i--) {
+      var m = msgs[i];
+      var isLocalPhoto = m && typeof m.image_url === 'string' && m.image_url.indexOf('data:') === 0;
+      if (!isLocalPhoto) { out.unshift(m); continue; }
+      seen += 1;
+      if (seen <= keep) { out.unshift(m); continue; }
+      var c = {};
+      Object.keys(m).forEach(function (k) { c[k] = m[k]; });
+      delete c.image_url;
+      c.image_lost = true;
+      out.unshift(c);
+    }
+    return out;
+  }
+
   function save() {
     if (DEMO) return;
-    try {
-      localStorage.setItem(LS_KEY, JSON.stringify({
-        theme: state.theme,
-        view: state.view,
-        room: state.room,
-        messages: state.messages.slice(-400),
-        tasks: state.tasks,
-        taskFilter: state.taskFilter,
-        dlCat: state.dlCat,
-        dlSort: state.dlSort,
-        quotas: state.quotas,
-        supabase: state.supabase
-      }));
-    } catch (e) { /* storage full or blocked */ }
+    var recent = state.messages.slice(-400);
+    if (writeStore(savePack(recent))) return;
+    /* 한도 초과 — 오래된 기기 저장 사진부터 정리해 글은 남깁니다. */
+    if (writeStore(savePack(trimPhotoCopies(recent, 3)))) return;
+    writeStore(savePack(trimPhotoCopies(recent, 0)));
   }
 
   function load() {
@@ -352,7 +385,22 @@
 
       var bub = document.createElement('div');
       bub.className = 'bubble';
-      bub.textContent = m.body;
+      if (m.body) {
+        var tx = document.createElement('div');
+        tx.className = 'bubble-text';
+        tx.textContent = m.body;
+        bub.appendChild(tx);
+      }
+      if (m.image_url) {
+        bub.classList.add('has-photo');
+        bub.appendChild(photoNode(m));
+      }
+      if (!m.image_url && m.image_lost) {
+        var lost = document.createElement('div');
+        lost.className = 'bubble-note';
+        lost.textContent = '사진은 기기 저장 한도로 정리됐어요';
+        bub.appendChild(lost);
+      }
 
       main.appendChild(head);
       main.appendChild(bub);
@@ -380,7 +428,10 @@
 
   function sendMessage() {
     var text = (el.chatInput.value || '').trim();
-    if (!text) return;
+    var photo = PHOTO.pending;
+    if (!text && !photo) return;
+    if (PHOTO.busy) { toast('사진을 준비하고 있어요 · 잠깐만 기다려 주세요'); return; }
+
     var msg = {
       id: uid(),
       room: state.room,
@@ -389,22 +440,452 @@
       body: text,
       created_at: new Date().toISOString()
     };
+    if (photo) {
+      /* 보내기 전에는 기기 저장용 data URL로 바로 보여 주고, 서버에 올라가면 공개 주소로 바꿉니다. */
+      msg.image_url = photo.dataUrl;
+      msg.image_size = photo.w + '×' + photo.h;
+      msg.image_from = photo.from;
+    }
     addMessage(msg);
     el.chatInput.value = '';
     resizeInput();
     hideMentions();
+    clearPhoto();
 
-    if (SB.connected) {
-      sbInsert('office_messages', {
-        id: msg.id, room: msg.room, author: msg.author, author_name: msg.author_name, body: msg.body
-      }).then(function () {
+    if (!SB.connected || !state.supabase.url || !state.supabase.key) {
+      toast(photo
+        ? '사진과 글을 이 기기에 저장했어요 · AI 서버를 연결하면 4인방에 전달됩니다'
+        : '기기에 저장했어요 · AI 서버를 연결하면 4인방에 전달됩니다', photo ? 3600 : 2600);
+      return;
+    }
+
+    if (!photo) {
+      insertMessage(msg, false).then(function () {
         flashServer('ok');
       }).catch(function () {
         toast('서버 전송 실패 · 기기에는 저장했어요');
       });
-    } else {
-      toast('기기에 저장했어요 · AI 서버를 연결하면 4인방에 전달됩니다');
+      return;
     }
+
+    uploadPhoto(photo).then(function (url) {
+      msg.image_url = url;              /* 기기 저장은 공개 주소로(용량 절약) */
+      if (PHOTO.remote.indexOf(msg.id) === -1) PHOTO.remote.push(msg.id);
+      save();
+      if (msg.room === state.room) renderChat();
+      return insertMessage(msg, true);
+    }).then(function () {
+      flashServer('ok');
+    }).catch(function (err) {
+      /* 사진이 안 올라가도 글은 반드시 전달합니다(사진은 이 기기에 남습니다). */
+      insertMessage(msg, false).then(function () {
+        photoFallbackNote(err);
+      }).catch(function () {
+        toast('서버 전송 실패 · 사진과 글은 기기에 저장했어요', 3600);
+      });
+    });
+  }
+
+  /* ---------------- 📷 사진 · 카메라 (v38) ---------------- */
+  /* 갤러리(#photoInput)와 즉시 촬영(#cameraInput capture=environment)이 같은 길을 씁니다.
+     ① 고른 파일을 data URL로 읽고 ② Canvas로 긴 변 1280px까지 줄여 JPEG 0.82로 다시 인코딩
+     ③ 전송 전 미리보기(썸네일 + ✕) ④ 보내면 Storage(office-attachments)에 올리고 주소만 메시지에 남깁니다.
+     DB의 image_url 컬럼이나 Storage 버킷이 아직 없어도 글이 실패하지 않게, 실패하면 글로만 보냅니다. */
+
+  var PHOTO = {
+    max: 1280,                       /* 긴 변 최대 px */
+    quality: 0.82,                   /* JPEG 압축 품질 */
+    maxInput: 15 * 1024 * 1024,      /* 원본 파일 상한 15MB */
+    bucket: 'office-attachments',
+    pending: null,                   /* { dataUrl, name, from, w, h, bytes, resized } */
+    column: null,                    /* image_url 컬럼: null 모름 · true 있음 · false 없음 */
+    bucketOk: null,                  /* Storage 버킷: null 모름 · true/false */
+    remote: [],                      /* 서버 주소로 바뀐 메시지 id (기기 저장 배지 판단) */
+    busy: false,
+    opened: null
+  };
+
+  /* 긴 변을 max 이하로 줄이는 비율 계산(작은 사진은 늘리지 않습니다). */
+  function photoPlan(w, h, max) {
+    w = Number(w) || 0;
+    h = Number(h) || 0;
+    var longest = Math.max(w, h);
+    var limit = Number(max) || PHOTO.max;
+    if (!w || !h || longest <= limit) return { w: Math.max(1, Math.round(w)), h: Math.max(1, Math.round(h)), scale: 1 };
+    var scale = limit / longest;
+    return { w: Math.max(1, Math.round(w * scale)), h: Math.max(1, Math.round(h * scale)), scale: scale };
+  }
+
+  function photoBytes(dataUrl) {
+    var s = String(dataUrl || '');
+    var i = s.indexOf(',');
+    if (i < 0) return 0;
+    var b64 = s.slice(i + 1);
+    var pad = b64.slice(-2) === '==' ? 2 : (b64.slice(-1) === '=' ? 1 : 0);
+    return Math.max(0, Math.round(b64.length * 3 / 4) - pad);
+  }
+
+  function readImageFile(file) {
+    return new Promise(function (resolve, reject) {
+      if (typeof FileReader === 'undefined') { reject(new Error('no-file-reader')); return; }
+      var reader = new FileReader();
+      reader.onload = function () { resolve(String(reader.result || '')); };
+      reader.onerror = function () { reject(new Error('read')); };
+      try { reader.readAsDataURL(file); } catch (e) { reject(e); }
+    });
+  }
+
+  function loadPhotoImage(src) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { reject(new Error('decode')); };
+      img.src = src;
+    });
+  }
+
+  /* Canvas가 없는 환경(아주 오래된 브라우저·테스트 러너)이면 null을 돌려주고 원본을 그대로 씁니다. */
+  function canvasJpeg(img, max, quality) {
+    var w = img.naturalWidth || img.width || 0;
+    var h = img.naturalHeight || img.height || 0;
+    if (!w || !h) return null;
+    var plan = photoPlan(w, h, max);
+    var canvas = document.createElement('canvas');
+    canvas.width = plan.w;
+    canvas.height = plan.h;
+    var ctx = null;
+    try { ctx = canvas.getContext ? canvas.getContext('2d') : null; } catch (e) { ctx = null; }
+    if (!ctx) return null;
+    try {
+      /* PNG·투명 배경이 JPEG에서 검게 나오지 않게 흰 바탕을 깔고 그립니다. */
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, plan.w, plan.h);
+      ctx.drawImage(img, 0, 0, plan.w, plan.h);
+      var out = canvas.toDataURL('image/jpeg', quality || PHOTO.quality);
+      if (!out || out.indexOf('data:image/jpeg') !== 0) return null;
+      return { dataUrl: out, w: plan.w, h: plan.h };
+    } catch (e) { return null; }
+  }
+
+  function pickPhoto(file, from) {
+    if (!file) return;
+    var name = String(file.name || '') || (from === 'camera' ? '카메라 촬영' : '사진');
+    var type = String(file.type || '');
+    if (type && type.indexOf('image/') !== 0) { toast('사진 파일만 첨부할 수 있어요'); return; }
+    if (file.size && file.size > PHOTO.maxInput) { toast('사진이 너무 커요 · 15MB 이하로 골라 주세요', 3200); return; }
+
+    PHOTO.busy = true;
+    setPhotoBusy(true);
+    readImageFile(file).then(function (dataUrl) {
+      if (!dataUrl) throw new Error('empty');
+      return loadPhotoImage(dataUrl).then(function (img) {
+        var out = canvasJpeg(img, PHOTO.max, PHOTO.quality);
+        var finalUrl = (out && out.dataUrl) ? out.dataUrl : dataUrl;
+        PHOTO.pending = {
+          dataUrl: finalUrl,
+          name: name,
+          from: from === 'camera' ? 'camera' : 'gallery',
+          w: out ? out.w : (img.naturalWidth || img.width || 0),
+          h: out ? out.h : (img.naturalHeight || img.height || 0),
+          bytes: photoBytes(finalUrl),
+          resized: !!(out && out.dataUrl)
+        };
+      });
+    }).then(function () {
+      PHOTO.busy = false;
+      setPhotoBusy(false);
+      renderPhotoStrip();
+      var kb = Math.max(1, Math.round(PHOTO.pending.bytes / 1024));
+      toast('사진 준비됐어요 · ' + PHOTO.pending.w + '×' + PHOTO.pending.h + ' · ' + kb + 'KB · 보내기를 누르면 전송됩니다', 2600);
+    }).catch(function () {
+      PHOTO.busy = false;
+      setPhotoBusy(false);
+      toast('사진을 읽지 못했어요 · 다른 사진으로 다시 시도해 주세요', 3200);
+    });
+  }
+
+  function setPhotoBusy(on) {
+    [el.photoBtn, el.cameraBtn].forEach(function (b) {
+      if (!b) return;
+      b.classList.toggle('is-busy', !!on);
+      b.setAttribute('aria-busy', on ? 'true' : 'false');
+    });
+    if (el.photoStrip) el.photoStrip.classList.toggle('is-loading', !!on);
+  }
+
+  function renderPhotoStrip() {
+    var p = PHOTO.pending;
+    if (!el.photoStrip) return;
+    if (!p) {
+      el.photoStrip.hidden = true;
+      if (el.photoThumb) el.photoThumb.removeAttribute('src');
+      setPhotoDbNote();
+      return;
+    }
+    el.photoStrip.hidden = false;
+    if (el.photoThumb) {
+      el.photoThumb.src = p.dataUrl;
+      el.photoThumb.alt = '첨부 사진 미리보기';
+    }
+    if (el.photoMeta) {
+      var kb = Math.max(1, Math.round(p.bytes / 1024));
+      el.photoMeta.textContent = (p.from === 'camera' ? '📷 촬영' : '🖼️ 갤러리') + ' · ' + p.w + '×' + p.h + ' · ' + kb + 'KB';
+    }
+    setPhotoDbNote();
+  }
+
+  function clearPhoto() {
+    PHOTO.pending = null;
+    PHOTO.busy = false;
+    try { if (el.photoInput) el.photoInput.value = ''; } catch (e) { /* ignore */ }
+    try { if (el.cameraInput) el.cameraInput.value = ''; } catch (e) { /* ignore */ }
+    setPhotoBusy(false);
+    renderPhotoStrip();
+  }
+
+  /* DB·Storage 준비 상태를 미리보기와 AI 서버 창에 한 줄로 알려 줍니다. */
+  function setPhotoDbNote() {
+    var note = '', warn = false;
+    if (PHOTO.column === false) {
+      note = 'DB 준비 전 · 지금은 이 기기에만 표시';
+      warn = true;
+    } else if (PHOTO.column === true && PHOTO.bucketOk === false) {
+      note = '사진 저장소 없음 · 글만 전송됩니다';
+      warn = true;
+    } else if (PHOTO.column === true) {
+      note = '서버 준비됨 · 보내면 4인방에 함께 전달';
+    }
+    if (el.photoNote) {
+      el.photoNote.textContent = note;
+      el.photoNote.classList.toggle('warn', warn);
+      el.photoNote.hidden = !note;
+    }
+    if (el.photoDbNote) {
+      if (PHOTO.column === false) {
+        el.photoDbNote.textContent = '📷 사진 첨부: DB에 image_url 컬럼이 없습니다 · 스키마 SQL을 실행해 주세요';
+      } else if (PHOTO.column === true && PHOTO.bucketOk === false) {
+        el.photoDbNote.textContent = '📷 사진 첨부: Storage 버킷(office-attachments)이 없습니다 · 스키마 SQL의 Storage 블록을 실행해 주세요';
+      } else if (PHOTO.column === true) {
+        el.photoDbNote.textContent = '📷 사진 첨부: 서버 준비됨 · office-attachments 버킷에 올라갑니다';
+      } else if (SB.connected) {
+        el.photoDbNote.textContent = '📷 사진 첨부: 서버 확인 중… (확인 전에는 이 기기에만 저장)';
+      } else {
+        el.photoDbNote.textContent = '📷 사진 첨부: 서버 연결 전 · 사진은 이 기기에만 저장됩니다';
+      }
+    }
+  }
+
+  /* 라이트박스에서 크게 보기 */
+  function photoFileName() {
+    var d = new Date();
+    return 'jju-office-' + isoDate(d).replace(/-/g, '') + '-' + pad2(d.getHours()) + pad2(d.getMinutes()) + '.jpg';
+  }
+
+  function openPhoto(m) {
+    var url = typeof m === 'string' ? m : (m && m.image_url);
+    if (!url) return;
+    PHOTO.opened = {
+      url: url,
+      remote: /^https?:/i.test(url),
+      meta: (m && m.image_size) || '',
+      when: (m && m.created_at) || ''
+    };
+    if (el.photoBig) {
+      el.photoBig.src = url;
+      el.photoBig.alt = '첨부 사진 크게 보기';
+    }
+    if (el.photoMetaLine) {
+      var bits = [];
+      if (PHOTO.opened.remote) {
+        bits.push('서버 저장');
+      } else {
+        bits.push('이 기기 저장');
+      }
+      if (PHOTO.opened.meta) bits.push(PHOTO.opened.meta);
+      if (PHOTO.opened.when) bits.push(timeLabel(PHOTO.opened.when));
+      el.photoMetaLine.textContent = bits.join(' · ');
+    }
+    if (el.photoDl) {
+      el.photoDl.href = url;
+      el.photoDl.setAttribute('download', photoFileName());
+    }
+    if (el.photoModal) el.photoModal.hidden = false;
+  }
+
+  function closePhoto() {
+    if (!el.photoModal || el.photoModal.hidden) return;
+    el.photoModal.hidden = true;
+    if (el.photoBig) el.photoBig.removeAttribute('src');
+    PHOTO.opened = null;
+  }
+
+  /* 서버 사진은 download 속성이 무시되므로(다른 출처) 받아서 blob으로 저장합니다. */
+  function savePhotoFile(e) {
+    if (!PHOTO.opened) return;
+    var url = PHOTO.opened.url;
+    if (!PHOTO.opened.remote) return;      /* data: URL 은 download 속성이 그대로 동작 */
+    if (e && e.preventDefault) e.preventDefault();
+    var went = false;
+    function openInstead() {
+      if (went) return;
+      went = true;
+      try { window.open(url, '_blank', 'noopener'); } catch (err) { /* ignore */ }
+    }
+    try {
+      fetch(url).then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.blob();
+      }).then(function (blob) {
+        if (!window.URL || typeof window.URL.createObjectURL !== 'function') { openInstead(); return; }
+        var obj = window.URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = obj;
+        a.download = photoFileName();
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { try { window.URL.revokeObjectURL(obj); } catch (err) { /* ignore */ } }, 4000);
+      }).catch(openInstead);
+    } catch (err) { openInstead(); }
+  }
+
+  function photoNode(m) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'bubble-photo';
+    btn.setAttribute('aria-label', '사진 크게 보기');
+    var img = document.createElement('img');
+    img.src = m.image_url;
+    img.alt = '첨부 사진';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.addEventListener('error', function () { btn.classList.add('is-broken'); });
+    btn.appendChild(img);
+    if (/^data:/i.test(m.image_url) && PHOTO.remote.indexOf(m.id) === -1) {
+      var tag = document.createElement('span');
+      tag.className = 'bubble-photo-tag';
+      tag.textContent = '기기 저장';
+      btn.appendChild(tag);
+    }
+    btn.addEventListener('click', function () { openPhoto(m); });
+    return btn;
+  }
+
+  function dataUrlToBlob(dataUrl) {
+    var s = String(dataUrl || '');
+    var comma = s.indexOf(',');
+    if (comma < 0) throw new Error('bad-data-url');
+    var meta = s.slice(0, comma);
+    var b64 = s.slice(comma + 1);
+    var mime = (meta.match(/data:([^;]+)/) || [])[1] || 'image/jpeg';
+    var bin = atob(b64);
+    var len = bin.length;
+    var arr = new Uint8Array(len);
+    for (var i = 0; i < len; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+
+  function photoPath() {
+    var d = new Date();
+    return 'office/' + isoDate(d) + '/' + d.getTime().toString(36) + '-' + Math.random().toString(36).slice(2, 8) + '.jpg';
+  }
+
+  /* Storage 업로드 → 공개 주소 반환. 실패는 그대로 던져 호출부가 글만 보내게 합니다. */
+  function uploadPhoto(photo) {
+    var dataUrl = photo && photo.dataUrl;
+    if (!dataUrl) return Promise.reject(new Error('no-photo'));
+    if (!state.supabase.url || !state.supabase.key) return Promise.reject(new Error('no-server'));
+    var path = photoPath();
+    var blob;
+    try { blob = dataUrlToBlob(dataUrl); } catch (e) { return Promise.reject(e); }
+    return fetch(sbBase() + '/storage/v1/object/' + PHOTO.bucket + '/' + path, {
+      method: 'POST',
+      headers: {
+        'apikey': state.supabase.key,
+        'Authorization': 'Bearer ' + state.supabase.key,
+        'Content-Type': 'image/jpeg',
+        'x-upsert': 'true',
+        'cache-control': 'max-age=31536000'
+      },
+      body: blob
+    }).then(function (res) {
+      if (!res.ok) {
+        var err = new Error('HTTP ' + res.status);
+        err.status = res.status;
+        err.detail = 'storage';
+        /* 404(버킷 없음)·403(정책 거부)는 준비 안 됨으로 확정하고, 그 밖은 확인 불가로 둡니다. */
+        if (res.status === 404 || res.status === 403) PHOTO.bucketOk = false;
+        throw err;
+      }
+      PHOTO.bucketOk = true;
+      return sbBase() + '/storage/v1/object/public/' + PHOTO.bucket + '/' + path;
+    });
+  }
+
+  function isColumnMissing(err) {
+    if (!err) return false;
+    var d = String(err.detail || '') + ' ' + String(err.message || '');
+    return d.indexOf('42703') !== -1 || d.indexOf('image_url') !== -1 || /column .* does not exist/i.test(d);
+  }
+
+  /* 메시지 1건 저장. image_url 컬럼이 없으면 같은 id로 컬럼 없이 한 번 더 시도합니다.
+     (컬럼 오류로 실패한 INSERT는 행을 만들지 않으므로 재시도가 중복을 남기지 않습니다) */
+  function insertMessage(msg, withImage) {
+    var row = {
+      id: msg.id,
+      room: msg.room,
+      author: msg.author,
+      author_name: msg.author_name,
+      body: msg.body || (msg.image_url ? '📷 사진' : '')
+    };
+    if (withImage && msg.image_url && !/^data:/i.test(msg.image_url)) row.image_url = msg.image_url;
+    return sbInsert('office_messages', row).catch(function (err) {
+      if (!row.image_url) throw err;
+      if (!(isColumnMissing(err) || err.status === 400)) throw err;
+      PHOTO.column = false;
+      setPhotoDbNote();
+      var textRow = {
+        id: msg.id, room: msg.room, author: msg.author, author_name: msg.author_name,
+        body: msg.body || '📷 사진'
+      };
+      return sbInsert('office_messages', textRow).then(function (r) {
+        photoFallbackNote(err);
+        return r;
+      });
+    });
+  }
+
+  function photoFallbackNote(err) {
+    if (PHOTO.column === false) {
+      toast('사진은 이 기기에만 있어요 · DB에 image_url 칸을 만들면 4인방에 함께 전송됩니다', 4600);
+    } else if (PHOTO.bucketOk === false) {
+      toast('사진 저장소가 아직 없어 글만 전달했어요 · 스키마 SQL의 Storage 블록을 실행해 주세요', 4800);
+    } else if (err) {
+      toast('사진 업로드가 안 돼 글만 전달했어요 · 잠시 후 다시 시도해 주세요', 3800);
+    }
+  }
+
+  /* 연결 직후 사진 준비 상태 확인 — 컬럼·버킷이 없어도 조용히 안내만 바꿉니다. */
+  function probePhotoColumn() {
+    if (!SB.connected || !state.supabase.url || !state.supabase.key) {
+      PHOTO.column = null;
+      setPhotoDbNote();
+      return Promise.resolve(null);
+    }
+    return fetch(sbBase() + '/rest/v1/office_messages?select=id,image_url&limit=1', { headers: sbHeaders() })
+      .then(function (res) {
+        if (res.ok) PHOTO.column = true;
+        else if (res.status === 400 || res.status === 404) PHOTO.column = false;
+        else PHOTO.column = null;
+        setPhotoDbNote();
+        return PHOTO.column;
+      })
+      .catch(function () {
+        PHOTO.column = null;
+        setPhotoDbNote();
+        return null;
+      });
   }
 
   /* ---------------- mentions ---------------- */
@@ -2091,10 +2572,12 @@
     }
     pullAll().then(function () {
       setServerState('ok');
+      probePhotoColumn();
     }).catch(function (e) {
       setServerState('err', e && e.status === 404
         ? '테이블이 없습니다 · 스키마 SQL을 먼저 실행해 주세요'
         : '연결 확인 실패 · 로컬 모드로 동작 중');
+      setPhotoDbNote();
     });
     startPolling();
   }
@@ -2146,7 +2629,8 @@
       state.messages.push({
         id: r.id, room: r.room, author: r.author || 'director',
         author_name: r.author_name || (PEOPLE[r.author] ? pname(PEOPLE[r.author]) : '비서'),
-        body: r.body || '', created_at: r.created_at || new Date().toISOString()
+        body: r.body || '', image_url: r.image_url || '',
+        created_at: r.created_at || new Date().toISOString()
       });
       changed = true;
     });
@@ -2162,7 +2646,7 @@
   /* VAPID 공개키는 공개 정보입니다(비밀키는 Supabase Edge Function 시크릿에만 저장). */
   var VAPID_PUBLIC_KEY = 'BLsYdjB1PvxgqFW1LsvjOKqEfQ6qry4P77QkHh04m2z7yXbYx5pAx4OtnRy4_XlqHofAiABdweCvsc_qRUrq0pA';
   var PUSH = { busy: false, sub: null, synced: false, lastError: '', opened: false };
-  var APP_VERSION = 'v37';
+  var APP_VERSION = 'v38';
 
   function pushSupported() {
     return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
@@ -3235,6 +3719,7 @@
         SB.connected = true;
         setServerState('ok');
         pullAll().catch(function () {});
+        probePhotoColumn();
         startPolling();
         PUSH.synced = false;
         refreshPushState();
@@ -3257,6 +3742,9 @@
     save();
     el.sbUrl.value = '';
     el.sbKey.value = '';
+    PHOTO.column = null;
+    PHOTO.bucketOk = null;
+    setPhotoDbNote();
     setServerState('none');
     toast('연결을 해제했어요 · 로컬 모드');
   }
@@ -3685,8 +4173,12 @@
       var incoming = quotaNorm(id, r);
       var st = incoming.updated_at ? new Date(incoming.updated_at).getTime() : 0;
       var ct = cur.updated_at ? new Date(cur.updated_at).getTime() : 0;
-      if (st && ct && st < ct) return; /* 기기에 더 새 기록이 있으면 그대로 둡니다 */
-      if (st && ct && st === ct) { n += 1; return; } /* 값이 같으면 동기화만 확인하고 다시 그리지 않습니다(18초마다 편집 패널이 닫히던 문제) */
+      /* 기기에 더 새 기록이 있으면 그대로 둡니다. */
+      if (st && ct && st < ct) return;
+      /* 값이 같으면 동기화 인원으로만 세고 다시 그리지 않습니다.
+         (같은 시각에 다시 그리면 18초 주기 동기화마다 ✏️ 수정 패널이 닫히던 문제)
+         — 본부 핫픽스 41c3434 반영 */
+      if (st && ct && st === ct) { n += 1; return; }
       cur.plan = incoming.plan;
       cur.reset = incoming.reset;
       cur.pct = incoming.pct;
@@ -3833,6 +4325,22 @@
     el.quotaRelayText = document.getElementById('quotaRelayText');
     el.quotaSourceChip = document.getElementById('quotaSourceChip');
     el.quotaMenuBadge = document.getElementById('quotaMenuBadge');
+    el.photoStrip = document.getElementById('photoStrip');
+    el.photoThumb = document.getElementById('photoThumb');
+    el.photoMeta = document.getElementById('photoMeta');
+    el.photoNote = document.getElementById('photoNote');
+    el.photoDel = document.getElementById('photoDel');
+    el.photoBtn = document.getElementById('photoBtn');
+    el.cameraBtn = document.getElementById('cameraBtn');
+    el.photoInput = document.getElementById('photoInput');
+    el.cameraInput = document.getElementById('cameraInput');
+    el.photoModal = document.getElementById('photoModal');
+    el.photoBig = document.getElementById('photoBig');
+    el.photoMetaLine = document.getElementById('photoMetaLine');
+    el.photoDl = document.getElementById('photoDl');
+    el.photoClose = document.getElementById('photoClose');
+    el.photoCloseBtn = document.getElementById('photoCloseBtn');
+    el.photoDbNote = document.getElementById('photoDbNote');
   }
 
   function bind() {
@@ -3872,6 +4380,34 @@
     el.chatInput.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); sendMessage(); }
     });
+
+    /* 📷 사진 · 카메라 */
+    if (el.photoBtn) el.photoBtn.addEventListener('click', function () {
+      if (el.photoInput) el.photoInput.click();
+    });
+    if (el.cameraBtn) el.cameraBtn.addEventListener('click', function () {
+      if (el.cameraInput) el.cameraInput.click();
+    });
+    if (el.photoInput) el.photoInput.addEventListener('change', function () {
+      var f = el.photoInput.files && el.photoInput.files[0];
+      pickPhoto(f, 'gallery');
+    });
+    if (el.cameraInput) el.cameraInput.addEventListener('change', function () {
+      var f = el.cameraInput.files && el.cameraInput.files[0];
+      pickPhoto(f, 'camera');
+    });
+    if (el.photoDel) el.photoDel.addEventListener('click', function () {
+      clearPhoto();
+      toast('첨부 사진을 뺐어요', 1600);
+    });
+    if (el.photoModal) {
+      el.photoModal.addEventListener('click', function (e) {
+        if (e.target.dataset && e.target.dataset.close) closePhoto();
+      });
+    }
+    if (el.photoClose) el.photoClose.addEventListener('click', closePhoto);
+    if (el.photoCloseBtn) el.photoCloseBtn.addEventListener('click', closePhoto);
+    if (el.photoDl) el.photoDl.addEventListener('click', savePhotoFile);
 
     el.plusBtn.addEventListener('click', function (e) {
       e.stopPropagation();
@@ -3914,7 +4450,7 @@
       if (e.target.dataset.close) closeModal();
     });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') { closeModal(); closeSheet(); hideMentions(); closePushPanel(); closeDeliverable(); }
+      if (e.key === 'Escape') { closeModal(); closeSheet(); hideMentions(); closePushPanel(); closeDeliverable(); closePhoto(); }
     });
     document.getElementById('sbSave').addEventListener('click', saveServer);
     document.getElementById('sbTest').addEventListener('click', testFromModal);
@@ -4063,6 +4599,7 @@
     renderBlog();
     renderDeliverables();
     renderQuota();
+    renderPhotoStrip();
     bind();
 
     var params = new URLSearchParams(location.search);
