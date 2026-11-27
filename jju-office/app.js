@@ -3684,7 +3684,7 @@
       var incoming = quotaNorm(id, r);
       var st = incoming.updated_at ? new Date(incoming.updated_at).getTime() : 0;
       var ct = cur.updated_at ? new Date(cur.updated_at).getTime() : 0;
-      if (st && ct && st < ct) return; /* 기기에 더 새 기록이 있으면 그대로 둡니다 */
+      if (st && ct && st <= ct) return; /* 기기에 같거나 더 새 기록이 있으면 그대로 둡니다(18초마다 재렌더로 편집 패널이 닫히던 문제) */
       cur.plan = incoming.plan;
       cur.reset = incoming.reset;
       cur.pct = incoming.pct;
