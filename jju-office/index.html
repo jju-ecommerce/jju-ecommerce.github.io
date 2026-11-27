@@ -13,10 +13,18 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="styles.css?v=30">
+<link rel="stylesheet" href="styles.css?v=31">
 </head>
 <body>
 <div class="app" id="app">
+
+  <!-- 🔄 새 버전 알림 배너 — 새 sw.js 가 배포되면 앱을 닫지 않아도 뜹니다(v40) -->
+  <div class="update-banner" id="updateBanner" role="status" aria-live="polite" hidden>
+    <span class="update-ico" aria-hidden="true">🔄</span>
+    <span class="update-txt">새 버전 있어요</span>
+    <button class="update-apply" id="updateApply" type="button">지금 적용</button>
+    <button class="update-later" id="updateLater" type="button" aria-label="나중에 적용" title="나중에 적용">✕</button>
+  </div>
 
   <header class="topbar">
     <div class="brand">
@@ -141,7 +149,7 @@
             <button class="plus-btn" id="plusBtn" aria-label="멘션 빠른 입력" aria-expanded="false">+</button>
             <button class="pic-btn" id="photoBtn" type="button" aria-label="사진 첨부(갤러리)" title="사진 첨부">🖼️</button>
             <button class="pic-btn" id="cameraBtn" type="button" aria-label="카메라로 촬영" title="카메라로 촬영">📷</button>
-            <input id="chatInput" type="text" autocomplete="off" placeholder="지시를 한 줄로 (@all = 전원)" aria-label="회의실 지시 입력">
+            <input id="chatInput" type="text" autocomplete="off" placeholder="지시를 한 줄로 (@all = 전원)" aria-label="회의실 지시 입력" title="사진은 Ctrl+V 로도 붙일 수 있어요">
             <button class="send-btn" id="sendBtn">보내기</button>
             <div class="mention-menu" id="mentionMenu" hidden>
             <button data-mention="@all">@all <small>전원</small></button>
@@ -785,6 +793,6 @@
   };
 })();
 </script>
-<script src="app.js?v=39" defer></script>
+<script src="app.js?v=40" defer></script>
 </body>
 </html>

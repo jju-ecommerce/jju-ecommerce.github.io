@@ -461,6 +461,9 @@ html[data-theme="dark"] .avatar { box-shadow: 0 2px 8px rgba(0, 0, 0, .35), 0 0 
   box-shadow: 0 2px 6px rgba(90, 60, 30, .18), 0 0 0 1px rgba(90, 60, 30, .08);
 }
 .avatar.avatar-char .avatar-face { border-radius: 50%; }
+/* 사진(캐리커쳐) 아바타 — 원형 칸을 꽉 채웁니다(v40) */
+.avatar-face img.char-img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 32%; }
+
 html[data-theme="dark"] .avatar.avatar-char {
   background: #1B2430;
   box-shadow: 0 2px 8px rgba(0, 0, 0, .4), 0 0 0 1px rgba(255, 240, 220, .1);
@@ -3071,4 +3074,393 @@ html[data-theme="dark"] .quota-pct-btn.active { background: linear-gradient(180d
 
   .pc-crew { grid-template-columns: 1fr; }
   .pc-crew .map-avatar { width: 32px; height: 32px; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   PC 가독성 확대 (styles v31)
+   ────────────────────────────────────────────────────────────
+   · 13.3형 보조모니터에서 PC 창을 최대화해 볼 때 글씨·요소가 작다는
+     피드백을 반영했습니다. 1024px 이상에서만 적용되고, 1023px 이하
+     모바일·태블릿 레이아웃은 이 블록의 영향을 받지 않습니다.
+   · 기본 글씨 16→16.5px, 말풍선 14.5→17px, 카드 제목 15.5→18.5px,
+     버튼·입력창 14.5~17px, 왼쪽 레일 11.5~14.5px, 오피스 맵 이름표
+     9.5→13px 로 키우고, 그에 맞춰 여백·아이콘·아바타도 함께 키웠습니다.
+   ════════════════════════════════════════════════════════════ */
+@media (min-width: 1024px) {
+  html, body { font-size: 16.5px; }
+
+  .app { font-size: 16.5px; grid-template-columns: 304px minmax(0, 1fr); }
+
+  /* ---------- 상단 바 ---------- */
+  .topbar { padding: 16px 28px 12px; }
+  .brand { gap: 12px; }
+  .brand-mark { width: 52px; height: 52px; }
+  .brand-text h1 { font-size: 21px; }
+  .brand-sub { font-size: 13.5px; }
+  .topbar-actions { gap: 9px; }
+  .push-btn { padding: 9px 14px; font-size: 14px; }
+  .push-btn .push-ico { font-size: 15px; }
+  .server-pill { padding: 9px 14px; font-size: 14px; }
+  .server-pill .gear { width: 16px; height: 16px; }
+  .theme-btn { width: 46px; height: 46px; border-radius: 15px; font-size: 19px; }
+
+  /* ---------- 왼쪽 메뉴 레일 ---------- */
+  .side-col { padding: 4px 16px 22px 18px; gap: 12px; }
+  .menu-grid { gap: 6px; padding: 8px; border-radius: 24px; }
+  .menu-item { padding: 11px 2px; font-size: 14px; }
+  .menu-item .menu-ico { font-size: 22px; }
+  .menu-item.menu-wide { padding: 9px 6px; font-size: 14px; gap: 7px; }
+  .menu-item.menu-wide .menu-ico { font-size: 19px; }
+  .menu-wide-badge { min-width: 21px; font-size: 12px; line-height: 18px; }
+
+  /* ---------- 공통 카드 ---------- */
+  .card { padding: 19px 20px; border-radius: 22px; margin-bottom: 13px; }
+  .card-head { margin-bottom: 13px; }
+  .card-head h3 { font-size: 18.5px; }
+  .eyebrow { font-size: 13px; }
+  .muted-note { font-size: 14.5px; }
+  .tiny-note { font-size: 13px; }
+  .chip { padding: 4px 11px; font-size: 13px; }
+  .view.active { gap: 14px; padding: 12px 26px 30px; }
+  /* 회의실 카드가 뷰 폭을 꽉 채우도록 — v39 의 align-items:start 상속으로
+     말풍선 카드가 내용 폭(510px)에 머물던 문제를 바로잡습니다. */
+  #view-office.active { display: flex; flex-direction: column; align-items: stretch; padding: 12px 28px 20px; }
+
+  /* ---------- 💬 회의실 · 말풍선 ---------- */
+  .chat-log { gap: 13px; padding: 10px 6px 6px 2px; }
+  .msg { gap: 11px; }
+  .avatar { width: 42px; height: 42px; font-size: 15px; }
+  .msg-main, .msg.boss .msg-main { max-width: calc(100% - 54px); }
+  .msg-head { gap: 8px; margin-bottom: 4px; }
+  .msg-name { font-size: 15px; }
+  .msg-device, .msg-time { font-size: 12.5px; }
+  .bubble { padding: 12px 17px; font-size: 17px; line-height: 1.62; border-radius: 5px 18px 18px 18px; }
+  .msg.boss .bubble { border-radius: 18px 5px 18px 18px; }
+  #view-office.active .msg-main,
+  #view-office.active .msg.boss .msg-main { max-width: min(80%, 1000px); }
+  .chat-empty { font-size: 15px; }
+  .bubble-photo { max-width: 280px; }
+  .bubble-photo img { max-height: 280px; }
+  .bubble-note { font-size: 12px; }
+  .bubble-photo-tag { font-size: 11.5px; padding: 3px 9px; }
+
+  /* 입력창 · 사진 버튼 · 전송 */
+  .composer { gap: 9px; padding: 8px 10px; }
+  .plus-btn { width: 42px; height: 42px; font-size: 22px; }
+  .pic-btn { width: 38px; height: 38px; font-size: 17px; }
+  .composer input { font-size: 17px; padding: 10px 3px; }
+  .send-btn { padding: 13px 22px; font-size: 16px; }
+  .mention-menu { min-width: 220px; }
+  .mention-menu button { padding: 11px 13px; font-size: 15px; }
+  .mention-menu small { font-size: 12.5px; }
+
+  /* 사진 미리보기 칩 */
+  .photo-thumb { width: 62px; height: 62px; }
+  .photo-title { font-size: 12.5px; }
+  .photo-meta { font-size: 13.5px; }
+  .photo-note { font-size: 12px; }
+
+  /* ---------- 📊 대시보드 · 각 탭 히어로 ---------- */
+  .hero h2, .blog-hero h2, .dl-hero h2, .quota-hero h2 { font-size: 24px; }
+  .yt-top h2 { font-size: 23px; }
+  .yt-handle { font-size: 13.5px; }
+  .hero-note { font-size: 12.5px; }
+  .stat { padding: 12px 6px; border-radius: 16px; }
+  .stat b { font-size: 26px; }
+  .stat span { font-size: 13px; }
+  .status-list li { gap: 12px; padding: 13px 0; }
+  .ico { width: 36px; height: 36px; border-radius: 11px; font-size: 17px; }
+  .status-body b { font-size: 16px; }
+  .status-body p { font-size: 14px; }
+
+  /* 대표님 확인 목록 */
+  .ask-list li { padding: 12px 0 12px 32px; }
+  .ask-list li::before { width: 22px; height: 22px; font-size: 12.5px; top: 13px; }
+  .ask-list li:first-child::before { top: 3px; }
+  .ask-list b { font-size: 16px; }
+  .ask-list span { font-size: 14px; }
+
+  .crew-mini { padding: 11px; gap: 10px; border-radius: 16px; }
+  .crew-mini .avatar { width: 36px; height: 36px; font-size: 14px; }
+  .crew-mini-txt b { font-size: 15px; }
+  .crew-mini-txt span { font-size: 12.5px; }
+
+  /* ---------- 🛒 소싱 ---------- */
+  .owner { padding: 4px 11px; font-size: 13px; }
+  .src-name { font-size: 18.5px; }
+  .src-grid { gap: 8px; }
+  .src-grid > div { padding: 10px; border-radius: 14px; }
+  .src-grid dt { font-size: 12.5px; }
+  .src-grid dd { font-size: 15.5px; }
+  .src-grid dd small { font-size: 12px; }
+  .src-note { padding: 10px 12px; font-size: 13.5px; }
+
+  /* ---------- 🧵 스레드 ---------- */
+  .ch-no { width: 44px; height: 44px; border-radius: 15px; font-size: 13px; }
+  .ch-id h3 { font-size: 17px; }
+  .ch-id p { font-size: 13.5px; }
+  .ch-link { padding: 6px 13px; font-size: 13.5px; }
+  .slot { padding: 7px 12px; }
+  .slot b { font-size: 16px; }
+  .slot .chip { font-size: 12px; }
+  .ch-meta { font-size: 13.5px; }
+
+  /* ---------- 🎬 유튜브 ---------- */
+  .ep { padding: 12px 14px; }
+  .ep-no { font-size: 12.5px; padding: 5px 9px; }
+  .ep-body b { font-size: 16px; }
+  .ep-body p { font-size: 13.5px; }
+  .dot-list li { font-size: 15px; padding: 6px 0 6px 16px; }
+  .dot-list li::before { top: 14px; }
+
+  /* ---------- 📋 할 일 ---------- */
+  .todo-check { width: 26px; height: 26px; font-size: 13px; }
+  .todo-text { font-size: 16px; }
+  .todo-del { font-size: 16px; }
+  .todo-item { gap: 12px; padding: 12px 0; }
+  .todo-add input { padding: 12px 14px; font-size: 15.5px; }
+  .todo-add button { padding: 0 18px; font-size: 15px; }
+  .todo-empty { font-size: 15px; }
+  .todo-due { font-size: 12.5px; padding: 3px 9px; }
+  .todo-due-input { width: 158px; font-size: 13.5px; }
+  .todo-due-clear { font-size: 12.5px; padding: 4px 9px; }
+  .todo-owner { font-size: 12.5px; padding: 3px 9px; }
+  .task-add input { padding: 12px 14px; font-size: 16px; }
+  .task-add-row select { padding: 11px 13px; font-size: 15px; }
+  .task-add-row button { font-size: 15.5px; }
+  .task-add-btn { padding: 11px 20px; font-size: 15.5px; }
+  .task-filter-card { padding: 11px 12px; }
+  .task-filter button { padding: 10px 6px; font-size: 13.5px; }
+  .task-due-box { padding: 9px 12px; }
+  .task-due-ico { font-size: 14px; }
+  .task-due-box input[type="date"] { font-size: 14.5px; }
+  .task-due-chips button { font-size: 13.5px; padding: 8px 12px; }
+
+  /* ---------- 🤖 비서 ---------- */
+  .crew-card .avatar { width: 52px; height: 52px; font-size: 17px; }
+  .crew-head-txt h3 { font-size: 18px; }
+  .crew-head-txt p { font-size: 13.5px; }
+  .crew-role { font-size: 15.5px; }
+
+  /* ---------- ✍️ 블로그 ---------- */
+  .blog-hero-sub, .dl-hero-sub, .quota-hero-sub { font-size: 14px; }
+  .blog-hero-note { font-size: 14px; }
+  .kw-item b { font-size: 15.5px; }
+  .kw-kind { font-size: 12px; padding: 3px 8px; }
+  .kw-copy { font-size: 13px; padding: 5px 11px; }
+  .dir-top b { font-size: 16px; }
+  .dir-link { font-size: 13px; padding: 4px 10px; }
+  .dir-note { font-size: 13.5px; }
+  .dir-seg button { font-size: 13px; }
+  .post-title { font-size: 17px; }
+  .post-meta { font-size: 13px; }
+  .post-tags span { font-size: 13px; padding: 4px 10px; }
+  .post-actions .btn { font-size: 14.5px; padding: 11px 8px; }
+  .post-status > span { font-size: 14.5px; }
+  .post-body-wrap summary { font-size: 14.5px; }
+  .post-body { font-size: 15px; line-height: 1.8; }
+  .fact-grid dt { font-size: 12.5px; }
+  .fact-grid dd { font-size: 14.5px; }
+  .fact-grid dd small { font-size: 12px; }
+
+  /* ---------- 📂 자료실 ---------- */
+  .dl-search input { font-size: 15.5px; padding: 12px 0; }
+  .dl-search-ico { font-size: 15px; }
+  .dl-cat { padding: 8px 13px; font-size: 14px; }
+  .dl-cat b { font-size: 12px; }
+  .dl-count { font-size: 13.5px; }
+  .dl-card { gap: 13px; padding: 12px; }
+  .dl-thumb { width: 68px; height: 68px; font-size: 26px; }
+  .dl-title { font-size: 16px; }
+  .dl-desc { font-size: 13.5px; }
+  .dl-kind, .dl-lock, .dl-srv { font-size: 12px; padding: 2px 7px; }
+  .dl-stamp { font-size: 12.5px; }
+  .dl-empty { font-size: 14.5px; }
+  .dl-modal-meta { font-size: 13.5px; }
+  .dl-loading { font-size: 14px; }
+  .dl-pv-note { font-size: 14.5px; }
+  .dl-panel { width: min(660px, 100%); }
+  .dl-md { font-size: 14.5px; }
+  .dl-md h1 { font-size: 18px; }
+  .dl-md h2 { font-size: 16.5px; }
+  .dl-md h3 { font-size: 15.5px; }
+  .dl-md h4 { font-size: 14.5px; }
+  .dl-preview table, .dl-md table { font-size: 13px; }
+  .dl-preview th, .dl-preview td { padding: 6px 9px; }
+
+  /* ---------- 🔋 AI 한도 ---------- */
+  .quota-card { padding: 16px 17px 14px; }
+  .quota-group-name { font-size: 14.5px; }
+  .quota-group-hint { font-size: 12.5px; }
+  .quota-head-txt h3 { font-size: 17px; }
+  .quota-role { font-size: 12.5px; }
+  .quota-plan { font-size: 13px; }
+  .quota-status { padding: 4px 11px; font-size: 13px; }
+  .quota-gauge { height: 12px; }
+  .quota-pct { font-size: 21px; }
+  .quota-nums > span { font-size: 13px; }
+  .quota-updated { font-size: 12.5px; }
+  .quota-memo { font-size: 13.5px; }
+  .quota-btn { padding: 9px 11px; font-size: 13.5px; }
+  .quota-field > span { font-size: 12.5px; }
+  .quota-field input { padding: 9px 11px; font-size: 14.5px; }
+  .quota-set-label { font-size: 12.5px; }
+  .quota-set-label b { font-size: 14px; }
+  .quota-opt, .quota-pct-btn { padding: 7px 12px; font-size: 13.5px; }
+  .quota-relay { font-size: 15px; }
+  .quota-allnote { font-size: 13.5px; }
+  .quota-hero-note { font-size: 13px; }
+  .map-avatar.quota-avatar { width: 52px; height: 52px; }
+  .quota-avatar.ai-badge { width: 52px; height: 52px; }
+
+  /* ---------- 🗺️ 오피스 맵 · 이름표 ---------- */
+  .map-summary { padding: 10px 16px; font-size: 14px; }
+  .map-legend { font-size: 13.5px; }
+  .zone-tag { padding: 5px 10px; font-size: 15px; border-radius: 10px; top: 4px; left: 6px; }
+  .zone-tag small { font-size: 11.5px; }
+  .map-avatar { width: 44px; height: 44px; font-size: 16px; }
+  .map-name { padding: 2px 8px; font-size: 13px; }
+  .map-bubble { max-width: 178px; padding: 6px 10px; border-radius: 11px; }
+  .bub-txt { max-width: 178px; font-size: 13px; }
+  .map-stat { padding: 10px; }
+  .map-avatar.sm { width: 32px; height: 32px; font-size: 13px; }
+  .map-stat-top b { font-size: 15px; }
+  .map-stat-top i { font-size: 11px; }
+  .map-stat-status { font-size: 13.5px; }
+
+  /* 캐릭터 빠른 시트 */
+  .map-sheet-panel { width: min(620px, 100%); padding: 8px 22px calc(24px + env(safe-area-inset-bottom)); }
+  .map-avatar.sheet-avatar { width: 50px; height: 50px; font-size: 17px; }
+  .sheet-head-txt h3 { font-size: 19px; }
+  .sheet-head-txt p { font-size: 13.5px; }
+  .sheet-label { font-size: 12.5px; }
+  .sheet-report p { font-size: 15px; }
+  .sheet-time { font-size: 12.5px; }
+  .sheet-guide { font-size: 13px; }
+  .sheet-rooms button { padding: 12px 4px; font-size: 14px; }
+
+  /* ---------- 왼쪽 오피스 현황 패널 ---------- */
+  .pc-side { gap: 12px; }
+  .pc-side-card { padding: 15px 16px; border-radius: 20px; }
+  .pc-side-head { font-size: 15px; margin-bottom: 11px; }
+  .pc-side-head b { font-size: 13.5px; }
+  .pc-crew { gap: 10px; }
+  .pc-crew .map-avatar { width: 38px; height: 38px; }
+  .pc-crew-txt b { font-size: 14.5px; }
+  .pc-crew-txt span { font-size: 12.5px; }
+  .pc-tasks li { font-size: 14px; gap: 7px; }
+  .pc-tasks li .pc-task-owner { font-size: 12px; }
+  .pc-empty { font-size: 14px; }
+  .pc-quota-row { font-size: 13.5px; }
+  .pc-quota-row .pc-quota-name { width: 92px; }
+  .pc-quota-bar { height: 8px; }
+  .pc-quota-pct { width: 42px; }
+  .pc-more { padding: 10px; font-size: 14px; border-radius: 12px; }
+
+  /* ---------- 창 · 버튼 공통 ---------- */
+  .modal-panel { width: min(500px, 100%); padding: 22px; }
+  .modal-head h2 { font-size: 20px; }
+  .modal-close { width: 38px; height: 38px; font-size: 15px; border-radius: 12px; }
+  .server-status { font-size: 14px; }
+  .field span { font-size: 13px; }
+  .field input { padding: 12px 13px; font-size: 15.5px; }
+  .btn { padding: 13px 16px; font-size: 16px; border-radius: 13px; }
+  .seg button { font-size: 13px; padding: 7px 10px; }
+  .push-status li { font-size: 14px; }
+  .push-help p { font-size: 13.5px; }
+  .toast { font-size: 14px; padding: 12px 18px; }
+}
+
+@media (min-width: 1440px) {
+  .app { grid-template-columns: 330px minmax(0, 1fr); }
+}
+
+/* ════════════════════════════════════════════════════════════
+   🔄 새 버전 업데이트 배너 (v40)
+   ────────────────────────────────────────────────────────────
+   새 sw.js 가 배포되면 앱을 닫았다 열지 않아도 이 배너가 상단에 뜹니다.
+   [지금 적용] = 대기 중인 서비스워커에 SKIP_WAITING 을 보내고 새로 고침.
+   ✕ = 이번 화면에서는 더 띄우지 않습니다(다음에 앱을 열면 다시 확인).
+   ════════════════════════════════════════════════════════════ */
+.update-banner {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: min(94vw, 470px);
+  margin-top: calc(8px + env(safe-area-inset-top));
+  padding: 8px 9px 8px 13px;
+  border: 1px solid rgba(199, 154, 59, .52);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #FFF8EA, #F6E8CE);
+  box-shadow: 0 10px 26px rgba(96, 64, 26, .22), 0 1px 0 rgba(255, 255, 255, .6) inset;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -.2px;
+  line-height: 1.3;
+  transform: translate(-50%, -140%);
+  transition: transform .24s cubic-bezier(.2, .9, .3, 1.06), opacity .24s ease;
+  opacity: 0;
+}
+
+.update-banner[hidden] { display: none; }
+.update-banner.show { transform: translate(-50%, 0); opacity: 1; }
+
+html[data-theme="dark"] .update-banner {
+  background: linear-gradient(180deg, #3A2C1C, #2A2016);
+  border-color: rgba(217, 174, 85, .5);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .5);
+}
+
+.update-banner .update-ico { flex: none; font-size: 15px; line-height: 1; }
+.update-banner .update-txt { min-width: 0; white-space: nowrap; }
+
+.update-banner .update-apply {
+  flex: none;
+  padding: 7px 13px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #96612C, #7A4A1E);
+  color: #FFF8EC;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: -.2px;
+  white-space: nowrap;
+  box-shadow: 0 3px 9px rgba(140, 90, 40, .28);
+}
+.update-banner .update-apply:active { transform: translateY(1px); }
+.update-banner .update-apply:disabled { opacity: .68; }
+
+.update-banner .update-later {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(120, 90, 60, .1);
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+.update-banner .update-later:hover { background: rgba(120, 90, 60, .2); }
+
+/* 배너가 떠 있는 동안 앱 내용이 가려지지 않게 위쪽을 비워 둡니다.
+   (배너가 이미 안전영역만큼 내려와 있으므로 상단바의 안전영역 여백은 한 번만 씁니다) */
+body.has-update .app { padding-top: calc(58px + env(safe-area-inset-top)); }
+body.has-update .topbar { padding-top: 12px; }
+
+@media (min-width: 1024px) {
+  .update-banner { font-size: 15px; padding: 10px 11px 10px 17px; gap: 10px; max-width: min(70vw, 560px); }
+  .update-banner .update-ico { font-size: 17px; }
+  .update-banner .update-apply { padding: 9px 17px; font-size: 14.5px; }
+  .update-banner .update-later { width: 28px; height: 28px; font-size: 13px; }
+  body.has-update .app { padding-top: calc(74px + env(safe-area-inset-top)); }
 }
