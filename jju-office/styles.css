@@ -2352,6 +2352,8 @@ html[data-theme="dark"] .dl-sort.seg button[aria-pressed="true"] { background: l
 /* 좁은 폰 화면에서는 카테고리 칩 6개가 한 줄에 다 들어가지 않으므로 줄을 바꿔 모두 보이게 합니다. */
 @media (max-width: 480px) {
   .dl-cats { flex-wrap: wrap; overflow-x: visible; row-gap: 6px; }
+  /* 버튼 글자가 단어 중간에서 끊기지 않게 (예: '새 탭에서 열기') */
+  .dl-modal-actions .btn { word-break: keep-all; }
 }
 
 @media (min-width: 470px) {
