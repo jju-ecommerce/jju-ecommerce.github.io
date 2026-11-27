@@ -3987,3 +3987,123 @@ body.has-update .topbar { padding-top: 12px; }
   .app.pc-split #view-map .map-stat-status { font-size: 12.5px; }
   .app.pc-split #view-map .tiny-note { margin-top: 5px; font-size: 11.5px; line-height: 1.4; }
 }
+
+/* ════════════════════════════════════════════════════════════
+   ✋ v46 — 터치모니터 확대 + 사이드바·가운데 단을 대화창 바닥선까지 채우기
+   ────────────────────────────────────────────────────────────
+   대표님 지시(2026-11-27):
+   ① 왼쪽 사이드바가 오른쪽 대화창 길이까지 늘어나 화면이 꽉 차 보이게
+   ② 터치모니터라 손가락으로 누르기 쉽게 아이콘·버튼을 큼직하게
+   · 늘리는 방식은 '빈 공간 만들기'가 아니라 카드 안 목록 줄 간격을 고르게
+     벌려 채웁니다(.pc-crew/.pc-tasks/.pc-quota flex:1 + space-between).
+   · 1440×900·1366×768·1280×680 모두 세로 스크롤 없이 딱 맞게 유지합니다.
+   ════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1024px) {
+  /* ---------- ① 왼쪽 레일: 대화창 바닥선까지 ---------- */
+  .pc-side { flex: 1 1 auto; min-height: 0; }
+  .pc-side-card { flex: 1 1 auto; display: flex; flex-direction: column; }
+  .pc-crew { flex: 1 1 auto; align-content: space-between; }
+  .pc-tasks,
+  .pc-quota { flex: 1 1 auto; justify-content: space-between; }
+
+  /* ---------- ② 터치 사이즈 ---------- */
+  /* 메뉴 탭 — 최소 높이 48px, 아이콘 확대 */
+  .side-col .menu-item,
+  .side-col .menu-item.menu-extra { min-height: 48px; }
+  .side-col .menu-item .menu-ico,
+  .side-col .menu-item.menu-extra .menu-ico { font-size: 26px; line-height: 1.12; }
+
+  /* 카드 우상단 버튼(오피스 맵 열기 → / 할 일 전체 보기 → / AI 한도 자세히 →)
+     — 절대배치를 풀고 카드 그리드의 1행 2열로 옮겨, 버튼이 커져도 제목줄과
+       같은 줄에 서고 아래 목록 첫 줄을 덮지 않게 합니다. */
+  .side-col .pc-side-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
+    column-gap: 8px;
+    row-gap: 4px;
+  }
+  .side-col .pc-side-head { grid-column: 1; grid-row: 1; padding-right: 0; margin: 0; min-height: 0; }
+  .side-col .pc-crew,
+  .side-col .pc-tasks,
+  .side-col .pc-quota { grid-column: 1 / -1; grid-row: 2; }
+  .side-col .pc-more {
+    position: relative;   /* ::after 히트 영역이 이 버튼 기준으로만 잡히도록 */
+    top: auto;
+    right: auto;
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    justify-self: end;
+    width: auto;
+    margin: 0;
+    padding: 6px 12px;
+    border-radius: 11px;
+    font-size: 14px;
+    line-height: 1.3;
+  }
+  /* 보이는 크기는 그대로 두고 손가락 히트 영역만 사방 8px 더 */
+  .side-col .pc-more::after {
+    content: "";
+    position: absolute;
+    inset: -8px -8px;
+    border-radius: 16px;
+  }
+
+  /* 대회의실 방 탭 — 높이 48px */
+  #view-office .room-tab { min-height: 48px; padding: 11px 6px; font-size: 15px; }
+
+  /* 입력창 + / 🖼️ / 📷 / 보내기 — 손가락 크기 */
+  #view-office .composer .plus-btn { width: 50px; height: 50px; font-size: 26px; }
+  #view-office .composer .pic-btn { width: 52px; height: 52px; font-size: 26px; }
+  .app.pc-split #view-office .composer .send-btn,
+  #view-office .composer .send-btn { padding: 15px 24px; font-size: 17.5px; }
+}
+
+/* 가운데 단(2단) — 4인방 현재 위치 카드가 대화창 바닥선까지 차도록 */
+@media (min-width: 1280px) {
+  /* 대화창 카드의 아래 여백(16px)에 맞춰 레일·왼쪽 단 바닥선을 같은 선에 */
+  .side-col { padding-bottom: 16px; }
+  .app.pc-split #view-map,
+  .app.pc-split #view-map.active { padding-bottom: 16px; }
+  .app.pc-split #view-map,
+  .app.pc-split #view-map.active {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .app.pc-split #view-map .map-card { flex: 0 0 auto; }
+  .app.pc-split #view-map .map-bar {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .app.pc-split #view-map .map-status { flex: 1 1 auto; grid-auto-rows: minmax(0, 1fr); }
+}
+
+/* 세로가 짧은 13.3형 — 아이콘을 한 단계만 키우고 여백으로 상쇄 */
+@media (min-width: 1024px) and (max-height: 820px) {
+  .side-col .menu-item .menu-ico,
+  .side-col .menu-item.menu-extra .menu-ico { font-size: 24px; line-height: 1.12; }
+  .side-col .menu-item,
+  .side-col .menu-item.menu-extra { padding: 4px 1px; }
+  .side-col .pc-side-card { padding: 7px 12px; }
+  .side-col .pc-more { padding: 5px 10px; font-size: 13.5px; }
+  /* AI 한도 줄은 2열로 — 4줄이 2줄이 되어 세로를 34px 벌어 줍니다 */
+  .side-col .pc-quota { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 10px; align-content: space-between; }
+  .side-col .pc-quota-row { gap: 5px; }
+  .side-col .pc-quota-row .pc-quota-name { width: 56px; }
+  .side-col .pc-quota-pct { width: 32px; }
+}
+
+/* 1280×680 — 한 단계 더 조여 스크롤 0 유지(늘어난 아이콘·버튼과 상쇄) */
+@media (min-width: 1024px) and (max-height: 720px) {
+  .side-col .menu-grid { gap: 2px; padding: 4px; }
+  .side-col .menu-item,
+  .side-col .menu-item.menu-extra { padding: 2px 1px; }
+  .side-col .pc-side-card { padding: 4px 11px; }
+  .side-col .pc-crew .map-avatar { width: 26px; height: 26px; }
+}
