@@ -345,6 +345,7 @@
   function setView(name) {
     var target = document.getElementById('view-' + name);
     if (!target) return;
+    closeReadPop();
     state.view = name;
     document.querySelectorAll('.view').forEach(function (v) {
       v.classList.toggle('active', v.id === 'view-' + name);
@@ -474,8 +475,8 @@
     if (n > 0) {
       b.hidden = false;
       b.textContent = String(n);
-      b.title = '안 읽은 사람 ' + n + '명';
-      b.setAttribute('aria-label', '안 읽은 사람 ' + n + '명');
+      b.title = '안 읽은 사람 ' + n + '명 · 눌러서 누가 읽었는지 보기';
+      b.setAttribute('aria-label', '안 읽은 사람 ' + n + '명 · 읽음 상세 보기');
     } else {
       b.textContent = '';
       b.hidden = true;           /* 0명이면 숨김 */
@@ -488,6 +489,11 @@
     var b = document.createElement('span');
     b.className = 'unread-count';
     if (id) b.setAttribute('data-unread', id);
+    /* v42: 배지를 눌러 읽음 상세(누가 읽음/안 읽음)를 엽니다 — 키보드로도 열 수 있게 합니다. */
+    b.setAttribute('role', 'button');
+    b.setAttribute('tabindex', '0');
+    b.setAttribute('aria-haspopup', 'dialog');
+    b.setAttribute('aria-expanded', 'false');
     setReadBadge(b, n);
     return b;
   }
@@ -503,7 +509,10 @@
       for (var j = 0; j < state.messages.length; j++) {
         if (state.messages[j].id === id) { msg = state.messages[j]; break; }
       }
-      setReadBadge(badges[i], (msg && msg.room === room) ? unreadCount(msg) : 0);
+      var n = (msg && msg.room === room) ? unreadCount(msg) : 0;
+      setReadBadge(badges[i], n);
+      /* 배지가 사라졌는데 팝오버만 떠 있으면 같이 닫습니다 */
+      if (!n && READPOP.badge === badges[i]) closeReadPop();
     }
   }
 
@@ -518,6 +527,128 @@
     var list = roomMessages(room);
     for (var j = 0; j < list.length; j++) if (unreadCount(list[j]) > 0) want += 1;
     return want - shown;
+  }
+
+  /* ---------------- 💬 읽음 상세 팝오버 (v42) ----------------
+     말풍선 옆 노란 숫자 배지를 누르면 '누가 읽었고 누가 아직 안 읽었는지'를 작은 팝오버로 보여 줍니다.
+     · 이미 받아 둔 office_reads(READ.byRoom)만 씁니다 — 여기서 서버로 새로 묻지 않습니다(추가 전송 0건).
+     · 배지는 unreadCount() 와 똑같은 기준(작성자 제외 · last_read_at >= 글 시각)으로 읽음/안 읽음을 가릅니다.
+     · 바깥을 누르거나 Esc·스크롤·다시 그리기에서 조용히 닫힙니다. */
+  var READPOP = { node: null, badge: null, id: '' };
+
+  /* 한 글의 읽음/안 읽음 명단 — 읽음 현황을 아직 못 받았으면 known=false */
+  function readPeople(msg) {
+    var out = { read: [], unread: [], at: Date.parse(msg.created_at), known: false };
+    var reads = readMapFor(msg.room);
+    if (!reads || isNaN(out.at)) return out;
+    out.known = true;
+    var members = roomMemberList(msg.room);
+    for (var i = 0; i < members.length; i++) {
+      var who = members[i];
+      if (who === msg.author) continue;          /* 작성자는 세지 않습니다 */
+      var t = reads[who];
+      if (t && t >= out.at) out.read.push(who);
+      else out.unread.push(who);
+    }
+    return out;
+  }
+
+  function readPopName(id) {
+    var p = PEOPLE[id];
+    return p ? p.name : id;
+  }
+
+  function closeReadPop() {
+    if (!READPOP.node) return;
+    var node = READPOP.node;
+    if (node.parentNode) node.parentNode.removeChild(node);
+    if (READPOP.badge) {
+      READPOP.badge.classList.remove('is-open');
+      READPOP.badge.setAttribute('aria-expanded', 'false');
+    }
+    READPOP.node = null;
+    READPOP.badge = null;
+    READPOP.id = '';
+  }
+
+  /* 배지 옆에 붙이되 화면 밖으로 나가지 않게 — 위가 좁으면 아래로 뒤집습니다. */
+  function placeReadPop(badge, node) {
+    var r = badge && badge.getBoundingClientRect ? badge.getBoundingClientRect() : null;
+    var w = node.offsetWidth || 196;
+    var h = node.offsetHeight || 104;
+    var vw = window.innerWidth || document.documentElement.clientWidth || 360;
+    var vh = window.innerHeight || document.documentElement.clientHeight || 640;
+    var left = (r && r.width) ? (r.left + r.width / 2 - w / 2) : 12;
+    if (left + w > vw - 8) left = vw - w - 8;
+    if (left < 8) left = 8;
+    var top = (r && r.height) ? (r.top - h - 8) : 64;
+    if (top < 8 && r && r.bottom) top = Math.min(r.bottom + 8, vh - h - 8);
+    if (top < 8) top = 8;
+    node.style.left = Math.round(left) + 'px';
+    node.style.top = Math.round(top) + 'px';
+  }
+
+  function fillReadPop(node, msg, info) {
+    var head = document.createElement('p');
+    head.className = 'read-pop-head';
+    head.textContent = '읽음 현황';
+    node.appendChild(head);
+
+    function row(label, ids, cls) {
+      var p = document.createElement('p');
+      p.className = 'read-pop-row ' + cls;
+      var b = document.createElement('b');
+      b.textContent = label;
+      var s = document.createElement('span');
+      s.className = 'read-pop-names';
+      s.textContent = ids.length ? ids.map(readPopName).join(' · ') : '없음';
+      p.appendChild(b);
+      p.appendChild(s);
+      return p;
+    }
+
+    if (!info.known) {
+      var na = document.createElement('p');
+      na.className = 'read-pop-note';
+      na.textContent = '읽음 현황을 아직 받지 못했어요';
+      node.appendChild(na);
+    } else {
+      node.appendChild(row('읽음', info.read, 'is-read'));
+      node.appendChild(row('안 읽음', info.unread, 'is-unread'));
+    }
+
+    var foot = document.createElement('p');
+    foot.className = 'read-pop-foot';
+    foot.textContent = timeLabel(msg.created_at) + ' 글 기준';
+    node.appendChild(foot);
+  }
+
+  function openReadPop(badge, msg) {
+    var node = document.createElement('div');
+    node.className = 'read-pop';
+    node.setAttribute('role', 'dialog');
+    node.setAttribute('aria-label', '읽음 상세');
+    fillReadPop(node, msg, readPeople(msg));
+    document.body.appendChild(node);
+    placeReadPop(badge, node);
+    badge.classList.add('is-open');
+    badge.setAttribute('aria-expanded', 'true');
+    READPOP.node = node;
+    READPOP.badge = badge;
+    READPOP.id = msg.id || '';
+  }
+
+  function toggleReadPop(badge) {
+    if (!badge) return;
+    var id = badge.getAttribute('data-unread') || '';
+    if (READPOP.node && READPOP.id === id) { closeReadPop(); return; }
+    closeReadPop();
+    var msg = null;
+    for (var i = 0; i < state.messages.length; i++) {
+      if (state.messages[i].id === id) { msg = state.messages[i]; break; }
+    }
+    if (!msg) return;
+    openReadPop(badge, msg);
   }
 
   /* 방 읽음 현황 조회 — 숨은 탭에서는 하지 않습니다(전송량 절감). */
@@ -595,6 +726,7 @@
   function renderChat() {
     var log = el.chatLog;
     var list = roomMessages(state.room);
+    closeReadPop();          /* 다시 그리면 예전 배지가 사라지므로 팝오버도 닫습니다 */
     log.innerHTML = '';
 
     if (!list.length) {
@@ -3030,7 +3162,7 @@
   /* VAPID 공개키는 공개 정보입니다(비밀키는 Supabase Edge Function 시크릿에만 저장). */
   var VAPID_PUBLIC_KEY = 'BLsYdjB1PvxgqFW1LsvjOKqEfQ6qry4P77QkHh04m2z7yXbYx5pAx4OtnRy4_XlqHofAiABdweCvsc_qRUrq0pA';
   var PUSH = { busy: false, sub: null, synced: false, lastError: '', opened: false };
-  var APP_VERSION = 'v41';
+  var APP_VERSION = 'v42';
 
   function pushSupported() {
     return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
@@ -4904,6 +5036,31 @@
     }
     if (el.sheetClose) el.sheetClose.addEventListener('click', closeSheet);
 
+    /* 💬 노란 읽음 배지 → 읽음 상세 팝오버 (v42) — 이미 받아 둔 값만 씁니다(요청 0건). */
+    if (el.chatLog) {
+      el.chatLog.addEventListener('click', function (e) {
+        var badge = e.target && e.target.closest ? e.target.closest('.unread-count[data-unread]') : null;
+        if (!badge) return;
+        e.stopPropagation();
+        toggleReadPop(badge);
+      });
+      el.chatLog.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+        var badge = e.target && e.target.closest ? e.target.closest('.unread-count[data-unread]') : null;
+        if (!badge) return;
+        e.preventDefault();
+        toggleReadPop(badge);
+      });
+      el.chatLog.addEventListener('scroll', closeReadPop);
+    }
+    document.addEventListener('click', function (e) {
+      if (!READPOP.node) return;
+      if (READPOP.node.contains(e.target)) return;
+      if (e.target && e.target.closest && e.target.closest('.unread-count')) return;
+      closeReadPop();
+    });
+    window.addEventListener('resize', closeReadPop);
+
     el.sendBtn.addEventListener('click', sendMessage);
     el.chatInput.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); sendMessage(); }
@@ -4992,7 +5149,7 @@
       if (e.target.dataset.close) closeModal();
     });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') { closeModal(); closeSheet(); hideMentions(); closePushPanel(); closeDeliverable(); closePhoto(); }
+      if (e.key === 'Escape') { closeReadPop(); closeModal(); closeSheet(); hideMentions(); closePushPanel(); closeDeliverable(); closePhoto(); }
     });
     document.getElementById('sbSave').addEventListener('click', saveServer);
     document.getElementById('sbTest').addEventListener('click', testFromModal);

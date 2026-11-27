@@ -217,6 +217,7 @@ img { display: block; max-width: 100%; }
 }
 
 .menu-item {
+  position: relative;          /* v42: 자료실·AI 한도 탭의 숫자 배지를 오른쪽 위에 얹기 위해 */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -487,8 +488,8 @@ html[data-theme="dark"] .avatar.avatar-char {
   border: 1px solid rgba(235, 220, 198, .8);
   padding: 8px 12px;
   border-radius: 4px 16px 16px 16px;
-  font-size: 14.5px;
-  line-height: 1.5;
+  font-size: 15.5px;    /* v42: 말풍선 본문을 한 단계 더 (14.5 → 15.5) */
+  line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -542,11 +543,80 @@ html[data-theme="dark"] .bubble { border-color: rgba(80, 62, 44, .8); }
 
 .unread-count[hidden] { display: none; }
 
+/* v42: 배지는 눌러서 읽음 상세를 여는 작은 버튼입니다 */
+.unread-count { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.unread-count:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.unread-count.is-open { box-shadow: 0 0 0 2px rgba(199, 154, 59, .45), 0 1px 2px rgba(120, 80, 10, .22); }
+
 html[data-theme="dark"] .unread-count {
   background: linear-gradient(160deg, #F2CB63, #D9A93A);
   color: #3A2606;
   box-shadow: 0 1px 3px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .35);
 }
+
+/* ── 읽음 상세 팝오버 (v42) ───────────────────────────────────
+   누가 읽었고 누가 아직 안 읽었는지 작게 보여 줍니다. 화면 위에 떠 있고(body 기준 고정),
+   바깥 클릭·Esc·스크롤·다시 그리기에서 닫힙니다. */
+.read-pop {
+  position: fixed;
+  z-index: 90;
+  min-width: 168px;
+  max-width: min(78vw, 260px);
+  padding: 9px 11px 8px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 10px 26px rgba(90, 60, 30, .2);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.read-pop-head {
+  margin: 0 0 5px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  color: var(--muted);
+}
+
+.read-pop-row {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 3px;
+  align-items: flex-start;
+}
+
+.read-pop-row b {
+  flex: none;
+  width: 42px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.read-pop-row.is-read b { color: var(--ok); }
+.read-pop-row.is-unread b { color: var(--gold); }
+
+.read-pop-names {
+  min-width: 0;
+  font-weight: 700;
+  color: var(--ink-2);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.read-pop-note { margin: 2px 0 0; color: var(--muted); font-weight: 600; }
+
+.read-pop-foot {
+  margin: 5px 0 0;
+  padding-top: 5px;
+  border-top: 1px dashed var(--line);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+html[data-theme="dark"] .read-pop { box-shadow: 0 12px 30px rgba(0, 0, 0, .55); }
 
 .chat-empty {
   margin: auto;
@@ -592,7 +662,7 @@ html[data-theme="dark"] .unread-count {
   outline: none;
   background: transparent;
   color: var(--ink);
-  font-size: 14.5px;
+  font-size: 15.5px;    /* v42: 입력창도 한 단계 더 (14.5 → 15.5) */
   padding: 8px 2px;
 }
 
@@ -2148,41 +2218,33 @@ html[data-theme="dark"] .kw-core { color: var(--gold); }
 
 html[data-theme="dark"] .sheet-rooms button.here { background: linear-gradient(180deg, #B98449, #95632F); color: #1A130D; }
 
-/* ---------------- 📂 작업물(자료실) ---------------- */
-.menu-item.menu-wide {
-  grid-column: 1 / -1;
-  flex-direction: row;
-  gap: 6px;
-  padding: 6px 4px 5px;
-  background: rgba(199, 154, 59, .09);
-  border: 1px solid rgba(199, 154, 59, .3);
-  border-radius: 12px;
-  color: var(--brown);
-  font-size: 12.5px;
+/* ---------------- 📂 작업물(자료실) · 🔋 AI 한도 — 아이콘 탭 카드 (v42) ----------------
+   v41까지는 두 칸을 다 쓰는 가로 막대였습니다. 이제 위쪽 4×2 메뉴와 똑같은
+   아이콘 탭 카드(아이콘 위 · 이름 아래)로 통일하고, 숫자만 오른쪽 위 작은 배지로 얹습니다.
+   좁은 폰에서는 이름이 한 줄에 들어가도록 두 칸씩 묶고, PC 와이드(1024px 이상) 2열 레일에서는
+   한 칸씩 설 수 있게 아래 PC 블록에서 grid-column 을 되돌립니다. */
+.menu-item.menu-extra {
+  grid-column: span 2;
 }
 
-.menu-item.menu-wide.active {
-  background: linear-gradient(180deg, #9A6530, #7A4A1E);
-  border-color: transparent;
-  color: #FFF8EC;
-}
+.menu-item.menu-extra .menu-label { letter-spacing: -.4px; }
 
-html[data-theme="dark"] .menu-item.menu-wide { background: rgba(217, 174, 85, .12); border-color: rgba(217, 174, 85, .34); color: var(--gold); }
-html[data-theme="dark"] .menu-item.menu-wide.active { background: linear-gradient(180deg, #B98449, #95632F); color: #1A130D; }
-
-.menu-wide-badge {
-  min-width: 18px;
-  padding: 0 5px;
+.menu-item.menu-extra .menu-wide-badge {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  min-width: 16px;
+  padding: 0 4px;
   border-radius: 999px;
   background: rgba(199, 154, 59, .18);
   color: var(--brown);
-  font-size: 10.5px;
+  font-size: 9.5px;
   font-weight: 800;
-  line-height: 16px;
+  line-height: 14px;
   text-align: center;
 }
 
-.menu-item.menu-wide.active .menu-wide-badge { background: rgba(255, 248, 236, .26); color: #FFF8EC; }
+.menu-item.menu-extra.active .menu-wide-badge { background: rgba(255, 248, 236, .26); color: #FFF8EC; }
 
 .dl-hero {
   background: linear-gradient(150deg, #FFFBF3, #F4E3CA 82%);
@@ -2517,12 +2579,11 @@ html[data-theme="dark"] .dl-sort.seg button[aria-pressed="true"] { background: l
 .chip-danger { background: rgba(160, 58, 42, .14); color: var(--danger); }
 html[data-theme="dark"] .chip-danger { background: rgba(224, 133, 115, .18); }
 
-.menu-item.menu-wide-quota { background: rgba(63, 138, 91, .1); border-color: rgba(63, 138, 91, .3); color: var(--ok); }
-.menu-item.menu-wide-quota.active { background: linear-gradient(180deg, #3F8A5B, #2F6F48); border-color: transparent; color: #FFF8EC; }
-html[data-theme="dark"] .menu-item.menu-wide-quota { background: rgba(124, 199, 154, .12); border-color: rgba(124, 199, 154, .32); color: var(--ok); }
-html[data-theme="dark"] .menu-item.menu-wide-quota.active { background: linear-gradient(180deg, #4C9B6C, #35714D); color: #10160F; }
-.menu-item.menu-wide-quota .menu-wide-badge { background: rgba(63, 138, 91, .18); color: var(--ok); }
-.menu-item.menu-wide-quota.active .menu-wide-badge { background: rgba(255, 248, 236, .26); color: #FFF8EC; }
+/* 🔋 AI 한도 탭의 숫자 배지만 초록 계열로 구분합니다(카드 모양은 위 메뉴와 동일) */
+.menu-item.menu-extra-quota .menu-wide-badge { background: rgba(63, 138, 91, .18); color: var(--ok); }
+.menu-item.menu-extra-quota.active .menu-wide-badge { background: rgba(255, 248, 236, .26); color: #FFF8EC; }
+html[data-theme="dark"] .menu-item.menu-extra-quota .menu-wide-badge { background: rgba(124, 199, 154, .2); }
+html[data-theme="dark"] .menu-item.menu-extra-quota.active .menu-wide-badge { background: rgba(255, 248, 236, .26); color: #FFF8EC; }
 
 .quota-hero {
   background: linear-gradient(150deg, #F7FBF5, #DFEEE2 82%);
@@ -2715,14 +2776,14 @@ html[data-theme="dark"] .quota-pct-btn.active { background: linear-gradient(180d
 
 /* 입력창 안의 🖼️ 사진 · 📷 카메라 버튼 */
 .pic-btn {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   flex: none;
   border-radius: 50%;
   border: 1px solid var(--line);
   background: var(--card);
   color: var(--ink-2);
-  font-size: 15px;
+  font-size: 20px;     /* v42: 이모지를 한눈에 띄고 누르기 편하게 (32px/15px → 40px/20px) */
   line-height: 1;
   display: grid;
   place-items: center;
@@ -2874,8 +2935,10 @@ html[data-theme="dark"] .quota-pct-btn.active { background: linear-gradient(180d
 .photo-actions .btn { flex: 1; text-align: center; text-decoration: none; }
 
 @media (max-width: 359px) {
-  .pic-btn { width: 29px; height: 29px; font-size: 14px; }
-  .composer { gap: 5px; }
+  /* 360px 이하에서도 한 줄을 지키려고 사진·카메라 버튼만 살짝 줄입니다(그래도 v41보다 큽니다) */
+  .pic-btn { width: 34px; height: 34px; font-size: 17px; }
+  .plus-btn { width: 34px; height: 34px; font-size: 18px; }
+  .composer { gap: 5px; padding: 6px; }
   .send-btn { padding: 10px 12px; font-size: 13px; }
   .bubble-photo { max-width: 180px; }
 }
@@ -3151,9 +3214,10 @@ html[data-theme="dark"] .quota-pct-btn.active { background: linear-gradient(180d
   .menu-grid { gap: 6px; padding: 8px; border-radius: 24px; }
   .menu-item { padding: 11px 2px; font-size: 14px; }
   .menu-item .menu-ico { font-size: 22px; }
-  .menu-item.menu-wide { padding: 9px 6px; font-size: 14px; gap: 7px; }
-  .menu-item.menu-wide .menu-ico { font-size: 19px; }
-  .menu-wide-badge { min-width: 21px; font-size: 12px; line-height: 18px; }
+  /* PC 2열 레일 — 네 칸 그리드가 아니라 두 칸이라 모두 한 칸씩 서고, 이름도 그대로 들어갑니다 */
+  .menu-item.menu-extra { grid-column: auto; }
+  .menu-item.menu-extra .menu-ico { font-size: 22px; }
+  .menu-item.menu-extra .menu-wide-badge { min-width: 18px; font-size: 10.5px; line-height: 16px; }
 
   /* ---------- 공통 카드 ---------- */
   .card { padding: 19px 20px; border-radius: 22px; margin-bottom: 13px; }
@@ -3176,7 +3240,7 @@ html[data-theme="dark"] .quota-pct-btn.active { background: linear-gradient(180d
   .msg-head { gap: 8px; margin-bottom: 4px; }
   .msg-name { font-size: 15px; }
   .msg-device, .msg-time { font-size: 12.5px; }
-  .bubble { padding: 12px 17px; font-size: 17px; line-height: 1.62; border-radius: 5px 18px 18px 18px; }
+  .bubble { padding: 12px 17px; font-size: 18px; line-height: 1.62; border-radius: 5px 18px 18px 18px; }
   .msg.boss .bubble { border-radius: 18px 5px 18px 18px; }
   #view-office.active .msg-main,
   #view-office.active .msg.boss .msg-main { max-width: min(80%, 1000px); }
@@ -3191,8 +3255,8 @@ html[data-theme="dark"] .quota-pct-btn.active { background: linear-gradient(180d
   /* 입력창 · 사진 버튼 · 전송 */
   .composer { gap: 9px; padding: 8px 10px; }
   .plus-btn { width: 42px; height: 42px; font-size: 22px; }
-  .pic-btn { width: 38px; height: 38px; font-size: 17px; }
-  .composer input { font-size: 17px; padding: 10px 3px; }
+  .pic-btn { width: 46px; height: 46px; font-size: 23px; }
+  .composer input { font-size: 18px; padding: 10px 3px; }
   .send-btn { padding: 13px 22px; font-size: 16px; }
   .mention-menu { min-width: 220px; }
   .mention-menu button { padding: 11px 13px; font-size: 15px; }
