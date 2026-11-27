@@ -3675,7 +3675,8 @@
 
   function applyQuotaRows(rows) {
     if (!Array.isArray(rows) || !rows.length) return 0;
-    var n = 0;
+    var n = 0;      /* 서버와 맞춰진 사람 수(값이 같아도 포함) */
+    var dirty = 0;  /* 기기 값이 실제로 바뀐 사람 수 — 이때만 다시 그립니다 */
     rows.forEach(function (r) {
       if (!r) return;
       var id = r.id || r.crew_id;
@@ -3684,15 +3685,17 @@
       var incoming = quotaNorm(id, r);
       var st = incoming.updated_at ? new Date(incoming.updated_at).getTime() : 0;
       var ct = cur.updated_at ? new Date(cur.updated_at).getTime() : 0;
-      if (st && ct && st <= ct) return; /* 기기에 같거나 더 새 기록이 있으면 그대로 둡니다(18초마다 재렌더로 편집 패널이 닫히던 문제) */
+      if (st && ct && st < ct) return; /* 기기에 더 새 기록이 있으면 그대로 둡니다 */
+      if (st && ct && st === ct) { n += 1; return; } /* 값이 같으면 동기화만 확인하고 다시 그리지 않습니다(18초마다 편집 패널이 닫히던 문제) */
       cur.plan = incoming.plan;
       cur.reset = incoming.reset;
       cur.pct = incoming.pct;
       cur.memo = incoming.memo;
       cur.updated_at = incoming.updated_at || cur.updated_at;
       n += 1;
+      dirty += 1;
     });
-    if (n) {
+    if (dirty) {
       save();
       renderQuota();
     }
