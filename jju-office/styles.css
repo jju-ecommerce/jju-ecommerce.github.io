@@ -506,6 +506,48 @@ html[data-theme="dark"] .bubble { border-color: rgba(80, 62, 44, .8); }
   border-radius: 16px 4px 16px 16px;
 }
 
+/* ── 말풍선 + 안 읽은 인원수 (v41) ───────────────────────────────
+   카카오톡처럼 말풍선 바깥쪽(보낸 사람 반대편)에 작은 노란 숫자를 붙입니다.
+   말풍선은 flex 항목이 되지만 폭·줄바꿈은 예전과 같습니다(0 1 auto + min-width:0). */
+.bubble-line {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.bubble-line > .bubble { flex: 0 1 auto; min-width: 0; }
+
+/* 내가 보낸 글은 오른쪽 정렬이라 숫자가 말풍선 왼쪽에 옵니다 */
+.msg.boss .bubble-line { flex-direction: row-reverse; }
+
+.unread-count {
+  flex: none;
+  align-self: flex-end;
+  margin-bottom: 1px;
+  min-width: 17px;
+  padding: 1px 5px;
+  border-radius: 9px;
+  background: linear-gradient(160deg, #FFE388, #F2C13C);
+  color: #5A3A0C;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 15px;
+  text-align: center;
+  letter-spacing: -.2px;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 1px 2px rgba(120, 80, 10, .22), inset 0 1px 0 rgba(255, 255, 255, .55);
+}
+
+.unread-count[hidden] { display: none; }
+
+html[data-theme="dark"] .unread-count {
+  background: linear-gradient(160deg, #F2CB63, #D9A93A);
+  color: #3A2606;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .35);
+}
+
 .chat-empty {
   margin: auto;
   text-align: center;
@@ -3143,6 +3185,8 @@ html[data-theme="dark"] .quota-pct-btn.active { background: linear-gradient(180d
   .bubble-photo img { max-height: 280px; }
   .bubble-note { font-size: 12px; }
   .bubble-photo-tag { font-size: 11.5px; padding: 3px 9px; }
+  /* 안 읽은 인원수 배지도 PC 글씨 크기에 맞춰 조금 키웁니다(v41) */
+  .unread-count { min-width: 19px; padding: 1px 5px; font-size: 12px; line-height: 17px; }
 
   /* 입력창 · 사진 버튼 · 전송 */
   .composer { gap: 9px; padding: 8px 10px; }

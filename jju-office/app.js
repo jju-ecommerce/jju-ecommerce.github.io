@@ -388,6 +388,203 @@
     save();
   }
 
+  /* ---------------- 💬 읽음 표시 · 안 읽은 인원수 (v41) ----------------
+     카카오톡처럼 말풍선 옆에 "안 읽은 사람 수"를 작은 노란 숫자로 붙입니다.
+     · 방별 참여 멤버에서 작성자 본인을 뺀 나머지 중, office_reads 의 last_read_at 이
+       그 글의 created_at 보다 뒤인 사람은 '읽음'으로 보고 나머지를 셉니다.
+     · 읽음 현황은 Supabase public.office_reads 에만 두고, 이 기기에는 방마다 마지막으로
+       받아 온 값만 들고 있습니다(기기 저장 X — 폴링 때 갱신).
+     · 테이블이 없거나(404) 권한이 없으면(401/403) 조용히 꺼집니다 — 앱 동작은 그대로. */
+  var ROOM_MEMBERS = {
+    grand:   ['boss', 'director', 'jju1', 'jju2', 'jju3'],
+    lounge:  ['boss', 'director', 'jju1', 'jju2', 'jju3'],
+    command: ['boss', 'director']
+  };
+  var MEMBER_IDS = ['boss', 'director', 'jju1', 'jju2', 'jju3'];
+
+  /* 이 기기를 쓰는 사람 — 기본은 대표님(boss). 다른 폰은 주소에 ?member=jju2 처럼 붙이면
+     그 브라우저에 기억합니다(읽음 기록의 주인). */
+  var ME = { id: 'boss' };
+
+  var READ = {
+    byRoom: {},     /* room → { member: last_read_at(ms) } */
+    mine: {},       /* room → 이 기기(ME)가 마지막으로 읽은 시각 — 서버 응답이 늦어도 내 배지에서 나를 빼기 위해 */
+    fetched: {},    /* room → 마지막 조회 시각 */
+    busy: {},       /* room → 조회 중 */
+    off: false,     /* 테이블 없음·권한 없음 → 더 시도하지 않음 */
+    lastMark: 0,    /* 마지막 읽음 기록(upsert) 시각 */
+    lastMarkRoom: ''
+  };
+  var READ_MS = 20000;   /* 같은 방 읽음 현황을 다시 받는 최소 간격(전송량 절감) */
+
+  function roomMemberList(room) {
+    if (ROOM_MEMBERS[room]) return ROOM_MEMBERS[room];
+    if (typeof room === 'string' && room.indexOf('dm:') === 0) {
+      var who = room.slice(3);
+      return who ? ['boss', who] : ['boss'];
+    }
+    return MEMBER_IDS;
+  }
+
+  function stripMemberParam() {
+    try {
+      var u = new URL(window.location.href);
+      if (!u.searchParams.has('member')) return;
+      u.searchParams.delete('member');
+      history.replaceState(null, '', u.pathname + u.search + u.hash);
+    } catch (e) { /* ignore */ }
+  }
+
+  function initMember() {
+    var want = '';
+    var saved = '';
+    try { want = new URLSearchParams(location.search).get('member') || ''; } catch (e) { want = ''; }
+    try { saved = localStorage.getItem('jju-office-member') || ''; } catch (e) { saved = ''; }
+    if (want && MEMBER_IDS.indexOf(want) !== -1) {
+      ME.id = want;
+      try { localStorage.setItem('jju-office-member', want); } catch (e) { /* ignore */ }
+      stripMemberParam();
+      return;
+    }
+    if (saved && MEMBER_IDS.indexOf(saved) !== -1) ME.id = saved;
+  }
+
+  function readMapFor(room) { return READ.byRoom[room] || null; }
+
+  /* 그 글을 아직 읽지 않은 참여자 수 — 작성자 본인은 빼고 셉니다. */
+  function unreadCount(msg, map) {
+    if (!msg) return 0;
+    var at = Date.parse(msg.created_at);
+    if (isNaN(at)) return 0;
+    var reads = map || readMapFor(msg.room);
+    if (!reads) return 0;        /* 읽음 현황을 아직 못 받았으면 표시하지 않습니다 */
+    var members = roomMemberList(msg.room);
+    var n = 0;
+    for (var i = 0; i < members.length; i++) {
+      var who = members[i];
+      if (who === msg.author) continue;
+      var t = reads[who];
+      if (!t || t < at) n += 1;
+    }
+    return n;
+  }
+
+  function setReadBadge(b, n) {
+    if (!b) return;
+    if (n > 0) {
+      b.hidden = false;
+      b.textContent = String(n);
+      b.title = '안 읽은 사람 ' + n + '명';
+      b.setAttribute('aria-label', '안 읽은 사람 ' + n + '명');
+    } else {
+      b.textContent = '';
+      b.hidden = true;           /* 0명이면 숨김 */
+      b.removeAttribute('title');
+      b.removeAttribute('aria-label');
+    }
+  }
+
+  function readSpan(n, id) {
+    var b = document.createElement('span');
+    b.className = 'unread-count';
+    if (id) b.setAttribute('data-unread', id);
+    setReadBadge(b, n);
+    return b;
+  }
+
+  /* 이미 그려 둔 배지만 다시 칠합니다 — 방 전체를 다시 그리지 않아 스크롤이 튀지 않습니다. */
+  function paintUnread(room) {
+    var log = el.chatLog;
+    if (!log || !log.querySelectorAll) return;
+    var badges = log.querySelectorAll('.unread-count[data-unread]');
+    for (var i = 0; i < badges.length; i++) {
+      var id = badges[i].getAttribute('data-unread');
+      var msg = null;
+      for (var j = 0; j < state.messages.length; j++) {
+        if (state.messages[j].id === id) { msg = state.messages[j]; break; }
+      }
+      setReadBadge(badges[i], (msg && msg.room === room) ? unreadCount(msg) : 0);
+    }
+  }
+
+  /* 화면에 그려진 배지 수와 지금 계산값이 어긋나는지 (0이면 그대로 칠해도 됨) */
+  function unreadBadgeGap(room) {
+    var log = el.chatLog;
+    if (!log || !log.querySelectorAll) return 0;
+    var nodes = log.querySelectorAll('.unread-count[data-unread]');
+    var shown = 0;
+    for (var i = 0; i < nodes.length; i++) if (!nodes[i].hidden) shown += 1;
+    var want = 0;
+    var list = roomMessages(room);
+    for (var j = 0; j < list.length; j++) if (unreadCount(list[j]) > 0) want += 1;
+    return want - shown;
+  }
+
+  /* 방 읽음 현황 조회 — 숨은 탭에서는 하지 않습니다(전송량 절감). */
+  function pullReads(room, force) {
+    if (!SB.connected || READ.off) return Promise.resolve(false);
+    room = room || state.room;
+    if (!room || pageHidden()) return Promise.resolve(false);
+    var now = Date.now();
+    if (!force && READ.fetched[room] && now - READ.fetched[room] < READ_MS) return Promise.resolve(false);
+    if (READ.busy[room]) return Promise.resolve(false);
+    READ.busy[room] = true;
+    return sbRequest('/rest/v1/office_reads?room=eq.' + encodeURIComponent(room) +
+                     '&select=member,last_read_at').then(function (rows) {
+      READ.busy[room] = false;
+      READ.fetched[room] = Date.now();
+      var map = {};
+      (Array.isArray(rows) ? rows : []).forEach(function (r) {
+        if (!r || !r.member) return;
+        var t = Date.parse(r.last_read_at);
+        if (!isNaN(t)) map[r.member] = t;
+      });
+      var mine = READ.mine[room];
+      if (mine && (!map[ME.id] || map[ME.id] < mine)) map[ME.id] = mine;
+      READ.byRoom[room] = map;
+      if (room === state.room && state.view === 'office') {
+        if (unreadBadgeGap(room) !== 0) renderChat();
+        else paintUnread(room);
+      }
+      return true;
+    }).catch(function (e) {
+      READ.busy[room] = false;
+      /* 테이블 미존재(404)·권한(401/403)이면 더 시도하지 않고 조용히 끕니다. */
+      if (e && (e.status === 404 || e.status === 401 || e.status === 403)) READ.off = true;
+      return false;
+    });
+  }
+
+  /* 내가 이 방을 읽었다고 남깁니다(upsert) — 그 방을 보고 있을 때 + 화면이 보일 때만. */
+  function markRead(room, force) {
+    if (!SB.connected || READ.off) return;
+    room = room || state.room;
+    if (!room || state.room !== room || state.view !== 'office') return;
+    if (pageHidden()) return;
+    var now = Date.now();
+    /* 내가 지금 보고 있으니 내 읽음은 바로 반영합니다(내 배지에서 나를 빼고 셈).
+       테이블이 없거나 응답이 없으면 배지 자체가 안 뜨므로 엉뚱한 숫자는 생기지 않습니다. */
+    READ.mine[room] = now;
+    if (READ.byRoom[room]) {
+      READ.byRoom[room][ME.id] = now;
+      if (state.view === 'office') paintUnread(room);
+    }
+    /* 같은 방·같은 순간에 여러 경로(입장·새 글·폴링)가 겹쳐도 쓰기는 한 번만 —
+       force 도 1.5초 안의 중복은 건너뜁니다(전송량 절감). */
+    if (READ.lastMarkRoom === room && now - READ.lastMark < (force ? 1500 : READ_MS)) return;
+    READ.lastMark = now;
+    READ.lastMarkRoom = room;
+    var stamp = new Date(now).toISOString();
+    sbRequest('/rest/v1/office_reads?on_conflict=room,member', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: { room: room, member: ME.id, last_read_at: stamp }
+    }).catch(function (e) {
+      if (e && (e.status === 404 || e.status === 401 || e.status === 403)) READ.off = true;
+      /* 그 밖의 오류는 조용히 무시 — 앱 동작에는 영향 없음 */
+    });
+  }
+
   /* ---------------- chat ---------------- */
   function roomMessages(room) {
     return state.messages
@@ -467,8 +664,15 @@
         bub.appendChild(lost);
       }
 
+      /* 말풍선 옆(보낸 사람 반대쪽)에 안 읽은 인원수 — 카카오톡과 같은 자리·같은 모양 */
+      var line = document.createElement('div');
+      line.className = 'bubble-line';
+      line.appendChild(bub);
+      var uc = unreadCount(m);
+      if (uc > 0) line.appendChild(readSpan(uc, m.id));
+
       main.appendChild(head);
-      main.appendChild(bub);
+      main.appendChild(line);
       row.appendChild(av);
       row.appendChild(main);
       log.appendChild(row);
@@ -516,6 +720,10 @@
     resizeInput();
     hideMentions();
     clearPhoto();
+
+    /* 글을 보낸 직후 내 읽음을 남기고, 다른 사람의 읽음 현황을 바로 받아 옵니다(보고 있는 중). */
+    markRead(msg.room, true);
+    pullReads(msg.room, true).catch(function () {});
 
     if (!SB.connected || !state.supabase.url || !state.supabase.key) {
       toast(photo
@@ -2251,6 +2459,9 @@
     el.roomMeta.textContent = ROOMS[room].meta;
     el.chatInput.placeholder = ROOMS[room].placeholder;
     el.chatInput.blur();
+    /* 방에 들어왔으니 이 방을 읽음으로 남기고, 다른 사람의 읽음 현황을 바로 받아 옵니다. */
+    markRead(room, true);
+    pullReads(room, true).catch(function () {});
     renderChat();
     save();
   }
@@ -2682,6 +2893,8 @@
     pullAll().then(function () {
       setServerState('ok');
       probePhotoColumn();
+      /* 연결되면 지금 보고 있는 방을 읽음으로 남깁니다(내 배지에서 나를 빼고 셈). */
+      markRead(state.room, true);
     }).catch(function (e) {
       setServerState('err', e && e.status === 404
         ? '테이블이 없습니다 · 스키마 SQL을 먼저 실행해 주세요'
@@ -2719,6 +2932,11 @@
     if (state.view === 'tasks' || SB.tick % 5 === 0) pullTasks().catch(function () {});
     /* AI 한도는 그 화면을 볼 때만, 그것도 3번에 한 번(약 18초)만 확인합니다 */
     if (state.view === 'quota' && SB.tick % 3 === 0) pullQuotas().catch(function () {});
+    /* 회의실을 보고 있을 때만 읽음 기록·현황을 맞춥니다(각각 20초에 한 번 이내). */
+    if (state.view === 'office') {
+      markRead(state.room);
+      pullReads(state.room).catch(function () {});
+    }
   }
 
   /* 서버가 준 created_at 중 가장 늦은 시각을 다음 증분 조회의 기준으로 삼습니다.
@@ -2774,7 +2992,8 @@
     if (!SB.connected) return Promise.reject(new Error('not connected'));
     return Promise.all([
       pullMessages(),
-      pullTasks()
+      pullTasks(),
+      pullReads(state.room, true)
     ]).then(function () { return true; });
   }
 
@@ -2796,7 +3015,13 @@
     if (changed) {
       state.messages.sort(function (a, b) { return new Date(a.created_at) - new Date(b.created_at); });
       save();
-      if (state.view === 'office') renderChat();
+      if (state.view === 'office') {
+        /* 방을 보고 있는 중에 새 글이 왔으면 읽음으로 남기고(숨은 탭이면 내부에서 건너뜀)
+           다른 사람의 읽음 현황도 다시 맞춥니다. */
+        markRead(state.room);
+        pullReads(state.room).catch(function () {});
+        renderChat();
+      }
     }
     updateMap();
   }
@@ -2805,7 +3030,7 @@
   /* VAPID 공개키는 공개 정보입니다(비밀키는 Supabase Edge Function 시크릿에만 저장). */
   var VAPID_PUBLIC_KEY = 'BLsYdjB1PvxgqFW1LsvjOKqEfQ6qry4P77QkHh04m2z7yXbYx5pAx4OtnRy4_XlqHofAiABdweCvsc_qRUrq0pA';
   var PUSH = { busy: false, sub: null, synced: false, lastError: '', opened: false };
-  var APP_VERSION = 'v40';
+  var APP_VERSION = 'v41';
 
   function pushSupported() {
     return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
@@ -4884,6 +5109,8 @@
       if (SB.connected) {
         startPolling();
         pullAll().catch(function () {});
+        /* 돌아온 화면에서 보고 있는 방은 읽음으로 남깁니다. */
+        markRead(state.room, true);
       }
       if (state.view === 'map') startMapWalk();
     });
@@ -5043,6 +5270,7 @@
 
   function init() {
     cacheEls();
+    initMember();
     var had = load();
     if (!had) seed();
     DL.cat = state.dlCat || 'all';
