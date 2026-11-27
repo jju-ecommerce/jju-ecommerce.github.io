@@ -37,6 +37,30 @@
     node.innerHTML = '<span class="avatar-face">' + (CHAR_ART[id] || '') + '</span>';
   }
 
+  /* ---------------- 외부 AI 아이콘 (v39) ---------------- */
+  /* ChatGPT·Codex 는 4인방처럼 캐릭터 그림이 없으므로, 서비스 성격(대화 / 코드)을 담은
+     인라인 SVG 배지로 그립니다. 공식 로고를 그대로 옮기지 않은 자체 아이콘이며,
+     id·defs·외부 참조를 쓰지 않아 여러 번 복제해도 충돌하지 않습니다. */
+  var TOOL_ART = {
+    chatgpt: '<svg class="tool-svg" viewBox="0 0 64 64" role="presentation" focusable="false" aria-hidden="true"><rect width="64" height="64" fill="#0E8C69"/><path d="M14 18.5 C14 16 16 14 18.5 14 H45.5 C48 14 50 16 50 18.5 V36.5 C50 39 48 41 45.5 41 H30 L20.5 48.6 V41 H18.5 C16 41 14 39 14 36.5 Z" fill="#EAFBF4"/><path d="M32 20.4 L34.4 27 L41 29.4 L34.4 31.8 L32 38.4 L29.6 31.8 L23 29.4 L29.6 27 Z" fill="#12A37B"/><circle cx="42.5" cy="24.5" r="1.9" fill="#12A37B"/></svg>',
+    codex: '<svg class="tool-svg" viewBox="0 0 64 64" role="presentation" focusable="false" aria-hidden="true"><rect width="64" height="64" fill="#31384B"/><path d="M25 22 L16.5 31.6 L25 41.2" fill="none" stroke="#EAF0FF" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M39 22 L47.5 31.6 L39 41.2" fill="none" stroke="#EAF0FF" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M35 19.5 L29 44.5" fill="none" stroke="#8FE3C9" stroke-width="3.2" stroke-linecap="round"/><path d="M50.5 14.5 L51.3 17.2 L54 18 L51.3 18.8 L50.5 21.5 L49.7 18.8 L47 18 L49.7 17.2 Z" fill="#FFE7A0"/></svg>'
+  };
+
+  /* 🔋 AI 한도 표에 4인방과 함께 오르는 외부 AI 도구 2종.
+     저장 키는 office_ai_quotas 의 id 그대로 'chatgpt' · 'codex' 입니다(스키마 변경 없음 — id 는 text). */
+  var AI_TOOL_IDS = ['chatgpt', 'codex'];
+  var AI_TOOLS = {
+    chatgpt: { name: 'ChatGPT', role: 'OpenAI · 대화·자료 조사' },
+    codex:   { name: 'Codex',   role: 'OpenAI · 코드·스크립트' }
+  };
+  var QUOTA_IDS = CREW_IDS.concat(AI_TOOL_IDS);
+  var QUOTA_GROUPS = [
+    { label: 'AI 비서 4인방', hint: '릴레이 추천 기준', ids: CREW_IDS },
+    { label: '외부 AI 도구', hint: 'ChatGPT · Codex', ids: AI_TOOL_IDS }
+  ];
+
+  function isToolId(id) { return AI_TOOL_IDS.indexOf(id) !== -1; }
+
   var CREW = [
     {
       id: 'director', name: '주드 총괄이사', device: '본폰', handle: '지휘 총괄',
@@ -100,7 +124,18 @@
     supabase: { url: '', key: '' }
   };
 
-  var SB = { connected: false, timer: null, lastPull: 0, busy: false };
+  /* v39 — 서버 트래픽 절감 상태.
+     cursor·primed 는 증분 조회(gt) 기준, fails 는 연속 실패(기준이 어긋났을 때 전체 재조회),
+     paused 는 숨은 탭에서 폴링을 멈춰 둔 상태입니다. */
+  var SB = { connected: false, timer: null, lastPull: 0, busy: false,
+             tick: 0, cursor: '', primed: false, fails: 0, paused: false };
+
+  /* 폴링 주기와 증분 조회 상한 (v39)
+     — 예전에는 4.5초마다 office_messages 전체(최대 400행)를 다시 받았습니다.
+       글이 쌓일수록 한 번의 폴링이 수십~수백 KB가 되어 무료 플랜 Egress(5GB)를 넘겼습니다. */
+  var POLL_MS = 6000;
+  var MSG_FIRST_LIMIT = 200;   /* 첫 조회: 최신 200건만 */
+  var MSG_DELTA_LIMIT = 120;   /* 증분 1회 상한 — 꽉 차면 한 번 더 이어 받습니다 */
 
   var DEMO = false;
   try {
@@ -361,7 +396,15 @@
 
       var av = document.createElement('div');
       av.className = 'avatar ' + p.cls;
-      av.textContent = p.initial;
+      /* 4인방은 오피스 맵·AI 한도 탭과 같은 캐릭터 그림을 씁니다.
+         대표님(boss)·시스템 등 CHAR_ART 에 없는 화자는 기존 원형 글자 배지를 그대로 둡니다. */
+      if (CHAR_ART[m.author]) {
+        av.className += ' avatar-char';
+        av.setAttribute('data-char', m.author);
+        paintAvatar(av, m.author);
+      } else {
+        av.textContent = p.initial;
+      }
 
       var main = document.createElement('div');
       main.className = 'msg-main';
@@ -1210,6 +1253,7 @@
       return t.id + ':' + (t.done ? 1 : 0) + ':' + (t.unsynced ? 1 : 0) + ':' + t.title + ':' + (t.owner || '') + ':' + (t.due_date || '');
     }).join('|');
     save();
+    renderPcSide();
   }
 
   function taskWrite(promise) {
@@ -2582,33 +2626,83 @@
     startPolling();
   }
 
-  function startPolling() {
-    if (SB.timer) clearInterval(SB.timer);
-    var tick = 0;
-    SB.timer = setInterval(function () {
-      if (document.visibilityState !== 'visible') return;
-      tick += 1;
-      pullMessages().catch(function () {});
-      /* 할 일 탭을 보고 있을 때는 매번, 다른 화면에서는 4번에 한 번만 맞춥니다 */
-      if (state.view === 'tasks' || tick % 4 === 0) pullTasks().catch(function () {});
-      if (state.view === 'quota' && tick % 4 === 0) pullQuotas().catch(function () {});
-    }, 4500);
+  /* 폰 화면이 꺼졌거나 앱이 뒤로 갔는지 — 이때는 폴링 타이머 자체를 멈춥니다. */
+  function pageHidden() {
+    return document.visibilityState === 'hidden' || document.hidden === true;
   }
 
-  function pullMessages() {
-    if (!SB.connected || SB.busy) return Promise.reject(new Error('not connected'));
+  function stopPolling() {
+    if (SB.timer) { clearInterval(SB.timer); SB.timer = null; }
+    SB.paused = true;
+  }
+
+  function startPolling() {
+    if (SB.timer) { clearInterval(SB.timer); SB.timer = null; }
+    SB.tick = 0;
+    /* 숨은 탭에서는 타이머를 만들지 않습니다 — 복귀(visibilitychange) 때 다시 켭니다. */
+    if (pageHidden()) { SB.paused = true; return; }
+    SB.paused = false;
+    SB.timer = setInterval(pollTick, POLL_MS);
+  }
+
+  function pollTick() {
+    if (pageHidden()) { stopPolling(); return; }
+    if (!SB.connected) { stopPolling(); return; }
+    SB.tick += 1;
+    pullMessages().catch(function () {});
+    /* 할 일 탭을 보고 있을 때는 매번, 다른 화면에서는 5번에 한 번(약 30초)만 맞춥니다 */
+    if (state.view === 'tasks' || SB.tick % 5 === 0) pullTasks().catch(function () {});
+    /* AI 한도는 그 화면을 볼 때만, 그것도 3번에 한 번(약 18초)만 확인합니다 */
+    if (state.view === 'quota' && SB.tick % 3 === 0) pullQuotas().catch(function () {});
+  }
+
+  /* 서버가 준 created_at 중 가장 늦은 시각을 다음 증분 조회의 기준으로 삼습니다.
+     (기기 시계 오차에 흔들리지 않게 로컬 시간은 쓰지 않습니다. ms 아래는 버리므로
+      경계에 걸친 행이 한 번 더 올 수 있지만 id 로 걸러져 중복되지 않습니다.) */
+  function noteMsgCursor(rows) {
+    var max = 0;
+    (rows || []).forEach(function (r) {
+      if (!r || !r.created_at) return;
+      var t = new Date(r.created_at).getTime();
+      if (!isNaN(t) && t > max) max = t;
+    });
+    if (!max) return;
+    var next = new Date(max).toISOString();
+    if (!SB.cursor || new Date(next).getTime() > new Date(SB.cursor).getTime()) SB.cursor = next;
+  }
+
+  /* 첫 조회는 최신 200건만, 그 뒤로는 마지막으로 받은 시각 이후(gt)만 받아 병합합니다.
+     — 매 폴링마다 전체 행을 다시 받던 v38 방식 대비 응답 본문이 거의 0에 가깝습니다. */
+  function pullMessages(opts) {
+    if (!SB.connected) return Promise.reject(new Error('not connected'));
+    if (SB.busy) return Promise.reject(new Error('busy'));
     SB.busy = true;
-    return sbRequest('/rest/v1/office_messages?select=*&order=created_at.asc&limit=400')
-      .then(function (rows) {
-        SB.busy = false;
-        SB.lastPull = Date.now();
-        mergeMessages(rows || []);
-        return true;
-      })
-      .catch(function (e) {
-        SB.busy = false;
-        throw e;
-      });
+    var full = !SB.primed || !SB.cursor || (opts && opts.full === true);
+    var path;
+    if (full) {
+      path = '/rest/v1/office_messages?select=*&order=created_at.desc&limit=' + MSG_FIRST_LIMIT;
+    } else {
+      path = '/rest/v1/office_messages?select=*&order=created_at.asc&created_at=gt.' +
+        encodeURIComponent(SB.cursor) + '&limit=' + MSG_DELTA_LIMIT;
+    }
+    return sbRequest(path).then(function (rows) {
+      SB.busy = false;
+      SB.lastPull = Date.now();
+      SB.fails = 0;
+      SB.primed = true;
+      var list = Array.isArray(rows) ? rows : [];
+      mergeMessages(list);
+      noteMsgCursor(list);
+      /* 증분이 상한을 꽉 채웠으면 더 남아 있을 수 있으니 이어 받습니다. */
+      if (!full && list.length >= MSG_DELTA_LIMIT) return pullMessages();
+      return true;
+    }).catch(function (e) {
+      SB.busy = false;
+      SB.fails += 1;
+      /* 기준 시각이 어긋난 것으로 보이면(3회 연속 실패) 다음 폴링에서 전체를 다시 받습니다. */
+      if (SB.fails >= 3) { SB.primed = false; SB.fails = 0; }
+      throw e;
+    });
   }
 
   function pullAll() {
@@ -2646,7 +2740,7 @@
   /* VAPID 공개키는 공개 정보입니다(비밀키는 Supabase Edge Function 시크릿에만 저장). */
   var VAPID_PUBLIC_KEY = 'BLsYdjB1PvxgqFW1LsvjOKqEfQ6qry4P77QkHh04m2z7yXbYx5pAx4OtnRy4_XlqHofAiABdweCvsc_qRUrq0pA';
   var PUSH = { busy: false, sub: null, synced: false, lastError: '', opened: false };
-  var APP_VERSION = 'v38';
+  var APP_VERSION = 'v39';
 
   function pushSupported() {
     return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
@@ -3738,7 +3832,9 @@
     state.supabase.url = '';
     state.supabase.key = '';
     SB.connected = false;
-    if (SB.timer) { clearInterval(SB.timer); SB.timer = null; }
+    stopPolling();
+    SB.primed = false;
+    SB.cursor = '';
     save();
     el.sbUrl.value = '';
     el.sbKey.value = '';
@@ -3771,12 +3867,16 @@
     { key: 'out',   label: '소진', min: 0,  preset: 0,   cls: 'qs-out' }
   ];
 
-  /* 기본값 — 4인방 모두 Free plan. 리셋은 사람이 보는 값이라 문장으로 적습니다. */
+  /* 4인방 모두 Free plan. 리셋은 사람이 보는 값이라 문장으로 적습니다.
+     ChatGPT·Codex(v39)는 플랜을 앱이 알 수 없으므로 ‘플랜 미확인’으로 두고,
+     대표님이 ✏️ 수정으로 실제 값(플랜·리셋 시각·잔여 %)을 적어 두는 자리입니다. */
   var QUOTA_DEFAULTS = {
     director: { plan: 'Free plan', reset: '보통 매일 자정~새벽 사이 초기화', pct: 85, memo: '지휘·원고 검수 우선' },
     jju1:     { plan: 'Free plan', reset: '매일 새벽 4시 전후 초기화',       pct: 80, memo: '1번 채널·유튜브 대본' },
     jju2:     { plan: 'Free plan', reset: '매일 새벽 초기화',                 pct: 75, memo: '2번 채널·1688 서칭' },
-    jju3:     { plan: 'Free plan', reset: '매일 새벽 초기화',                 pct: 90, memo: '3번 채널·업리카 대응' }
+    jju3:     { plan: 'Free plan', reset: '매일 새벽 초기화',                 pct: 90, memo: '3번 채널·업리카 대응' },
+    chatgpt:  { plan: 'ChatGPT · 플랜 미확인', reset: '앱 → 설정에서 한도·리셋 확인', pct: 100, memo: '대화·자료 조사 — 화면 보고 ✏️ 수정으로 맞추기' },
+    codex:    { plan: 'Codex · 플랜 미확인',   reset: 'ChatGPT 플랜 한도에 포함(계정별 상이)', pct: 100, memo: '코드·스크립트 — 화면 보고 ✏️ 수정으로 맞추기' }
   };
 
   var QUOTA = { source: 'local', sourceLabel: '기기 저장', loading: false, pulled: false };
@@ -3826,10 +3926,10 @@
     (Array.isArray(list) ? list : []).forEach(function (q) {
       if (!q) return;
       var id = q.id || q.crew_id;
-      if (CREW_IDS.indexOf(id) === -1) return;
+      if (QUOTA_IDS.indexOf(id) === -1) return;
       map[id] = quotaNorm(id, q);
     });
-    return CREW_IDS.map(function (id) { return map[id] || quotaDefault(id); });
+    return QUOTA_IDS.map(function (id) { return map[id] || quotaDefault(id); });
   }
 
   function quotaOf(id) {
@@ -3851,14 +3951,30 @@
     return same ? ('오늘 ' + hm + ' 갱신') : ((d.getMonth() + 1) + '/' + d.getDate() + ' ' + hm + ' 갱신');
   }
 
-  function quotaReadyCount() {
-    return state.quotas.filter(function (q) { return quotaLevelKey(q.pct) === 'free'; }).length;
+  function quotaName(id) {
+    return isToolId(id) ? AI_TOOLS[id].name : pname(PEOPLE[id]);
   }
 
-  /* 40% 이상 남은 사람 중 잔여율이 가장 높은 사람 — 없으면 null */
-  function quotaBest() {
+  /* ids 를 주면 그 묶음만 셀니다. 인자가 없으면 전체(4인방 + ChatGPT·Codex) */
+  function quotaReadyCount(ids) {
+    var list = ids || QUOTA_IDS;
+    return state.quotas.filter(function (q) {
+      return list.indexOf(q.id) !== -1 && quotaLevelKey(q.pct) === 'free';
+    }).length;
+  }
+
+  function quotaAvg(ids) {
+    var list = ids || QUOTA_IDS;
+    var sum = 0;
+    list.forEach(function (id) { sum += quotaOf(id).pct; });
+    return list.length ? Math.round(sum / list.length) : 0;
+  }
+
+  /* 40% 이상 남은 것 중 잔여율이 가장 높은 것 — 없으면 null.
+     기본은 4인방(CREW_IDS)이고, AI_TOOL_IDS 를 넘기면 외부 AI 중에서 찾습니다. */
+  function quotaBest(ids) {
     var best = null;
-    CREW_IDS.forEach(function (id) {
+    (ids || CREW_IDS).forEach(function (id) {
       var q = quotaOf(id);
       if (q.pct < 40) return;
       if (!best || q.pct > best.pct) best = q;
@@ -3876,34 +3992,142 @@
 
   function renderQuota() {
     state.quotas = normalizeQuotaList(state.quotas);
-    var ready = quotaReadyCount();
+    renderPcSide();
+    /* 상단 요약은 4인방 기준 — AI 비서 릴레이는 사람 사이에서만 고릅니다. */
+    var ready = quotaReadyCount(CREW_IDS);
     var total = CREW_IDS.length;
-    var sum = state.quotas.reduce(function (s, q) { return s + q.pct; }, 0);
-    var avg = total ? Math.round(sum / total) : 0;
-    var best = quotaBest();
+    var avg = quotaAvg(CREW_IDS);
+    var best = quotaBest(CREW_IDS);
+    /* 전체 한도 현황은 ChatGPT·Codex 까지 6건으로 따로 표기합니다. */
+    var allReady = quotaReadyCount(QUOTA_IDS);
+    var allAvg = quotaAvg(QUOTA_IDS);
+    var toolBest = quotaBest(AI_TOOL_IDS);
 
     if (el.quotaStatReady) el.quotaStatReady.textContent = ready + '/' + total;
     if (el.quotaStatAvg) el.quotaStatAvg.textContent = avg + '%';
     if (el.quotaStatRelay) el.quotaStatRelay.textContent = best ? PEOPLE[best.id].name : '없음';
-    if (el.quotaMenuBadge) el.quotaMenuBadge.textContent = ready + '/' + total;
+    if (el.quotaMenuBadge) {
+      el.quotaMenuBadge.textContent = ready + '/' + total;
+      el.quotaMenuBadge.title = '4인방 여유 ' + ready + '/' + total +
+        ' · 전체 ' + QUOTA_IDS.length + '건 중 여유 ' + allReady + '건';
+    }
+    if (el.quotaAllNote) {
+      el.quotaAllNote.innerHTML = '전체 <b>' + QUOTA_IDS.length + '건</b> · 여유 <b>' + allReady +
+        '건</b> · 평균 잔여 <b>' + allAvg + '%</b> — ChatGPT·Codex 포함, 4인방 ' + ready + '/' + total;
+    }
 
     if (el.quotaReadyChip) {
       el.quotaReadyChip.textContent = ready + '명 여유';
       el.quotaReadyChip.className = 'chip ' + (ready >= 3 ? 'chip-ok' : (ready >= 1 ? 'chip-warn' : 'chip-danger'));
+      el.quotaReadyChip.title = '4인방 기준 · 전체 ' + QUOTA_IDS.length + '건 중 여유 ' + allReady + '건';
     }
     if (el.quotaRelayText) {
+      var toolTail = toolBest
+        ? (' 외부 AI로는 ' + quotaName(toolBest.id) + ' ' + toolBest.pct + '%가 남아 있습니다.')
+        : '';
       if (best) {
         el.quotaRelayText.innerHTML = '<b>' + dlEsc(pname(PEOPLE[best.id])) + '</b> 잔여 <b>' + best.pct +
-          '%</b> · 평균 ' + avg + '% — 다음 원고·지시는 이쪽으로 넘기면 됩니다.';
+          '%</b> · 4인방 평균 ' + avg + '% — 다음 원고·지시는 이쪽으로 넘기면 됩니다.' + dlEsc(toolTail);
       } else {
-        el.quotaRelayText.textContent = '40% 이상 남은 사람이 없습니다. 초기화를 기다리거나 대표님이 직접 처리해 주세요.';
+        el.quotaRelayText.textContent = '4인방 중 40% 이상 남은 사람이 없습니다. 초기화를 기다리거나 대표님이 직접 처리해 주세요.' + toolTail;
       }
     }
 
     var wrapEl = el.quotaCards;
     if (!wrapEl) return;
     wrapEl.innerHTML = '';
-    CREW_IDS.forEach(function (id) { wrapEl.appendChild(quotaCard(id)); });
+    QUOTA_GROUPS.forEach(function (g) {
+      var head = document.createElement('p');
+      head.className = 'quota-group';
+      head.setAttribute('data-quota-group', g.ids.join(','));
+      head.innerHTML = '<span class="quota-group-name">' + g.label + '</span>' +
+        '<span class="quota-group-hint">' + g.hint + ' · ' + g.ids.length + '건</span>';
+      wrapEl.appendChild(head);
+      g.ids.forEach(function (id) { wrapEl.appendChild(quotaCard(id)); });
+    });
+  }
+
+  /* ---------------- PC 오피스 현황 패널 (v39) --------------
+     PC(1024px 이상)에서만 보이는 왼쪽 패널을 채웁니다.
+     폰(1023px 이하)에서는 CSS 로 숨겨지므로, 값만 미리 맞춰 두면 됩니다. */
+  function pcOwnerLabel(id) {
+    return id === 'boss' ? '대표' : (PEOPLE[id] ? PEOPLE[id].name : '');
+  }
+
+  function renderPcSide() {
+    var side = document.getElementById('pcSide');
+    if (!side) return;
+
+    /* ① 4인방 — 캐릭터 그림은 정적이라 한 번만 그립니다. */
+    var crewBox = document.getElementById('pcCrew');
+    if (crewBox && !crewBox.getAttribute('data-filled')) {
+      crewBox.setAttribute('data-filled', '1');
+      CREW_IDS.forEach(function (id) {
+        var p = PEOPLE[id];
+        var li = document.createElement('li');
+        li.setAttribute('data-pc-crew', id);
+        li.setAttribute('role', 'button');
+        li.setAttribute('tabindex', '0');
+        li.setAttribute('aria-label', pname(p) + ' — 오피스 맵 열기');
+        var av = document.createElement('span');
+        av.className = 'map-avatar ' + p.cls;
+        paintAvatar(av, id);
+        li.appendChild(av);
+        var txt = document.createElement('span');
+        txt.className = 'pc-crew-txt';
+        txt.innerHTML = '<b>' + dlEsc(pname(p)) + '</b><span>' + dlEsc(p.device) + '</span>';
+        li.appendChild(txt);
+        li.addEventListener('click', function () { setView('map'); });
+        li.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setView('map'); }
+        });
+        crewBox.appendChild(li);
+      });
+    }
+
+    /* ② 오늘 할 일 — 진행 중인 것 중 마감이 가까운 3건 */
+    var open = state.tasks.filter(function (t) { return !t.done; });
+    var taskNote = document.getElementById('pcTaskNote');
+    if (taskNote) taskNote.textContent = open.length + '건';
+    var taskBox = document.getElementById('pcTasks');
+    if (taskBox) {
+      taskBox.innerHTML = '';
+      var top = open.slice().sort(byDueThenCreated).slice(0, 3);
+      if (!top.length) {
+        var empty = document.createElement('li');
+        empty.className = 'pc-empty';
+        empty.textContent = '진행 중인 할 일이 없습니다.';
+        taskBox.appendChild(empty);
+      } else {
+        top.forEach(function (t) {
+          var li = document.createElement('li');
+          var own = pcOwnerLabel(t.owner);
+          li.innerHTML = (own ? '<span class="pc-task-owner">' + dlEsc(own) + '</span>' : '') +
+            '<span>' + dlEsc(t.title) + '</span>';
+          taskBox.appendChild(li);
+        });
+      }
+    }
+
+    /* ③ AI 한도 — 4인방 잔여율 게이지 */
+    var qBox = document.getElementById('pcQuota');
+    if (qBox) {
+      qBox.innerHTML = '';
+      CREW_IDS.forEach(function (id) {
+        var q = quotaOf(id);
+        var lv = quotaLevelKey(q.pct);
+        var barCls = lv === 'free' ? '' : (lv === 'watch' ? 'warn' : 'danger');
+        var row = document.createElement('div');
+        row.className = 'pc-quota-row';
+        row.setAttribute('data-pc-quota', id);
+        row.innerHTML = '<span class="pc-quota-name">' + dlEsc(PEOPLE[id].name) + '</span>' +
+          '<span class="pc-quota-bar"><i class="' + barCls + '" style="width:' + q.pct + '%"></i></span>' +
+          '<span class="pc-quota-pct">' + q.pct + '%</span>';
+        qBox.appendChild(row);
+      });
+    }
+    var qNote = document.getElementById('pcQuotaNote');
+    if (qNote) qNote.textContent = '여유 ' + quotaReadyCount(CREW_IDS) + '/' + CREW_IDS.length;
   }
 
   function quotaFormHtml(q) {
@@ -3941,7 +4165,10 @@
 
   function quotaCard(id) {
     var q = quotaOf(id);
-    var p = PEOPLE[id];
+    var tool = isToolId(id);
+    var p = tool ? null : PEOPLE[id];
+    var toolInfo = tool ? AI_TOOLS[id] : null;
+    var dispName = tool ? toolInfo.name : pname(p);
     var lvKey = quotaLevelKey(q.pct);
     var lv = quotaLevel(lvKey);
 
@@ -3949,24 +4176,34 @@
     card.className = 'card quota-card';
     card.setAttribute('data-quota-id', id);
     card.setAttribute('data-status', lvKey);
+    card.setAttribute('data-quota-kind', tool ? 'tool' : 'crew');
 
     var head = document.createElement('div');
     head.className = 'quota-head';
-    var av = document.createElement('span');
-    av.className = 'map-avatar quota-avatar ' + p.cls;
-    paintAvatar(av, id);
+    var av;
+    if (tool) {
+      /* 외부 AI 는 사람 얼굴 대신 서비스 배지(인라인 SVG) */
+      av = document.createElement('span');
+      av.className = 'quota-avatar ai-badge ai-' + id;
+      av.innerHTML = '<span class="avatar-face">' + TOOL_ART[id] + '</span>';
+    } else {
+      av = document.createElement('span');
+      av.className = 'map-avatar quota-avatar ' + p.cls;
+      paintAvatar(av, id);
+    }
     head.appendChild(av);
 
     var txt = document.createElement('div');
     txt.className = 'quota-head-txt';
     var nameEl = document.createElement('h3');
-    nameEl.textContent = pname(p);
+    nameEl.textContent = dispName;
     txt.appendChild(nameEl);
     var crewInfo = null;
     for (var ci = 0; ci < CREW.length; ci++) { if (CREW[ci].id === id) { crewInfo = CREW[ci]; break; } }
     var roleEl = document.createElement('p');
     roleEl.className = 'quota-role';
-    roleEl.textContent = crewInfo ? (crewInfo.device + ' · ' + crewInfo.handle) : (p.device || '');
+    roleEl.textContent = tool ? toolInfo.role
+      : (crewInfo ? (crewInfo.device + ' · ' + crewInfo.handle) : ((p && p.device) || ''));
     txt.appendChild(roleEl);
     var planLine = document.createElement('p');
     planLine.className = 'quota-plan';
@@ -3984,7 +4221,7 @@
     var gauge = document.createElement('div');
     gauge.className = 'quota-gauge';
     gauge.setAttribute('role', 'progressbar');
-    gauge.setAttribute('aria-label', pname(p) + ' 잔여 한도');
+    gauge.setAttribute('aria-label', dispName + ' 잔여 한도');
     gauge.setAttribute('aria-valuemin', '0');
     gauge.setAttribute('aria-valuemax', '100');
     gauge.setAttribute('aria-valuenow', String(q.pct));
@@ -4105,7 +4342,7 @@
       save();
       renderQuota();
       persistQuota(id);
-      toast(pname(p) + ' 한도 ' + q.pct + '% · ' + quotaLevel(quotaLevelKey(q.pct)).label + '로 저장했어요');
+      toast(dispName + ' 한도 ' + q.pct + '% · ' + quotaLevel(quotaLevelKey(q.pct)).label + '로 저장했어요');
     }
 
     form.addEventListener('click', function (e) {
@@ -4126,7 +4363,7 @@
       save();
       renderQuota();
       persistQuota(id);
-      toast(pname(p) + ' 한도 ' + q.pct + '% · 지금 확인으로 기록했어요');
+      toast(dispName + ' 한도 ' + q.pct + '% · 지금 확인으로 기록했어요');
     });
 
     return card;
@@ -4168,7 +4405,7 @@
     rows.forEach(function (r) {
       if (!r) return;
       var id = r.id || r.crew_id;
-      if (CREW_IDS.indexOf(id) === -1) return;
+      if (QUOTA_IDS.indexOf(id) === -1) return;
       var cur = quotaOf(id);
       var incoming = quotaNorm(id, r);
       var st = incoming.updated_at ? new Date(incoming.updated_at).getTime() : 0;
@@ -4323,6 +4560,7 @@
     el.quotaStatRelay = document.getElementById('quotaStatRelay');
     el.quotaReadyChip = document.getElementById('quotaReadyChip');
     el.quotaRelayText = document.getElementById('quotaRelayText');
+    el.quotaAllNote = document.getElementById('quotaAllNote');
     el.quotaSourceChip = document.getElementById('quotaSourceChip');
     el.quotaMenuBadge = document.getElementById('quotaMenuBadge');
     el.photoStrip = document.getElementById('photoStrip');
@@ -4350,7 +4588,7 @@
     document.querySelectorAll('.bn-item').forEach(function (b) {
       b.addEventListener('click', function () { setView(b.dataset.view); });
     });
-    document.querySelectorAll('[data-view].link-btn, [data-view].crew-mini').forEach(function (b) {
+    document.querySelectorAll('[data-view].link-btn, [data-view].crew-mini, [data-view].pc-more').forEach(function (b) {
       b.addEventListener('click', function () { setView(b.dataset.view); });
     });
 
@@ -4557,12 +4795,18 @@
     if (el.dlCopyLink) el.dlCopyLink.addEventListener('click', copyDlLink);
 
     document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState === 'visible') {
-        if (SB.connected) pullAll().catch(function () {});
-        if (state.view === 'map') startMapWalk();
-      } else {
+      if (pageHidden()) {
+        /* 폰이 잠기거나 앱을 뒤로 보내면 폴링을 멈춥니다(서버 트래픽 절감). */
+        stopPolling();
         stopMapWalk();
+        return;
       }
+      /* 탭으로 돌아오면 즉시 1회 동기화하고 폴링을 다시 켭니다. */
+      if (SB.connected) {
+        startPolling();
+        pullAll().catch(function () {});
+      }
+      if (state.view === 'map') startMapWalk();
     });
 
     window.addEventListener('resize', function () {

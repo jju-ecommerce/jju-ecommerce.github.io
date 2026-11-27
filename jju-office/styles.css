@@ -449,6 +449,23 @@ html[data-theme="dark"] .chip-gold { color: var(--gold); }
 html[data-theme="dark"] .avatar.p-boss { background: linear-gradient(160deg, #8C7256, #6A533E); }
 html[data-theme="dark"] .avatar { box-shadow: 0 2px 8px rgba(0, 0, 0, .35), 0 0 0 1px rgba(255, 240, 220, .08); }
 
+/* ── 말풍선 캐릭터 아바타 (v39) ─────────────────────────────────
+   크기(34px)·원형·간격은 글자 배지와 똑같이 두고, 안쪽 원에만 캐릭터 SVG 를 채웁니다.
+   그래서 이름줄 정렬과 말풍선 시작 위치가 이전과 같습니다. */
+.avatar.avatar-char {
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  background: var(--card-soft);
+  color: transparent;
+  box-shadow: 0 2px 6px rgba(90, 60, 30, .18), 0 0 0 1px rgba(90, 60, 30, .08);
+}
+.avatar.avatar-char .avatar-face { border-radius: 50%; }
+html[data-theme="dark"] .avatar.avatar-char {
+  background: #1B2430;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .4), 0 0 0 1px rgba(255, 240, 220, .1);
+}
+
 .msg-main { min-width: 0; max-width: calc(100% - 42px); }
 
 .msg-head {
@@ -2470,6 +2487,19 @@ html[data-theme="dark"] .quota-hero { background: linear-gradient(150deg, #1E2A2
 .quota-hero h2 { margin: 0; font-size: 21px; line-height: 1.35; letter-spacing: -.5px; font-weight: 800; }
 .quota-hero-sub { margin: 6px 0 0; font-size: 12px; font-weight: 600; color: var(--muted); }
 .quota-hero-note { margin: 10px 0 0; font-size: 11px; font-weight: 600; line-height: 1.5; color: var(--muted); }
+.quota-allnote {
+  margin: 8px 0 0;
+  padding: 7px 10px;
+  border-radius: 12px;
+  background: rgba(255, 253, 248, .78);
+  border: 1px solid rgba(235, 220, 198, .9);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.quota-allnote b { font-weight: 800; color: var(--brown); }
+html[data-theme="dark"] .quota-allnote { background: rgba(255, 250, 240, .06); border-color: var(--line); }
 
 .quota-summary { padding-bottom: 14px; }
 .quota-relay { margin: 8px 0 0; font-size: 13px; line-height: 1.6; color: var(--ink-2); }
@@ -2483,6 +2513,38 @@ html[data-theme="dark"] .quota-hero { background: linear-gradient(150deg, #1E2A2
 
 .quota-head { display: flex; align-items: center; gap: 10px; }
 .map-avatar.quota-avatar { width: 46px; height: 46px; flex: none; }
+
+/* ── 외부 AI 도구(ChatGPT·Codex) 아이콘 배지 (v39) ── */
+.quota-avatar.ai-badge {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 50%;
+  overflow: hidden;
+  display: block;
+  background: var(--card-soft);
+  box-shadow: 0 2px 8px rgba(90, 60, 30, .16), 0 0 0 1px rgba(90, 60, 30, .08);
+}
+.quota-avatar.ai-badge .avatar-face { border-radius: 50%; }
+.quota-avatar.ai-badge .tool-svg { display: block; width: 100%; height: 100%; }
+html[data-theme="dark"] .quota-avatar.ai-badge {
+  background: #1B2430;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .4), 0 0 0 1px rgba(255, 240, 220, .1);
+}
+
+/* 카드 묶음 제목 — 4인방과 외부 AI 를 나누어 보여 줍니다 */
+.quota-group {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 2px 0 -2px;
+  padding: 0 2px;
+}
+.quota-group + .quota-card { margin-top: 0; }
+.quota-group-name { font-size: 12px; font-weight: 800; letter-spacing: -.2px; color: var(--brown); }
+.quota-group-hint { font-size: 10.5px; font-weight: 600; color: var(--muted); }
+.quota-group:not(:first-child) { margin-top: 6px; }
 .quota-head-txt { flex: 1; min-width: 0; }
 .quota-head-txt h3 { margin: 0; font-size: 14.5px; font-weight: 800; letter-spacing: -.2px; }
 .quota-role { margin: 1px 0 0; font-size: 10.5px; font-weight: 700; color: var(--ink-2); opacity: .8; }
@@ -2767,4 +2829,242 @@ html[data-theme="dark"] .quota-pct-btn.active { background: linear-gradient(180d
   .composer { gap: 5px; }
   .send-btn { padding: 10px 12px; font-size: 13px; }
   .bubble-photo { max-width: 180px; }
+}
+/* ════════════════════════════════════════════════════════════
+   PC 전체화면 와이드 레이아웃 (v39)
+   ────────────────────────────────────────────────────────────
+   · 1024px 이상: 560px 폭 제한을 풀고 화면을 꽉 채웁니다.
+     왼쪽 = 메뉴 + 오피스 현황(4인방 · 할 일 · AI 한도)
+     오른쪽 = 지금 보는 화면을 2단(1440px 이상 3단) 대시보드로 배치.
+   · 1023px 이하(모바일·태블릿)는 이 블록이 적용되지 않아 기존 화면 그대로입니다.
+   ════════════════════════════════════════════════════════════ */
+
+/* 왼쪽 묶음(side-col)은 모바일에서 '감싸는 상자가 없는 것'처럼 동작합니다.
+   (display:contents — 안쪽 .menu-grid 가 지금처럼 .app 의 바로 아래 항목으로 배치됨) */
+.side-col { display: contents; }
+.pc-side { display: none; }
+
+@media (min-width: 1024px) {
+  body { padding: 0; }
+
+  .app {
+    display: grid;
+    width: 100%;
+    max-width: none;
+    grid-template-columns: 278px minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      "top  top"
+      "rail main";
+    box-shadow: none;
+    border-left: none;
+    border-right: none;
+  }
+
+  .topbar { grid-area: top; padding: 14px 24px 10px; }
+  .brand-text h1 { font-size: 18px; }
+  .brand-sub { font-size: 12.5px; }
+
+  .side-col {
+    grid-area: rail;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+    padding: 2px 14px 18px 16px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(150, 120, 85, .28) rgba(255, 255, 255, 0);
+  }
+  .side-col::-webkit-scrollbar { width: 6px; }
+  .side-col::-webkit-scrollbar-thumb { background: rgba(150, 120, 85, .26); border-radius: 999px; }
+
+  .menu-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0;
+    flex: none;
+  }
+  .menu-item { padding: 9px 2px; }
+
+  .bottom-nav { display: none; }
+
+  main {
+    grid-area: main;
+    min-width: 0;
+    min-height: 0;
+    border-left: 1px solid var(--line);
+  }
+
+  /* ---------- 오른쪽: 다단 대시보드 ---------- */
+  .view.active {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    align-content: start;
+    align-items: start;
+    padding: 10px 22px 26px;
+  }
+  .view.active > * { margin-bottom: 0; min-width: 0; }
+
+  /* 두 칸을 다 쓰는 넓은 카드 */
+  .view.active > .map-summary,
+  .view.active > .hero,
+  .view.active > .hero-yt,
+  .view.active > .blog-hero,
+  .view.active > .dl-hero,
+  .view.active > .dl-grid,
+  .view.active > .dl-empty,
+  .view.active > .ep-list,
+  .view.active > .quota-hero,
+  .view.active > #crewList { grid-column: 1 / -1; }
+
+  /* 🗺️ 오피스 맵 — 왼쪽에 큰 평면도, 오른쪽에 4인방 현황 */
+  #view-map.active { grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); }
+
+  /* 💬 회의실 — 폭을 꽉 채우고, 말풍선만 읽기 좋은 폭으로 제한 */
+  #view-office.active {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 24px 18px;
+  }
+  #view-office.active .meeting-card { flex: 1; min-height: 0; margin: 0; }
+  #view-office.active .msg-main,
+  #view-office.active .msg.boss .msg-main { max-width: min(80%, 920px); }
+  #view-office.active .chat-log { padding-right: 10px; }
+
+  /* 📋 할 일 — 필터 줄은 한 칸, 목록 카드는 두 칸 */
+  #view-tasks.active > .task-filter-card { grid-column: 1 / -1; }
+
+  /* 📂 자료실 — 넓은 화면에서는 카드를 여러 열로 */
+  #view-deliverables.active > .dl-grid {
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  }
+
+  /* 🔋 AI 한도 — 4인방·외부 AI 카드를 두 열로 */
+  #quotaCards {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  #quotaCards > .quota-group { grid-column: 1 / -1; }
+
+  /* 🤖 비서 — 카드 두 열 */
+  #crewList { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+
+  /* ---------- 왼쪽: 오피스 현황 패널 ---------- */
+  .pc-side { display: flex; flex-direction: column; gap: 10px; }
+
+  .pc-side-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 12px 13px;
+    box-shadow: var(--shadow);
+  }
+
+  .pc-side-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 9px;
+    font-size: 12.5px;
+    font-weight: 800;
+    letter-spacing: -.2px;
+    color: var(--brown);
+  }
+  .pc-side-head b { margin-left: auto; font-size: 11.5px; font-weight: 800; color: var(--muted); }
+
+  .pc-crew {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .pc-crew li { display: flex; align-items: center; gap: 7px; min-width: 0; cursor: pointer; }
+  .pc-crew li:hover b { color: var(--brown); }
+  .pc-crew li:focus-visible { outline: 2px solid var(--brown); outline-offset: 2px; border-radius: 10px; }
+  .pc-crew .map-avatar { width: 30px; height: 30px; flex: none; }
+  .pc-crew-txt { min-width: 0; display: flex; flex-direction: column; }
+  .pc-crew-txt b {
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: -.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pc-crew-txt span {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pc-tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .pc-tasks li {
+    display: flex;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--ink-2);
+  }
+  .pc-tasks li .pc-task-owner {
+    flex: none;
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--muted);
+  }
+  .pc-empty { margin: 0; font-size: 11.5px; font-weight: 600; color: var(--muted); }
+
+  .pc-quota { display: flex; flex-direction: column; gap: 6px; }
+  .pc-quota-row { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; color: var(--ink-2); }
+  .pc-quota-row .pc-quota-name { flex: none; width: 74px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pc-quota-bar {
+    flex: 1;
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(150, 120, 85, .16);
+    overflow: hidden;
+  }
+  html[data-theme="dark"] .pc-quota-bar { background: rgba(255, 240, 220, .12); }
+  .pc-quota-bar i { display: block; height: 100%; border-radius: 999px; background: var(--ok); }
+  .pc-quota-bar i.warn { background: var(--warn); }
+  .pc-quota-bar i.danger { background: var(--danger); }
+  .pc-quota-pct { flex: none; width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  .pc-more {
+    display: block;
+    width: 100%;
+    margin-top: 9px;
+    padding: 7px 8px;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    background: var(--card-soft);
+    color: var(--ink-2);
+    font-size: 11.5px;
+    font-weight: 800;
+  }
+  .pc-more:hover { border-color: rgba(150, 110, 60, .45); color: var(--brown); }
+}
+
+/* 1440px 이상 — 3단 대시보드 */
+@media (min-width: 1440px) {
+  .app { grid-template-columns: 300px minmax(0, 1fr); }
+
+  .view.active { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 12px 28px 30px; }
+
+  #view-map.active { grid-template-columns: minmax(0, 1.9fr) minmax(340px, 1fr); }
+
+  #quotaCards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #crewList { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #view-deliverables.active > .dl-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+
+  .pc-crew { grid-template-columns: 1fr; }
+  .pc-crew .map-avatar { width: 32px; height: 32px; }
 }

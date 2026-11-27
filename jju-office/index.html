@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="styles.css?v=29">
+<link rel="stylesheet" href="styles.css?v=30">
 </head>
 <body>
 <div class="app" id="app">
@@ -42,6 +42,7 @@
     </div>
   </header>
 
+  <div class="side-col">
   <nav class="menu-grid" aria-label="주요 메뉴">
     <button class="menu-item" data-view="map"><span class="menu-ico">🗺️</span><span class="menu-label">오피스 맵</span></button>
     <button class="menu-item active" data-view="office"><span class="menu-ico">🏛️</span><span class="menu-label">회의실</span></button>
@@ -54,6 +55,26 @@
     <button class="menu-item menu-wide" data-view="deliverables"><span class="menu-ico">📂</span><span class="menu-label">작업물(자료실)</span><span class="menu-wide-badge" id="dlMenuBadge">0</span></button>
     <button class="menu-item menu-wide menu-wide-quota" data-view="quota"><span class="menu-ico">🔋</span><span class="menu-label">AI 한도</span><span class="menu-wide-badge" id="quotaMenuBadge">4/4</span></button>
   </nav>
+
+  <!-- PC(1024px 이상)에서만 보이는 오피스 현황 패널 — 폰에서는 display:none -->
+  <aside class="pc-side" id="pcSide" aria-label="오피스 현황">
+    <div class="pc-side-card">
+      <p class="pc-side-head"><span class="live-dot"></span>오피스 현황<b id="pcCrewNote">4인방</b></p>
+      <ul class="pc-crew" id="pcCrew"></ul>
+      <button class="pc-more" type="button" data-view="map">오피스 맵 열기 →</button>
+    </div>
+    <div class="pc-side-card">
+      <p class="pc-side-head">오늘 할 일<b id="pcTaskNote">0건</b></p>
+      <ul class="pc-tasks" id="pcTasks"></ul>
+      <button class="pc-more" type="button" data-view="tasks">할 일 전체 보기 →</button>
+    </div>
+    <div class="pc-side-card">
+      <p class="pc-side-head">AI 한도<b id="pcQuotaNote">–</b></p>
+      <div class="pc-quota" id="pcQuota"></div>
+      <button class="pc-more" type="button" data-view="quota">AI 한도 자세히 →</button>
+    </div>
+  </aside>
+  </div>
 
   <main id="main">
 
@@ -550,19 +571,20 @@
     <section class="view" id="view-quota" aria-label="AI 한도">
       <div class="card quota-hero">
         <p class="eyebrow">AI 한도 · QUOTA</p>
-        <h2>🔋 4인방 AI 한도</h2>
-        <p class="quota-hero-sub">누가 지금 여유 있는지 한눈에 보고, 남은 사람에게 일을 넘깁니다.</p>
+        <h2>🔋 AI 한도 · 4인방 + ChatGPT·Codex</h2>
+        <p class="quota-hero-sub">4인방 4건과 외부 AI 2건(ChatGPT·Codex)을 한 표에서 봅니다. <b>릴레이 추천·요약은 4인방 기준</b>입니다.</p>
         <div class="hero-stats">
-          <div class="stat"><b id="quotaStatReady">–</b><span>여유 인원</span></div>
-          <div class="stat"><b id="quotaStatAvg">–</b><span>평균 잔여율</span></div>
-          <div class="stat"><b id="quotaStatRelay">–</b><span>추천 릴레이</span></div>
+          <div class="stat"><b id="quotaStatReady">–</b><span>여유 인원 (4인방)</span></div>
+          <div class="stat"><b id="quotaStatAvg">–</b><span>평균 잔여율 (4인방)</span></div>
+          <div class="stat"><b id="quotaStatRelay">–</b><span>추천 릴레이 (4인방)</span></div>
         </div>
-        <p class="quota-hero-note">표시된 한도는 각 폰의 앱 화면을 보고 사람이 갱신하는 값입니다(자동 측정 아님).</p>
+        <p class="quota-allnote" id="quotaAllNote">전체 6건 · 여유 –건 · 평균 잔여 –%</p>
+        <p class="quota-hero-note">표시된 한도는 각 폰·서비스 화면을 보고 사람이 갱신하는 값입니다(자동 측정 아님).</p>
       </div>
 
       <div class="card quota-summary">
         <div class="card-head"><h3>지금 릴레이</h3><span class="chip chip-ok" id="quotaReadyChip">확인 중</span></div>
-        <p class="quota-relay" id="quotaRelayText">4인방 한도를 불러오는 중입니다.</p>
+        <p class="quota-relay" id="quotaRelayText">AI 한도를 불러오는 중입니다.</p>
         <div class="quota-legend">
           <span class="chip chip-ok">여유 70%↑</span>
           <span class="chip chip-warn">주의 40~69%</span>
@@ -577,9 +599,10 @@
         <div class="card-head"><h3>이 화면의 값</h3><span class="chip chip-soft" id="quotaSourceChip">기기 저장</span></div>
         <ul class="dot-list">
           <li>카드의 <b>✏️ 수정</b>을 누르면 <b>플랜명 · 리셋 시각 · 잔여 한도(%) · 상태 · 메모</b>를 그 자리에서 바꿉니다.</li>
+          <li>표에는 <b>AI 비서 4인방</b>과 <b>외부 AI 도구(ChatGPT · Codex)</b>가 함께 올라갑니다. 위쪽 요약(여유 인원·평균·추천 릴레이)은 <b>4인방 기준</b>이고, <b>전체 6건</b> 현황은 따로 표기됩니다.</li>
           <li>상태 배지(여유·주의·임박·소진)는 잔여율에 맞춰 자동으로 정해지고, 상태 버튼을 누르면 그 기준 잔여율로 맞춰집니다.</li>
-          <li>AI 서버(Supabase)를 연결하면 <b>office_ai_quotas</b> 테이블과 동기화되어 4기기에서 같은 값을 봅니다. 테이블이 없거나(404) 응답이 없으면 이 브라우저(localStorage)에만 저장되고 화면은 그대로 동작합니다.</li>
-          <li>추천 릴레이는 <b>잔여율이 가장 높은 사람</b>입니다(40% 미만이면 추천하지 않습니다).</li>
+          <li>AI 서버(Supabase)를 연결하면 <b>office_ai_quotas</b> 테이블과 동기화되어 4기기에서 같은 값을 봅니다(<b>chatgpt · codex</b> 행 포함 — id가 text라 스키마 변경 없음). 테이블이 없거나(404) 응답이 없으면 이 브라우저(localStorage)에만 저장되고 화면은 그대로 동작합니다.</li>
+          <li>추천 릴레이는 <b>4인방 중 잔여율이 가장 높은 사람</b>입니다(40% 미만이면 추천하지 않습니다). 4인방이 모두 40% 미만이면 외부 AI 중 남은 한도를 함께 알려 줍니다.</li>
         </ul>
       </div>
     </section>
@@ -762,6 +785,6 @@
   };
 })();
 </script>
-<script src="app.js?v=38" defer></script>
+<script src="app.js?v=39" defer></script>
 </body>
 </html>
