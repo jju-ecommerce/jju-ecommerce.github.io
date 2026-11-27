@@ -19,12 +19,13 @@
 | ✍️ 블로그 | 도매에빠지다 네이버 블로그 SEO — 공략 키워드(복사), 도매몰 디렉토리 3곳 진행(나셀러·셀러위키·도매리스트닷컴, 이 브라우저에만 저장), 11/25 원고(제목·본문·해시태그 11개) 원클릭 복사와 발행 상태(초안·발행완료) |
 | 📋 할 일 | 할 일·약속 — Supabase `office_tasks`와 동기화. 제목 + 담당(대표님 결정·주드 총괄이사·하루 팀장·다온 과장·로이 대리) + **날짜(약속)** 빠른 추가(오늘·내일·날짜 없음 칩, 날짜 선택), 날짜 배지(`오늘`·`내일`·`11/28 (토)`·`지남`)를 눌러 날짜 변경/삭제, 약속은 날짜순·날짜 없는 할 일은 뒤로 정렬, 보기 필터(전체·오늘·날짜없음·예정된 약속), 체크로 진행 중/완료 분리, 삭제, 상단에 미완료 건수 배지. AI 서버 미연결 시 이 기기에만 저장 (하단 바 `📋 할 일`) |
 | 📂 작업물(자료실) | 전자책·영상·이미지·문서/표·유틸리티 자료실. 카테고리 필터(전체·전자책·영상·이미지·문서/표·유틸리티) + 검색(이름·태그) + 정렬(최신순·이름순). 이미지·영상·CSV·마크다운은 모달에서 바로 미리보기 + 다운로드, 드라이브·문서·시트·웹 링크는 새 탭 열기. 목록은 `app.js`의 정적 기본 목록으로 서버 없이 즉시 뜨고, Supabase `office_deliverables` 테이블이 있으면 그 자료를 더합니다 |
+| 🔋 AI 한도 | 4인방별 잔여 한도 게이지·상태 배지(여유·주의·임박·소진)·다음 리셋 시각·플랜명·메모를 한 화면에. 상단에 **여유 인원·평균 잔여율·추천 릴레이**. 각 카드의 `✏️ 수정`에서 플랜명·리셋 시각·상태·잔여율(프리셋 100/75/50/25/0 + 슬라이더)·메모를 그 자리에서 고치고 `✓ 지금 확인`으로 갱신 시각을 남깁니다. Supabase `office_ai_quotas`와 동기화되고, 테이블이 없으면(404) 기기 저장으로 그대로 동작 |
 | 🤖 비서 | 4인방 역할 카드 |
 
 ## 동작 방식
 
 1. **로컬 모드(기본)** — 서버 없이 바로 동작합니다. 회의실 메시지·할 일은 그 기기 브라우저(localStorage)에 저장됩니다.
-2. **AI 서버 연결(Supabase)** — 우측 상단 `AI 서버` 배지를 눌러 Project URL 과 anon key 를 넣으면 `office_messages` · `office_tasks` 테이블과 동기화됩니다. 4.5초 주기로 주고받으며, 여러 기기에서 같은 회의실·할 일을 봅니다. 할 일은 `📋 할 일` 탭을 보고 있을 때 매 주기, 다른 화면에서는 4주기에 한 번 맞춥니다.
+2. **AI 서버 연결(Supabase)** — 우측 상단 `AI 서버` 배지를 눌러 Project URL 과 anon key 를 넣으면 `office_messages` · `office_tasks` 테이블과 동기화됩니다. `🔋 AI 한도` 탭은 `office_ai_quotas` 테이블과 따로 동기화하며, 그 테이블이 없어도 앱의 다른 화면은 영향받지 않습니다. 4.5초 주기로 주고받으며, 여러 기기에서 같은 회의실·할 일을 봅니다. 할 일은 `📋 할 일` 탭을 보고 있을 때 매 주기, 다른 화면에서는 4주기에 한 번 맞춥니다.
 
 ### 원터치 연결 (주소 한 줄)
 
@@ -92,7 +93,7 @@ curl -X PATCH "$SUPABASE_URL/rest/v1/office_tasks?id=eq.<id>" \
 ```
 index.html                  화면
 styles.css                  크림·브라운·골드 테마(라이트/다크)
-app.js                      회의실·오피스 맵·할 일·자료실·서버 동기화
+app.js                      회의실·오피스 맵·할 일·자료실·AI 한도·서버 동기화
 assets/office-floorplan.jpg  오피스 맵 평면도(1402×1122)
 assets/jju-ecom-logo-transparent.png        쭈대표 이커머스 투명 로고
 assets/jnt-logo-luxury-mono.png             JNT 인터내셔날 로고 시안(럭셔리 모노)
@@ -102,7 +103,7 @@ assets/coupang-ads-playbook-2026-11-26.md   쿠팡 광고 관리 비법 리서�
 assets/weekly-youtube-3picks-2026-11-23.md  주간 유튜브 추천 3선 대본
 assets/domeggook-best100-2026-11-25.xlsx    도매꾹 베스트100 분석(사진 포함)
 manifest.json               PWA 설치 정보
-sw.js                       오프라인 캐시(v30 · 영상·Range 요청은 캐시 제외)
+sw.js                       오프라인 캐시(v31 · 영상·Range 요청은 캐시 제외)
 supabase-office-schema.sql  서버 테이블·정책
 icons/                      앱 아이콘(192·512·maskable·apple-touch)
 scripts/make-icons.py       아이콘 생성 스크립트
@@ -113,6 +114,19 @@ scripts/make-icons.py       아이콘 생성 스크립트
 `id`(uuid) · `title`(text) · `description`(text) · `category`(text — `ebook`·`video`·`image`·`doc`·`util`) · `kind`(text — `pdf`·`md`·`csv`·`xlsx`·`image`·`video`·`web`·`sheet`·`doc`·`app`·`sql`) · `url`(text, 바깥 링크) · `file_path`(text, 이 저장소 안 경로) · `tags`(text[] 또는 쉼표 문자열) · `size_label`(text) · `locked`(boolean) · `created_at` · `updated_at`
 
 테이블이 없거나(404) 비어 있으면 앱은 `app.js`의 정적 기본 목록만으로 동작합니다(자료실 화면은 그대로 열립니다).
+
+### AI 한도(`office_ai_quotas`) 컬럼
+
+`id`(text PK — `director`·`jju1`·`jju2`·`jju3`) · `plan`(text, 플랜명) · `status`(text — `free`·`watch`·`near`·`out`) · `percent`(integer 0~100) · `reset_note`(text, 다음 리셋 예정) · `memo`(text) · `updated_by`(text) · `updated_at`(timestamptz)
+
+앱은 `on_conflict=id` upsert로 한 줄씩 올리고, 조회는 `updated_at` 최신순 50건입니다. 테이블이 없거나(404) 응답이 없으면 조용히 기기 저장으로 돌아가고 화면은 그대로 동작합니다.
+
+```bash
+curl -X POST "$SUPABASE_URL/rest/v1/office_ai_quotas?on_conflict=id" \
+  -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+  -H "Content-Type: application/json" -H "Prefer: resolution=merge-duplicates" \
+  -d '{"id":"jju1","plan":"Free plan","status":"watch","percent":55,"reset_note":"매일 새벽 4시 전후 초기화","memo":"원고 2편 대기"}'
+```
 
 ## 보안
 

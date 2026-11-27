@@ -96,6 +96,7 @@
     taskFilter: 'all',
     dlCat: 'all',
     dlSort: 'new',
+    quotas: [],
     supabase: { url: '', key: '' }
   };
 
@@ -154,6 +155,7 @@
         taskFilter: state.taskFilter,
         dlCat: state.dlCat,
         dlSort: state.dlSort,
+        quotas: state.quotas,
         supabase: state.supabase
       }));
     } catch (e) { /* storage full or blocked */ }
@@ -184,6 +186,7 @@
       state.taskFilter = (s.taskFilter === 'today' || s.taskFilter === 'upcoming') ? s.taskFilter : 'all';
       state.dlCat = DL_CATS.indexOf(s.dlCat) !== -1 ? s.dlCat : 'all';
       state.dlSort = s.dlSort === 'name' ? 'name' : 'new';
+      state.quotas = normalizeQuotaList(s.quotas);
       if (s.supabase && typeof s.supabase === 'object') {
         state.supabase.url = s.supabase.url || '';
         state.supabase.key = s.supabase.key || '';
@@ -277,6 +280,10 @@
     if (name === 'deliverables') {
       renderDeliverables();
       if (!DL.pulled) { DL.pulled = true; pullDeliverables(); }
+    }
+    if (name === 'quota') {
+      renderQuota();
+      pullQuotas();
     }
     /* 오피스 맵을 보고 있을 때만 캐릭터가 걸어 다닙니다 */
     if (name === 'map') {
@@ -2101,6 +2108,7 @@
       pullMessages().catch(function () {});
       /* 할 일 탭을 보고 있을 때는 매번, 다른 화면에서는 4번에 한 번만 맞춥니다 */
       if (state.view === 'tasks' || tick % 4 === 0) pullTasks().catch(function () {});
+      if (state.view === 'quota' && tick % 4 === 0) pullQuotas().catch(function () {});
     }, 4500);
   }
 
@@ -2154,7 +2162,7 @@
   /* VAPID 공개키는 공개 정보입니다(비밀키는 Supabase Edge Function 시크릿에만 저장). */
   var VAPID_PUBLIC_KEY = 'BLsYdjB1PvxgqFW1LsvjOKqEfQ6qry4P77QkHh04m2z7yXbYx5pAx4OtnRy4_XlqHofAiABdweCvsc_qRUrq0pA';
   var PUSH = { busy: false, sub: null, synced: false, lastError: '', opened: false };
-  var APP_VERSION = 'v36';
+  var APP_VERSION = 'v37';
 
   function pushSupported() {
     return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
@@ -3264,6 +3272,456 @@
     });
   }
 
+  /* ---------------- 🔋 AI 한도 ---------------- */
+  /* 4인방이 쓰는 앱(AI) 한도를 사람이 보고 갱신하는 표입니다.
+     Supabase office_ai_quotas 가 있으면 4기기와 같이 맞추고,
+     테이블이 없거나(404) 응답이 없으면 이 브라우저(localStorage)만 씁니다. */
+  var QUOTA_LEVELS = [
+    { key: 'free',  label: '여유', min: 70, preset: 100, cls: 'qs-free' },
+    { key: 'watch', label: '주의', min: 40, preset: 60,  cls: 'qs-watch' },
+    { key: 'near',  label: '임박', min: 1,  preset: 20,  cls: 'qs-near' },
+    { key: 'out',   label: '소진', min: 0,  preset: 0,   cls: 'qs-out' }
+  ];
+
+  /* 기본값 — 4인방 모두 Free plan. 리셋은 사람이 보는 값이라 문장으로 적습니다. */
+  var QUOTA_DEFAULTS = {
+    director: { plan: 'Free plan', reset: '보통 매일 자정~새벽 사이 초기화', pct: 85, memo: '지휘·원고 검수 우선' },
+    jju1:     { plan: 'Free plan', reset: '매일 새벽 4시 전후 초기화',       pct: 80, memo: '1번 채널·유튜브 대본' },
+    jju2:     { plan: 'Free plan', reset: '매일 새벽 초기화',                 pct: 75, memo: '2번 채널·1688 서칭' },
+    jju3:     { plan: 'Free plan', reset: '매일 새벽 초기화',                 pct: 90, memo: '3번 채널·업리카 대응' }
+  };
+
+  var QUOTA = { source: 'local', sourceLabel: '기기 저장', loading: false, pulled: false };
+
+  function quotaClampPct(v) {
+    var n = Math.round(Number(v));
+    if (isNaN(n)) n = 0;
+    return Math.max(0, Math.min(100, n));
+  }
+
+  function quotaLevelKey(pct) {
+    var p = quotaClampPct(pct);
+    for (var i = 0; i < QUOTA_LEVELS.length; i++) {
+      if (p >= QUOTA_LEVELS[i].min) return QUOTA_LEVELS[i].key;
+    }
+    return 'out';
+  }
+
+  function quotaLevel(key) {
+    for (var i = 0; i < QUOTA_LEVELS.length; i++) {
+      if (QUOTA_LEVELS[i].key === key) return QUOTA_LEVELS[i];
+    }
+    return QUOTA_LEVELS[QUOTA_LEVELS.length - 1];
+  }
+
+  function quotaDefault(id) {
+    var d = QUOTA_DEFAULTS[id] || { plan: 'Free plan', reset: '매일 새벽 초기화', pct: 80, memo: '' };
+    return { id: id, plan: d.plan, reset: d.reset, pct: quotaClampPct(d.pct), memo: d.memo, updated_at: '' };
+  }
+
+  function quotaNorm(id, q) {
+    var d = quotaDefault(id);
+    if (!q || typeof q !== 'object') return d;
+    var rawPct = (q.pct !== undefined && q.pct !== null) ? q.pct : q.percent;
+    return {
+      id: id,
+      plan: String(q.plan || d.plan).slice(0, 60),
+      reset: String(q.reset || q.reset_note || d.reset).slice(0, 80),
+      pct: quotaClampPct(rawPct === undefined || rawPct === null ? d.pct : rawPct),
+      memo: String(q.memo || '').slice(0, 120),
+      updated_at: q.updated_at || ''
+    };
+  }
+
+  function normalizeQuotaList(list) {
+    var map = {};
+    (Array.isArray(list) ? list : []).forEach(function (q) {
+      if (!q) return;
+      var id = q.id || q.crew_id;
+      if (CREW_IDS.indexOf(id) === -1) return;
+      map[id] = quotaNorm(id, q);
+    });
+    return CREW_IDS.map(function (id) { return map[id] || quotaDefault(id); });
+  }
+
+  function quotaOf(id) {
+    for (var i = 0; i < state.quotas.length; i++) {
+      if (state.quotas[i] && state.quotas[i].id === id) return state.quotas[i];
+    }
+    var d = quotaDefault(id);
+    state.quotas.push(d);
+    return d;
+  }
+
+  function quotaStamp(isoStr) {
+    if (!isoStr) return '아직 갱신 전';
+    var d = new Date(isoStr);
+    if (isNaN(d.getTime())) return '아직 갱신 전';
+    var now = new Date();
+    var hm = pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+    var same = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+    return same ? ('오늘 ' + hm + ' 갱신') : ((d.getMonth() + 1) + '/' + d.getDate() + ' ' + hm + ' 갱신');
+  }
+
+  function quotaReadyCount() {
+    return state.quotas.filter(function (q) { return quotaLevelKey(q.pct) === 'free'; }).length;
+  }
+
+  /* 40% 이상 남은 사람 중 잔여율이 가장 높은 사람 — 없으면 null */
+  function quotaBest() {
+    var best = null;
+    CREW_IDS.forEach(function (id) {
+      var q = quotaOf(id);
+      if (q.pct < 40) return;
+      if (!best || q.pct > best.pct) best = q;
+    });
+    return best;
+  }
+
+  function setQuotaSource(kind, label) {
+    QUOTA.source = kind;
+    QUOTA.sourceLabel = label;
+    if (!el.quotaSourceChip) return;
+    el.quotaSourceChip.textContent = label;
+    el.quotaSourceChip.className = 'chip ' + (kind === 'server' ? 'chip-ok' : 'chip-soft');
+  }
+
+  function renderQuota() {
+    state.quotas = normalizeQuotaList(state.quotas);
+    var ready = quotaReadyCount();
+    var total = CREW_IDS.length;
+    var sum = state.quotas.reduce(function (s, q) { return s + q.pct; }, 0);
+    var avg = total ? Math.round(sum / total) : 0;
+    var best = quotaBest();
+
+    if (el.quotaStatReady) el.quotaStatReady.textContent = ready + '/' + total;
+    if (el.quotaStatAvg) el.quotaStatAvg.textContent = avg + '%';
+    if (el.quotaStatRelay) el.quotaStatRelay.textContent = best ? PEOPLE[best.id].name : '없음';
+    if (el.quotaMenuBadge) el.quotaMenuBadge.textContent = ready + '/' + total;
+
+    if (el.quotaReadyChip) {
+      el.quotaReadyChip.textContent = ready + '명 여유';
+      el.quotaReadyChip.className = 'chip ' + (ready >= 3 ? 'chip-ok' : (ready >= 1 ? 'chip-warn' : 'chip-danger'));
+    }
+    if (el.quotaRelayText) {
+      if (best) {
+        el.quotaRelayText.innerHTML = '<b>' + dlEsc(pname(PEOPLE[best.id])) + '</b> 잔여 <b>' + best.pct +
+          '%</b> · 평균 ' + avg + '% — 다음 원고·지시는 이쪽으로 넘기면 됩니다.';
+      } else {
+        el.quotaRelayText.textContent = '40% 이상 남은 사람이 없습니다. 초기화를 기다리거나 대표님이 직접 처리해 주세요.';
+      }
+    }
+
+    var wrapEl = el.quotaCards;
+    if (!wrapEl) return;
+    wrapEl.innerHTML = '';
+    CREW_IDS.forEach(function (id) { wrapEl.appendChild(quotaCard(id)); });
+  }
+
+  function quotaFormHtml(q) {
+    var lvKey = quotaLevelKey(q.pct);
+    var statusBtns = QUOTA_LEVELS.map(function (l) {
+      return '<button type="button" class="quota-opt" data-quota-status="' + l.key + '" aria-pressed="' +
+        (l.key === lvKey ? 'true' : 'false') + '">' + l.label + '</button>';
+    }).join('');
+    var presets = [100, 75, 50, 25, 0].map(function (n) {
+      return '<button type="button" class="quota-pct-btn" data-quota-preset="' + n + '">' + n + '%</button>';
+    }).join('');
+    return '' +
+      '<div class="quota-edit-grid">' +
+        '<label class="quota-field"><span>플랜명</span>' +
+          '<input type="text" data-quota-input="plan" maxlength="60" value="' + dlEsc(q.plan) + '" placeholder="예: Free plan"></label>' +
+        '<label class="quota-field"><span>리셋 시각</span>' +
+          '<input type="text" data-quota-input="reset" maxlength="80" value="' + dlEsc(q.reset) + '" placeholder="예: 매일 새벽 4시 전후 초기화"></label>' +
+      '</div>' +
+      '<div class="quota-set">' +
+        '<span class="quota-set-label">상태</span>' +
+        '<div class="quota-opts" role="group" aria-label="상태 선택">' + statusBtns + '</div>' +
+      '</div>' +
+      '<div class="quota-set">' +
+        '<span class="quota-set-label">잔여 한도 <b data-quota-range-val>' + q.pct + '%</b></span>' +
+        '<div class="quota-pcts" role="group" aria-label="잔여율 빠른 선택">' + presets + '</div>' +
+        '<input class="quota-range" type="range" min="0" max="100" step="5" value="' + q.pct + '" data-quota-range aria-label="잔여 한도 퍼센트">' +
+      '</div>' +
+      '<label class="quota-field quota-field-wide"><span>메모</span>' +
+        '<input type="text" data-quota-input="memo" maxlength="120" value="' + dlEsc(q.memo) + '" placeholder="예: 원고 검수 우선"></label>' +
+      '<div class="quota-edit-actions">' +
+        '<button type="button" class="btn primary quota-save" data-quota-save>저장</button>' +
+        '<button type="button" class="btn ghost quota-cancel" data-quota-cancel>닫기</button>' +
+      '</div>';
+  }
+
+  function quotaCard(id) {
+    var q = quotaOf(id);
+    var p = PEOPLE[id];
+    var lvKey = quotaLevelKey(q.pct);
+    var lv = quotaLevel(lvKey);
+
+    var card = document.createElement('article');
+    card.className = 'card quota-card';
+    card.setAttribute('data-quota-id', id);
+    card.setAttribute('data-status', lvKey);
+
+    var head = document.createElement('div');
+    head.className = 'quota-head';
+    var av = document.createElement('span');
+    av.className = 'map-avatar quota-avatar ' + p.cls;
+    paintAvatar(av, id);
+    head.appendChild(av);
+
+    var txt = document.createElement('div');
+    txt.className = 'quota-head-txt';
+    var nameEl = document.createElement('h3');
+    nameEl.textContent = pname(p);
+    txt.appendChild(nameEl);
+    var crewInfo = null;
+    for (var ci = 0; ci < CREW.length; ci++) { if (CREW[ci].id === id) { crewInfo = CREW[ci]; break; } }
+    var roleEl = document.createElement('p');
+    roleEl.className = 'quota-role';
+    roleEl.textContent = crewInfo ? (crewInfo.device + ' · ' + crewInfo.handle) : (p.device || '');
+    txt.appendChild(roleEl);
+    var planLine = document.createElement('p');
+    planLine.className = 'quota-plan';
+    planLine.textContent = q.plan + (q.reset ? ' · ' + q.reset : '');
+    txt.appendChild(planLine);
+    head.appendChild(txt);
+
+    var badge = document.createElement('span');
+    badge.className = 'quota-status ' + lv.cls;
+    badge.setAttribute('data-quota-badge', '1');
+    badge.textContent = lv.label;
+    head.appendChild(badge);
+    card.appendChild(head);
+
+    var gauge = document.createElement('div');
+    gauge.className = 'quota-gauge';
+    gauge.setAttribute('role', 'progressbar');
+    gauge.setAttribute('aria-label', pname(p) + ' 잔여 한도');
+    gauge.setAttribute('aria-valuemin', '0');
+    gauge.setAttribute('aria-valuemax', '100');
+    gauge.setAttribute('aria-valuenow', String(q.pct));
+    var fill = document.createElement('span');
+    fill.className = 'quota-gauge-fill ' + lv.cls;
+    fill.style.width = q.pct + '%';
+    gauge.appendChild(fill);
+    card.appendChild(gauge);
+
+    var nums = document.createElement('div');
+    nums.className = 'quota-nums';
+    var pctEl = document.createElement('b');
+    pctEl.className = 'quota-pct';
+    pctEl.textContent = q.pct + '%';
+    var pctCap = document.createElement('span');
+    pctCap.textContent = '잔여';
+    var updEl = document.createElement('span');
+    updEl.className = 'quota-updated';
+    updEl.textContent = quotaStamp(q.updated_at);
+    nums.appendChild(pctEl);
+    nums.appendChild(pctCap);
+    nums.appendChild(updEl);
+    card.appendChild(nums);
+
+    var memoEl = document.createElement('p');
+    memoEl.className = 'quota-memo';
+    memoEl.textContent = q.memo || '메모 없음';
+    card.appendChild(memoEl);
+
+    var foot = document.createElement('div');
+    foot.className = 'quota-foot';
+    var editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'quota-btn';
+    editBtn.setAttribute('data-quota-edit', '1');
+    editBtn.setAttribute('aria-expanded', 'false');
+    editBtn.textContent = '✏️ 수정';
+    var doneBtn = document.createElement('button');
+    doneBtn.type = 'button';
+    doneBtn.className = 'quota-btn ghost';
+    doneBtn.setAttribute('data-quota-done', '1');
+    doneBtn.textContent = '✓ 지금 확인';
+    foot.appendChild(editBtn);
+    foot.appendChild(doneBtn);
+    card.appendChild(foot);
+
+    var form = document.createElement('div');
+    form.className = 'quota-edit';
+    form.setAttribute('data-quota-form', '1');
+    form.hidden = true;
+    form.innerHTML = quotaFormHtml(q);
+    card.appendChild(form);
+
+    var range = form.querySelector('[data-quota-range]');
+    var rangeVal = form.querySelector('[data-quota-range-val]');
+    var draft = { pct: q.pct };
+
+    function paint(v) {
+      var n = quotaClampPct(v);
+      draft.pct = n;
+      var lk = quotaLevelKey(n);
+      var l = quotaLevel(lk);
+      fill.style.width = n + '%';
+      fill.className = 'quota-gauge-fill ' + l.cls;
+      pctEl.textContent = n + '%';
+      badge.textContent = l.label;
+      badge.className = 'quota-status ' + l.cls;
+      card.setAttribute('data-status', lk);
+      gauge.setAttribute('aria-valuenow', String(n));
+      if (rangeVal) rangeVal.textContent = n + '%';
+      if (range && Number(range.value) !== n) range.value = String(n);
+      form.querySelectorAll('[data-quota-status]').forEach(function (b) {
+        var on = b.getAttribute('data-quota-status') === lk;
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        b.classList.toggle('active', on);
+      });
+      form.querySelectorAll('[data-quota-preset]').forEach(function (b) {
+        b.classList.toggle('active', Number(b.getAttribute('data-quota-preset')) === n);
+      });
+    }
+
+    function openEdit() {
+      form.hidden = false;
+      planLine.hidden = true;
+      editBtn.setAttribute('aria-expanded', 'true');
+      editBtn.textContent = '✏️ 접기';
+      var planI = form.querySelector('[data-quota-input="plan"]');
+      var resetI = form.querySelector('[data-quota-input="reset"]');
+      var memoI = form.querySelector('[data-quota-input="memo"]');
+      if (planI) planI.value = q.plan;
+      if (resetI) resetI.value = q.reset;
+      if (memoI) memoI.value = q.memo;
+      paint(q.pct);
+      if (planI && planI.focus) { try { planI.focus(); } catch (e) {} }
+    }
+
+    function closeEdit() {
+      form.hidden = true;
+      planLine.hidden = false;
+      editBtn.setAttribute('aria-expanded', 'false');
+      editBtn.textContent = '✏️ 수정';
+      paint(q.pct);
+    }
+
+    editBtn.addEventListener('click', function () {
+      if (form.hidden) openEdit(); else closeEdit();
+    });
+
+    function commit() {
+      var planI = form.querySelector('[data-quota-input="plan"]');
+      var resetI = form.querySelector('[data-quota-input="reset"]');
+      var memoI = form.querySelector('[data-quota-input="memo"]');
+      q.plan = String((planI && planI.value) || '').trim().slice(0, 60) || 'Free plan';
+      q.reset = String((resetI && resetI.value) || '').trim().slice(0, 80);
+      q.memo = String((memoI && memoI.value) || '').trim().slice(0, 120);
+      q.pct = quotaClampPct(draft.pct);
+      q.updated_at = new Date().toISOString();
+      save();
+      renderQuota();
+      persistQuota(id);
+      toast(pname(p) + ' 한도 ' + q.pct + '% · ' + quotaLevel(quotaLevelKey(q.pct)).label + '로 저장했어요');
+    }
+
+    form.addEventListener('click', function (e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      var sb = t.closest('[data-quota-status]');
+      if (sb) { paint(quotaLevel(sb.getAttribute('data-quota-status')).preset); return; }
+      var pb = t.closest('[data-quota-preset]');
+      if (pb) { paint(Number(pb.getAttribute('data-quota-preset'))); return; }
+      if (t.closest('[data-quota-cancel]')) { closeEdit(); return; }
+      if (t.closest('[data-quota-save]')) commit();
+    });
+
+    if (range) range.addEventListener('input', function () { paint(range.value); });
+
+    doneBtn.addEventListener('click', function () {
+      q.updated_at = new Date().toISOString();
+      save();
+      renderQuota();
+      persistQuota(id);
+      toast(pname(p) + ' 한도 ' + q.pct + '% · 지금 확인으로 기록했어요');
+    });
+
+    return card;
+  }
+
+  /* 서버에 이 사람 한도 한 줄을 올립니다(있으면 갱신). 실패해도 화면은 기기 저장으로 계속됩니다. */
+  function persistQuota(id) {
+    var q = quotaOf(id);
+    if (!state.supabase.url || !state.supabase.key) {
+      setQuotaSource('local', '기기 저장');
+      return Promise.resolve(false);
+    }
+    return sbRequest('/rest/v1/office_ai_quotas?on_conflict=id', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: {
+        id: q.id,
+        plan: q.plan,
+        status: quotaLevelKey(q.pct),
+        percent: q.pct,
+        reset_note: q.reset,
+        memo: q.memo || '',
+        updated_at: q.updated_at || new Date().toISOString(),
+        updated_by: 'jju1'
+      }
+    }).then(function () {
+      setQuotaSource('server', '서버 동기화');
+      return true;
+    }).catch(function () {
+      setQuotaSource('local', '기기 저장 · 서버 반영 안 됨');
+      return false;
+    });
+  }
+
+  function applyQuotaRows(rows) {
+    if (!Array.isArray(rows) || !rows.length) return 0;
+    var n = 0;
+    rows.forEach(function (r) {
+      if (!r) return;
+      var id = r.id || r.crew_id;
+      if (CREW_IDS.indexOf(id) === -1) return;
+      var cur = quotaOf(id);
+      var incoming = quotaNorm(id, r);
+      var st = incoming.updated_at ? new Date(incoming.updated_at).getTime() : 0;
+      var ct = cur.updated_at ? new Date(cur.updated_at).getTime() : 0;
+      if (st && ct && st < ct) return; /* 기기에 더 새 기록이 있으면 그대로 둡니다 */
+      cur.plan = incoming.plan;
+      cur.reset = incoming.reset;
+      cur.pct = incoming.pct;
+      cur.memo = incoming.memo;
+      cur.updated_at = incoming.updated_at || cur.updated_at;
+      n += 1;
+    });
+    if (n) {
+      save();
+      renderQuota();
+    }
+    return n;
+  }
+
+  function pullQuotas() {
+    if (!state.supabase.url || !state.supabase.key) {
+      setQuotaSource('local', '기기 저장');
+      return Promise.resolve(false);
+    }
+    if (QUOTA.loading) return Promise.resolve(false);
+    QUOTA.loading = true;
+    setQuotaSource('local', '서버 확인 중…');
+    return sbRequest('/rest/v1/office_ai_quotas?select=*&order=updated_at.desc&limit=50')
+      .then(function (rows) {
+        QUOTA.loading = false;
+        QUOTA.pulled = true;
+        var n = applyQuotaRows(rows);
+        setQuotaSource(n ? 'server' : 'local', n ? ('서버 ' + n + '명 동기화') : '기기 저장');
+        return true;
+      })
+      .catch(function (e) {
+        QUOTA.loading = false;
+        setQuotaSource('local', (e && e.status === 404) ? '기기 저장 · 테이블 없음' : '기기 저장 · 서버 응답 없음');
+        return false;
+      });
+  }
+
   /* ---------------- init ---------------- */
   function cacheEls() {
     el.main = document.getElementById('main');
@@ -3364,6 +3822,14 @@
     el.dlOpenTab = document.getElementById('dlOpenTab');
     el.dlDownload = document.getElementById('dlDownload');
     el.dlCopyLink = document.getElementById('dlCopyLink');
+    el.quotaCards = document.getElementById('quotaCards');
+    el.quotaStatReady = document.getElementById('quotaStatReady');
+    el.quotaStatAvg = document.getElementById('quotaStatAvg');
+    el.quotaStatRelay = document.getElementById('quotaStatRelay');
+    el.quotaReadyChip = document.getElementById('quotaReadyChip');
+    el.quotaRelayText = document.getElementById('quotaRelayText');
+    el.quotaSourceChip = document.getElementById('quotaSourceChip');
+    el.quotaMenuBadge = document.getElementById('quotaMenuBadge');
   }
 
   function bind() {
@@ -3593,6 +4059,7 @@
     loadBlog();
     renderBlog();
     renderDeliverables();
+    renderQuota();
     bind();
 
     var params = new URLSearchParams(location.search);

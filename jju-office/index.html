@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="styles.css?v=27">
+<link rel="stylesheet" href="styles.css?v=28">
 </head>
 <body>
 <div class="app" id="app">
@@ -52,6 +52,7 @@
     <button class="menu-item" data-view="blog"><span class="menu-ico">✍️</span><span class="menu-label">블로그</span></button>
     <button class="menu-item" data-view="tasks"><span class="menu-ico">📋</span><span class="menu-label">할 일</span></button>
     <button class="menu-item menu-wide" data-view="deliverables"><span class="menu-ico">📂</span><span class="menu-label">작업물(자료실)</span><span class="menu-wide-badge" id="dlMenuBadge">0</span></button>
+    <button class="menu-item menu-wide menu-wide-quota" data-view="quota"><span class="menu-ico">🔋</span><span class="menu-label">AI 한도</span><span class="menu-wide-badge" id="quotaMenuBadge">4/4</span></button>
   </nav>
 
   <main id="main">
@@ -528,6 +529,44 @@
       </div>
     </section>
 
+    <!-- ============ 🔋 AI 한도 ============ -->
+    <section class="view" id="view-quota" aria-label="AI 한도">
+      <div class="card quota-hero">
+        <p class="eyebrow">AI 한도 · QUOTA</p>
+        <h2>🔋 4인방 AI 한도</h2>
+        <p class="quota-hero-sub">누가 지금 여유 있는지 한눈에 보고, 남은 사람에게 일을 넘깁니다.</p>
+        <div class="hero-stats">
+          <div class="stat"><b id="quotaStatReady">–</b><span>여유 인원</span></div>
+          <div class="stat"><b id="quotaStatAvg">–</b><span>평균 잔여율</span></div>
+          <div class="stat"><b id="quotaStatRelay">–</b><span>추천 릴레이</span></div>
+        </div>
+        <p class="quota-hero-note">표시된 한도는 각 폰의 앱 화면을 보고 사람이 갱신하는 값입니다(자동 측정 아님).</p>
+      </div>
+
+      <div class="card quota-summary">
+        <div class="card-head"><h3>지금 릴레이</h3><span class="chip chip-ok" id="quotaReadyChip">확인 중</span></div>
+        <p class="quota-relay" id="quotaRelayText">4인방 한도를 불러오는 중입니다.</p>
+        <div class="quota-legend">
+          <span class="chip chip-ok">여유 70%↑</span>
+          <span class="chip chip-warn">주의 40~69%</span>
+          <span class="chip chip-danger">임박 1~39%</span>
+          <span class="chip chip-soft">소진 0%</span>
+        </div>
+      </div>
+
+      <div class="quota-list" id="quotaCards"></div>
+
+      <div class="card">
+        <div class="card-head"><h3>이 화면의 값</h3><span class="chip chip-soft" id="quotaSourceChip">기기 저장</span></div>
+        <ul class="dot-list">
+          <li>카드의 <b>✏️ 수정</b>을 누르면 <b>플랜명 · 리셋 시각 · 잔여 한도(%) · 상태 · 메모</b>를 그 자리에서 바꿉니다.</li>
+          <li>상태 배지(여유·주의·임박·소진)는 잔여율에 맞춰 자동으로 정해지고, 상태 버튼을 누르면 그 기준 잔여율로 맞춰집니다.</li>
+          <li>AI 서버(Supabase)를 연결하면 <b>office_ai_quotas</b> 테이블과 동기화되어 4기기에서 같은 값을 봅니다. 테이블이 없거나(404) 응답이 없으면 이 브라우저(localStorage)에만 저장되고 화면은 그대로 동작합니다.</li>
+          <li>추천 릴레이는 <b>잔여율이 가장 높은 사람</b>입니다(40% 미만이면 추천하지 않습니다).</li>
+        </ul>
+      </div>
+    </section>
+
     <!-- ============ 비서 ============ -->
     <section class="view" id="view-assistants" aria-label="비서">
       <div class="card">
@@ -600,7 +639,7 @@
         <a class="link-btn" href="supabase-office-schema.sql" target="_blank" rel="noopener">스키마 SQL 열기</a>
         <button class="link-btn danger" id="sbClear">연결 해제</button>
       </div>
-      <p class="tiny-note">office_messages · office_tasks 테이블을 씁니다. 스키마는 저장소의 supabase-office-schema.sql에 있습니다.</p>
+      <p class="tiny-note">office_messages · office_tasks · office_ai_quotas 테이블을 씁니다. 스키마는 저장소의 supabase-office-schema.sql에 있습니다.</p>
     </div>
   </div>
 
@@ -686,6 +725,6 @@
   };
 })();
 </script>
-<script src="app.js?v=36" defer></script>
+<script src="app.js?v=37" defer></script>
 </body>
 </html>

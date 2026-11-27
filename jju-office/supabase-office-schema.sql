@@ -2,7 +2,7 @@
 -- 쭈대표 AI 오피스 · Supabase 스키마
 -- Supabase 대시보드 → SQL Editor 에 붙여넣고 Run 하면 끝입니다.
 -- 앱 우측 상단 [AI 서버] → Project URL + anon key 를 넣으면
--- 회의실(office_messages)과 메모(office_tasks)가 이 테이블과 동기화됩니다.
+-- 회의실(office_messages) · 할 일(office_tasks) · AI 한도(office_ai_quotas)가 이 테이블과 동기화됩니다.
 -- ============================================================
 
 create extension if not exists "pgcrypto";
@@ -55,12 +55,31 @@ create table if not exists public.office_deliverables (
 create index if not exists office_deliverables_updated_idx
   on public.office_deliverables (updated_at desc);
 
+-- ---------- 🔋 AI 한도(4인방) — 선택 ----------
+-- 앱의 AI 한도 탭은 이 테이블이 없어도(404) 기기 저장(localStorage)으로 그대로 동작합니다.
+-- 4기기에서 같은 값을 보려면 이 블록을 실행하세요.
+create table if not exists public.office_ai_quotas (
+  id          text primary key,                       -- director | jju1 | jju2 | jju3
+  plan        text not null default 'Free plan',       -- 플랜명(자유 문장)
+  status      text not null default 'free',            -- free(여유) | watch(주의) | near(임박) | out(소진)
+  percent     integer not null default 100
+              check (percent >= 0 and percent <= 100), -- 잔여 한도 %
+  reset_note  text,                                    -- 다음 리셋 예정(예: 보통 매일 자정~새벽 사이 초기화)
+  memo        text,
+  updated_by  text default 'jju1',
+  updated_at  timestamptz not null default now()
+);
+
+create index if not exists office_ai_quotas_updated_idx
+  on public.office_ai_quotas (updated_at desc);
+
 -- ---------- 접근 정책 ----------
 -- 개인 오피스용입니다. anon key 를 가진 기기(대표님 폰·PC)만 접속하므로
 -- anon 역할에 읽기·쓰기를 열어 둡니다. 키를 공유하지 마세요.
 alter table public.office_messages enable row level security;
 alter table public.office_tasks    enable row level security;
 alter table public.office_deliverables enable row level security;
+alter table public.office_ai_quotas enable row level security;
 
 drop policy if exists "office messages anon all" on public.office_messages;
 create policy "office messages anon all"
@@ -86,10 +105,21 @@ create policy "office deliverables anon all"
   using (true)
   with check (true);
 
+-- office_tasks와 같은 패턴: select · insert · update · delete 모두 anon 허용
+-- (개인 오피스 기준 · anon key를 가진 대표님 기기만 접속 · 키를 공유하지 마세요)
+drop policy if exists "office ai quotas anon all" on public.office_ai_quotas;
+create policy "office ai quotas anon all"
+  on public.office_ai_quotas
+  for all
+  to anon
+  using (true)
+  with check (true);
+
 grant usage on schema public to anon;
 grant select, insert, update, delete on public.office_messages to anon;
 grant select, insert, update, delete on public.office_tasks    to anon;
 grant select, insert, update, delete on public.office_deliverables to anon;
+grant select, insert, update, delete on public.office_ai_quotas to anon;
 
 -- ---------- Realtime (선택) ----------
 -- 앱은 4.5초 주기로 동기화하므로 Realtime 은 없어도 동작합니다.
@@ -101,4 +131,6 @@ grant select, insert, update, delete on public.office_deliverables to anon;
 -- ---------- 확인 ----------
 select 'office_messages' as table_name, count(*) as rows from public.office_messages
 union all
-select 'office_tasks', count(*) from public.office_tasks;
+select 'office_tasks', count(*) from public.office_tasks
+union all
+select 'office_ai_quotas', count(*) from public.office_ai_quotas;
